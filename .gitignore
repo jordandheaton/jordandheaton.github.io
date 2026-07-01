@@ -1,0 +1,7 @@
+# Local preview helpers (not needed for the deployed site)
+.claude/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini

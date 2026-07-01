@@ -1,0 +1,142 @@
+/* 1. Global styling and university-style typography */
+body {
+    background-color: #f7f9fa; /* Lighter, cleaner background */
+    font-family: 'Public Sans', 'Segoe UI', Arial, sans-serif; /* Clean, modern sans-serif */
+    color: #333333;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* 2. Professional Header utilizing BYU Navy Blue */
+header {
+    /* 1. Link your image and set a dark backup color in case the image fails to load */
+    background: linear-gradient(rgba(0, 46, 93, 0.75), rgba(0, 46, 93, 0.85)), url('https://t4.ftcdn.net/jpg/03/07/23/85/360_F_307238537_7bCjLyqObQs4jfKOu1LAHxQNH3UZcJYZ.jpg');
+    
+    /* 2. Ensure the image covers the header nicely without stretching awkwardly */
+    background-size: cover;
+    background-position: 20% center;
+    background-repeat: no-repeat;
+
+    /* Keep your existing structural and accent styles */
+    color: #ffffff;
+    text-align: center;
+    padding: 6rem 0; /* Increased padding to give the background image more room to show off */
+    border-bottom: 4px solid #0062B8; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    margin: 0 0 15px 0;
+    font-weight: 300;
+    letter-spacing: 1px;
+    font-size: 2.5em;
+}
+
+/* 3. Navigation Bar Styling */
+header nav {
+    background-color: #001f3f; /* Darker navy for contrast */
+    display: inline-block;
+    padding: 10px 25px;
+    border-radius: 50px;
+}
+
+header a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 500;
+    margin: 0 15px;
+    font-size: 1.05em;
+    transition: color 0.3s ease;
+}
+
+header a:hover {
+    color: #8db5e2; /* Light blue hover effect */
+}
+
+/* 4. Base class for Content Containers */
+.content-container {
+    width: 80%;
+    max-width: 850px;
+    margin: 40px auto; 
+    padding: 40px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05); /* Softer, more professional shadow */
+    border-top: 5px solid #002E5D; /* Consistent branding across blocks */
+}
+
+/* Typography inside the Divs */
+.content-container h2 {
+    color: #002E5D;
+    font-size: 1.8em;
+    margin-top: 0;
+    border-bottom: 1px solid #eeeeee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.intro-div p {
+    font-size: 1.1em;
+    color: #555555;
+}
+
+/* 5. Video Container Styling */
+.video-div {
+    text-align: center;
+}
+
+iframe {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    margin: 20px 0;
+}
+
+/* 6. List Container Styling */
+ol {
+    font-size: 1.1em;
+    color: #002E5D;
+    font-weight: 600;
+    padding-left: 20px;
+}
+
+ul {
+    list-style-type: square; /* Sharper bullet points */
+    color: #444444;
+    font-weight: normal;
+    margin-top: 8px;
+    margin-bottom: 25px;
+    font-size: 0.95em;
+}
+
+/* Image Styling */
+.dance-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 30px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 7. Subtle On-page Anchor buttons */
+.back-to-top {
+    display: inline-block;
+    margin-top: 25px;
+    padding: 8px 20px;
+    background-color: #f1f1f1;
+    color: #002E5D;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: 600;
+    border: 1px solid #dddddd;
+    transition: all 0.2s ease;
+}
+
+.back-to-top:hover {
+    background-color: #002E5D;
+    color: #ffffff;
+    border-color: #002E5D;
+}

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BYU Target Chaser</title>
+    <style>
+        /* --- STYLES --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #002255; /* BYU Navy */
+        }
+
+        .stats {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #0062B8; /* BYU Royal Blue */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #002255;
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        /* The playing field */
+        #game-board {
+            width: 400px;
+            height: 400px;
+            background-color: #ffffff;
+            border: 4px solid #002255;
+            border-radius: 10px;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            cursor: crosshair;
+        }
+
+        /* The clickable target */
+        #target {
+            position: absolute;
+            display: none; 
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            
+            /* Centering content */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        #target img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>BYU Target Chaser</h1>
+    
+    <div class="stats">
+        <span>Score: <span id="score">0</span></span> | 
+        <span>Time Left: <span id="time">15</span>s</span>
+    </div>
+
+    <div style="margin-bottom:16px;">
+        <button id="start-btn" style="padding:10px 18px; margin-right:8px; background-color:#0062B8; color:#fff; border:none; border-radius:6px; cursor:pointer;">Start Game</button>
+        <button id="home-btn" onclick="location.href='index.html'" style="padding:10px 18px; background-color:#0062B8; color:#fff; border:none; border-radius:6px; cursor:pointer;">Home</button>
+    </div>
+
+    <div id="game-board">
+        <div id="target" style="display: none;"></div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('time');
+        const gameBoard = document.getElementById('game-board');
+        const target = document.getElementById('target');
+
+        let score = 0;
+        let timeLeft = 15;
+        let gameInterval;
+        let spawnTimeout; // Tracks the automatic movement timer
+        let isPlaying = false;
+        let currentTargetIsEnemy = false; // Tracks if the current dot is a Ute
+
+        const stretchYSrc = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABeCAMAAADv7q56AAAAbFBMVEUAAAD///89PT37+/v19fX4+Pj8/Pzv7+/m5ubp6ens7Ozk5OTV1dXW1tbIyMjGxsa+vr67u7vS0tLR0dHd3d3b29u4uLjExMTFxcXAwMDJycnNzc3Ozs7v7+///Pz6+vr29vb09PTw8PDm5ubp6emOAnYhAAAAAnRSTlMAAHaTzTgAAAIZSURBVGjH7ZfrioMwDIYfXTe3Of//v90Cg7Idg6pZAn2eLAnpS/MlLWvS/+S+H3b3w24Z9mKq7mY87Dby4T3Zg8+A+mRve8g7R3N4P9bYshXv3L/VbYfL+mS7v66I92/Pto+1ePdWb7m9fV+7vD3bvW3u12/99reNf7b6q60H9GfXp8296Y3v7Xm2P78hCgMKEgYUGJQIDChIsBvVv7P98Z3uK7G3v39/fWd87X9v++cb/Y3vew39mXpBgoGChAElAgMKEgYUGJQYDBisZft3/9Zva37g8e2O3nLzN6f2fWfW9e729+7M6/ub89u+pGAsmCwUKAsGBQsFCwULBQsFCwXvFrxlC96yYFnwsOBhwbLgYcGykE0YMGDCYI0pDBiwNIDBgInBAAEDA2bBgAGDoWDCYDCbMGDCgMGECQMGExYmDBgwmDBhwIDBhAljwoBhwsKECQMGEyYMDJiYMDAwYDLwMGAyYDBgMvAwYDJgMGDgZ8DAz8D/9+7m/LbeD4gFCwULBQsFCwXvFrxlC96yYFnwXvU3p7f8ZasBCgMKFAYUGJQIDChIsBvVv7P98Z3uK7G3v39/fWd87X9v++cb/Y3ve/6Gf7v6f2/v7m1z/bO3/fnf9saXb+30OvdG9bY/vyEKAwoSBhQYlAgMKEiwG9W/sf3xne4rsbe/f399Z3ztfG/75xv9uVqDdf/W7w6X9cl2f10R79+ebe/W98NuvQx7/QvIscy9mAnXdQAAAABJRU5ErkJggg==";
+
+        // --- Themes including the new Utah Utes enemy ---
+        const themes = [
+            { type: 'good', content: 'Y', bg: '#002255', color: 'white' },
+            { type: 'good', content: 'Y', bg: '#0062B8', color: 'white' },
+            { type: 'good', content: '🐾', bg: '#ffffff', color: 'black', border: '2px solid #002255' },
+            { type: 'good', content: '⛰️', bg: '#87CEEB', color: 'white' },
+            { type: 'good', content: '📖', bg: '#D3D3D3', color: 'white' },
+            // NEW: Utah Utes Enemy Dot
+            { type: 'enemy', content: 'U', bg: '#CC0000', color: 'white', border: '2px solid #ffffff' }
+        ];
+
+        function moveTarget() {
+            // Clear any active timeout so dots don't double-hop
+            clearTimeout(spawnTimeout);
+
+            if (!isPlaying) return;
+
+            // Random size assignment (30px - 75px)
+            const randomSize = Math.floor(Math.random() * (75 - 30 + 1)) + 30;
+            target.style.width = randomSize + 'px';
+            target.style.height = randomSize + 'px';
+
+            const maxX = gameBoard.clientWidth - randomSize;
+            const maxY = gameBoard.clientHeight - randomSize;
+
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+
+            target.style.left = randomX + 'px';
+            target.style.top = randomY + 'px';
+
+            // Pick a random theme
+            const currentTheme = themes[Math.floor(Math.random() * themes.length)];
+            
+            target.style.borderRadius = '50%';
+            target.style.backgroundColor = currentTheme.bg;
+            target.style.border = currentTheme.border ? currentTheme.border : 'none';
+            target.style.fontSize = Math.floor(randomSize * 0.5) + 'px';
+
+            // Flag whether this selection is an enemy
+            currentTargetIsEnemy = (currentTheme.type === 'enemy');
+
+            if (currentTheme.type === 'image') {
+                target.innerHTML = `<img src="${currentTheme.content}" alt="BYU Stretch Y">`;
+            } else {
+                target.innerHTML = currentTheme.content;
+                target.style.color = currentTheme.color;
+            }
+
+            // NEW: Force the dot to jump somewhere else if not clicked within 1.5 seconds
+            spawnTimeout = setTimeout(moveTarget, 1500);
+        }
+
+        // Handle clicks
+        target.addEventListener('click', function() {
+            if (isPlaying) {
+                if (currentTargetIsEnemy) {
+                    // Tapped the Utes dot! Game Over.
+                    endGame("Game Over! You clicked the Utes dot! down goes the cougars!");
+                } else {
+                    // Clicked a safe BYU dot
+                    score++;
+                    scoreDisplay.textContent = score;
+                    moveTarget(); 
+                }
+            }
+        });
+
+        function endGame(message) {
+            isPlaying = false;
+            clearInterval(gameInterval);
+            clearTimeout(spawnTimeout);
+            target.style.display = 'none'; 
+            startBtn.disabled = false;     
+            alert(message || `Game Over! Final Score: ${score}. Rise and shout!`);
+        }
+
+        startBtn.addEventListener('click', function() {
+            score = 0;
+            timeLeft = 15;
+            isPlaying = true;
+            currentTargetIsEnemy = false;
+            
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+            startBtn.disabled = true; 
+            
+            target.style.display = 'flex'; 
+            moveTarget(); 
+
+            gameInterval = setInterval(function() {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    endGame(`Game Over! Final Score: ${score}. Rise and shout!`);
+                }
+            }, 1000); 
+        });
+    </script>
+</body>
+</html>

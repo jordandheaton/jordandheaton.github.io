@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BYU Scholarship Matcher</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <span class="brand"><i class="fas fa-graduation-cap"></i> BYU Scholarship Matcher</span>
+  </nav>
+
+  <header class="hero">
+    <h1><i class="fas fa-graduation-cap"></i> Find the scholarships you qualify for</h1>
+    <p>
+      Tell me your GPA, major, and situation. I'll surface the BYU scholarships you're eligible
+      for, when they're due, and — powered by AI — a personalized plan to stack them.
+    </p>
+  </header>
+
+  <!-- FORM -->
+  <section class="panel">
+    <form id="matcher-form" class="form-grid">
+      <div class="field">
+        <label for="gpa">Cumulative GPA</label>
+        <input type="number" id="gpa" min="0" max="4" step="0.01" value="3.5" required />
+      </div>
+
+      <div class="field">
+        <label for="major">Major</label>
+        <select id="major"></select>
+      </div>
+
+      <div class="field">
+        <label for="level">Class level</label>
+        <select id="level"></select>
+      </div>
+
+      <div class="field">
+        <label for="need">Do you have financial need?</label>
+        <select id="need">
+          <option value="maybe">Maybe / not sure</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <label for="interests">Interests, goals, or anything that makes you stand out (optional)</label>
+        <input type="text" id="interests" placeholder="e.g. ballroom dance, Spanish fluency, wants to study abroad" />
+      </div>
+
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="studyAbroad" /> Interested in studying abroad</label>
+        <label class="check"><input type="checkbox" id="firstGen" /> First-generation college student</label>
+        <label class="check"><input type="checkbox" id="international" /> International student</label>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn"><i class="fas fa-magnifying-glass"></i> Find my scholarships</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- RESULTS -->
+  <div id="results-wrap">
+    <p id="results-summary" class="results-summary"></p>
+    <div id="results"></div>
+  </div>
+
+  <!-- AI STRATEGIST -->
+  <section id="ai-section" class="panel" hidden>
+    <h2><i class="fas fa-robot"></i> AI Application Strategist</h2>
+    <p class="ai-intro">
+      Get a personalized plan: which scholarships to prioritize, how to stack them, an essay angle,
+      and your next steps.
+    </p>
+    <div class="ai-controls">
+      <button id="generate-plan" class="btn"><i class="fas fa-wand-magic-sparkles"></i> Generate my plan</button>
+      <button id="open-settings" class="link-btn">Use my own Claude API key</button>
+    </div>
+
+    <div id="settings" hidden>
+      <label for="api-key-input">Anthropic API key (optional)</label>
+      <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+      <div class="ai-controls">
+        <button id="save-key" class="btn secondary">Save</button>
+        <button id="close-settings" class="link-btn">Close</button>
+        <span id="key-status"></span>
+      </div>
+      <p class="settings-help">
+        Stored only in your browser (localStorage) and sent directly to Anthropic — never to any
+        server. Leave blank to use the built-in advisor. For a public demo, use a spending-capped key.
+      </p>
+    </div>
+
+    <div id="ai-output" class="ai-output"></div>
+  </section>
+
+  <p class="disclaimer">
+    Built by Jordan Heaton. Scholarship details are gathered from official BYU pages and may change —
+    always confirm amounts and deadlines on the linked official page before applying.
+  </p>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

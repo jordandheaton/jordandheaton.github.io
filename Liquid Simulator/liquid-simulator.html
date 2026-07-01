@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Liquid Simulator</title>
+<style>
+  :root {
+    --bg: #070b18;
+    --panel: rgba(18, 24, 44, 0.72);
+    --panel-border: rgba(120, 160, 255, 0.18);
+    --text: #e6edff;
+    --muted: #8a97c2;
+    --accent: #4da3ff;
+    --accent-2: #43e7d0;
+    --track: rgba(255, 255, 255, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  #stage { position: fixed; inset: 0; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  /* ---- Control panel ---- */
+  #panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 300px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding: 18px 18px 14px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    z-index: 10;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  #panel.collapsed { transform: translateX(112%); opacity: 0; pointer-events: none; }
+
+  #panel h1 {
+    font-size: 17px;
+    font-weight: 650;
+    margin: 0 0 2px;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #panel h1 .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--accent-2), var(--accent));
+    box-shadow: 0 0 12px var(--accent);
+  }
+  .sub { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+
+  .control { margin: 0 0 13px; }
+  .control .row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 5px;
+  }
+  .control label { font-size: 12.5px; color: var(--text); font-weight: 500; }
+  .control .val { font-size: 12px; color: var(--accent-2); font-variant-numeric: tabular-nums; }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 5px; border-radius: 5px;
+    background: var(--track); outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--text);
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 8px rgba(77, 163, 255, 0.6);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--text); border: 3px solid var(--accent); cursor: pointer;
+  }
+
+  .divider { height: 1px; background: var(--panel-border); margin: 14px 0; }
+
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button {
+    font: inherit; font-size: 12.5px; font-weight: 550;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 9px 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+  }
+  button:hover { background: rgba(77, 163, 255, 0.16); border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: rgba(77, 163, 255, 0.22); border-color: var(--accent); }
+  button.wide { grid-column: 1 / -1; }
+
+  .seg { display: flex; gap: 0; border: 1px solid var(--panel-border); border-radius: 10px; overflow: hidden; }
+  .seg button { border: none; border-radius: 0; background: transparent; flex: 1; }
+  .seg button.active { background: rgba(77, 163, 255, 0.22); color: #fff; }
+
+  .preset-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .preset-row button { flex: 1 1 auto; padding: 7px 6px; font-size: 11.5px; }
+
+  .hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 12px; }
+
+  #toggleBtn {
+    position: fixed; top: 16px; right: 16px; z-index: 11;
+    width: 42px; height: 42px; border-radius: 12px;
+    display: none; align-items: center; justify-content: center;
+    font-size: 18px; padding: 0;
+  }
+  #toggleBtn.show { display: flex; }
+
+  #stats {
+    position: fixed; bottom: 14px; left: 16px; z-index: 9;
+    font-size: 11.5px; color: var(--muted);
+    background: rgba(10, 14, 28, 0.5);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 7px 11px;
+    font-variant-numeric: tabular-nums;
+    backdrop-filter: blur(6px);
+  }
+  #stats b { color: var(--text); font-weight: 600; }
+
+  /* scrollbar */
+  #panel::-webkit-scrollbar { width: 8px; }
+  #panel::-webkit-scrollbar-thumb { background: rgba(120,160,255,0.25); border-radius: 8px; }
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="c"></canvas></div>
+
+  <!-- "Goo" + water filter:
+       1. blur the blobs and sharply threshold the alpha so nearby blobs fuse into
+          one continuous surface with a crisp liquid edge (metaball);
+       2. light that surface with a specular highlight so it looks wet and glossy;
+       3. add a faint turbulent shimmer across the body for a watery texture. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="goo" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" id="gooBlur" />
+        <feColorMatrix in="blur" type="matrix"
+          values="1 0 0 0 0
+                  0 1 0 0 0
+                  0 0 1 0 0
+                  0 0 0 22 -10" result="goo" />
+
+        <!-- watery surface texture: slow-moving caustic ripples, masked to the body -->
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="1"
+          seed="4" result="noise" id="gooNoise" />
+        <feColorMatrix in="noise" type="matrix"
+          values="0 0 0 0 0
+                  0 0 0 0 0
+                  0 0 0 0 0
+                  0 0 0 0.5 0" result="noiseA" />
+        <feComposite in="noiseA" in2="goo" operator="in" result="ripple" />
+
+        <!-- glossy specular highlight -> reads as a wet water surface -->
+        <feGaussianBlur in="goo" stdDeviation="5" result="glossSrc" />
+        <feSpecularLighting in="glossSrc" surfaceScale="7" specularConstant="0.9"
+          specularExponent="20" lighting-color="#eaf7ff" result="spec">
+          <fePointLight x="260" y="120" z="170" id="gooLight" />
+        </feSpecularLighting>
+        <feComposite in="spec" in2="goo" operator="in" result="specClip" />
+
+        <!-- combine: liquid body + ripple shimmer + specular gloss -->
+        <feMerge result="lit">
+          <feMergeNode in="goo" />
+          <feMergeNode in="ripple" />
+          <feMergeNode in="specClip" />
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
+
+  <button id="toggleBtn" title="Show controls">☰</button>
+
+  <div id="panel">
+    <h1><span class="dot"></span> Liquid Simulator</h1>
+    <p class="sub">Click to drop liquid, move the cursor through it to push it around. Tweak the sliders to change how it behaves.</p>
+
+    <div class="control">
+      <div class="row"><label for="viscosity">Viscosity</label><span class="val" id="viscosityV"></span></div>
+      <input type="range" id="viscosity" min="0" max="2" step="0.01" />
+    </div>
+    <div class="control">
+      <div class="row"><label for="thickness">Thickness (gooeyness)</label><span class="val" id="thicknessV"></span></div>
+      <input type="range" id="thickness" min="0" max="1" step="0.01" />
+    </div>
+    <div class="control">
+      <div class="row"><label for="gravity">Gravity</label><span class="val" id="gravityV"></span></div>
+      <input type="range" id="gravity" min="-0.4" max="1.2" step="0.01" />
+    </div>
+    <div class="control">
+      <div class="row"><label for="density">Rest density</label><span class="val" id="densityV"></span></div>
+      <input type="range" id="density" min="1" max="14" step="0.1" />
+    </div>
+    <div class="control">
+      <div class="row"><label for="stiffness">Pressure / springiness</label><span class="val" id="stiffnessV"></span></div>
+      <input type="range" id="stiffness" min="0.01" max="0.5" step="0.005" />
+    </div>
+    <div class="control">
+      <div class="row"><label for="radius">Interaction radius</label><span class="val" id="radiusV"></span></div>
+      <input type="range" id="radius" min="14" max="48" step="1" />
+    </div>
+    <div class="control">
+      <div class="row"><label for="count">Particles</label><span class="val" id="countV"></span></div>
+      <input type="range" id="count" min="100" max="2200" step="50" />
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="control" style="margin-bottom:8px">
+      <div class="row"><label>Render</label></div>
+      <div class="seg" id="renderMode">
+        <button data-render="liquid" class="active">Liquid</button>
+        <button data-render="blob">Blobs</button>
+        <button data-render="speed">Speed</button>
+        <button data-render="dots">Dots</button>
+      </div>
+    </div>
+
+    <div class="control" style="margin-bottom:6px">
+      <div class="row"><label>Presets</label></div>
+      <div class="preset-row" id="presets">
+        <button data-preset="water">Water</button>
+        <button data-preset="honey">Honey</button>
+        <button data-preset="lava">Lava</button>
+        <button data-preset="gas">Gas</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="btns">
+      <button id="pauseBtn">⏸ Pause</button>
+      <button id="resetBtn">↺ Reset</button>
+    </div>
+
+    <p class="hint"><b>Click &amp; hold</b> to drop liquid &nbsp;·&nbsp; <b>Move</b> the cursor through the liquid to push it around.</p>
+  </div>
+
+  <div id="stats">
+    <b id="fps">0</b> fps &nbsp;·&nbsp; <b id="pcount">0</b> particles &nbsp;·&nbsp;
+    sim <b id="simms">0</b>ms &nbsp;·&nbsp; draw <b id="drawms">0</b>ms
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("c");
+  // alpha:true so the "Liquid" metaball mode can clear to transparent and let the
+  // SVG goo filter threshold the blobs' alpha into a continuous surface.
+  const ctx = canvas.getContext("2d");
+
+  // ---------- Tunable parameters (defaults = "water") ----------
+  const params = {
+    viscosity: 0.10,   // linear viscosity (sigma)
+    thickness: 0.10,   // quadratic viscosity (beta) — resists fast shear, gives goo
+    gravity:   0.35,   // downward acceleration
+    density:   5.0,    // rest density (rho0)
+    stiffness: 0.08,   // pressure stiffness (k); near-stiffness derived from it
+    radius:    26,     // interaction radius h (px)
+    count:     600,    // target particle count (kept light by default for smoothness)
+    renderMode:"liquid",
+  };
+
+  const presets = {
+    water: { viscosity: 0.06, thickness: 0.08, gravity: 0.35, density: 5,   stiffness: 0.08, radius: 26 },
+    honey: { viscosity: 0.85, thickness: 0.55, gravity: 0.30, density: 6.5, stiffness: 0.12, radius: 30 },
+    lava:  { viscosity: 1.40, thickness: 0.85, gravity: 0.22, density: 8,   stiffness: 0.16, radius: 34 },
+    gas:   { viscosity: 0.02, thickness: 0.02, gravity: -0.06,density: 2.5, stiffness: 0.20, radius: 24 },
+  };
+
+  // ---------- Simulation state (flat typed arrays — zero per-frame allocation) ----------
+  let W = 0, H = 0, DPR = 1;
+  const dt = 1.0;            // time step (constants tuned around dt = 1)
+  let paused = false;
+
+  const MAX = 4000;          // hard cap on particle count
+  let count = 0;             // number of active particles
+  const posX  = new Float32Array(MAX), posY  = new Float32Array(MAX); // current position
+  const prevX = new Float32Array(MAX), prevY = new Float32Array(MAX); // previous position
+  const velX  = new Float32Array(MAX), velY  = new Float32Array(MAX); // velocity
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  function setParticle(i, x, y) {
+    posX[i] = x; posY[i] = y;
+    prevX[i] = x; prevY[i] = y;
+    velX[i] = 0; velY[i] = 0;
+  }
+
+  function spawnBlock(n) {
+    n = Math.min(Math.round(n), MAX);
+    // pack particles into a rectangle near the top-center
+    const cols = Math.ceil(Math.sqrt(n * (W / H) * 0.8));
+    const spacing = params.radius * 0.55;
+    const startX = W * 0.5 - (cols * spacing) / 2;
+    let x = startX, y = H * 0.12;
+    for (let i = 0; i < n; i++) {
+      setParticle(i, x + rand(-1, 1), y + rand(-1, 1));
+      x += spacing;
+      if (x > startX + cols * spacing) { x = startX; y += spacing; }
+    }
+    count = n;
+  }
+
+  function addParticle(x, y) {
+    if (count >= MAX) return;
+    setParticle(count, x + rand(-2, 2), y + rand(-2, 2));
+    count++;
+  }
+
+  // ---------- Spatial grid (allocation-free: linked list of head[cell] + next[i]) ----------
+  // Rebuilt every frame, but allocates nothing on the hot path — only fill(-1) + O(n)
+  // inserts. This is what keeps the GC quiet (no per-cell arrays / Map churn).
+  let gCols = 0, gRows = 0;
+  let cellHead = new Int32Array(0);     // head[cell] -> first particle index, or -1
+  const nextIdx = new Int32Array(MAX);  // next[i] -> next particle in same cell, or -1
+
+  function buildGrid() {
+    const cs = params.radius;
+    const cols = Math.max(1, Math.ceil(W / cs) + 1);
+    const rows = Math.max(1, Math.ceil(H / cs) + 1);
+    const cc = cols * rows;
+    if (cc !== cellHead.length) cellHead = new Int32Array(cc); // re-allocates only on resize / radius change
+    cellHead.fill(-1);
+    gCols = cols; gRows = rows;
+    for (let i = 0; i < count; i++) {
+      let cx = (posX[i] / cs) | 0, cy = (posY[i] / cs) | 0;
+      if (cx < 0) cx = 0; else if (cx >= cols) cx = cols - 1;
+      if (cy < 0) cy = 0; else if (cy >= rows) cy = rows - 1;
+      const c = cy * cols + cx;
+      nextIdx[i] = cellHead[c];
+      cellHead[c] = i;
+    }
+  }
+
+  // ---------- Mouse / touch interaction ----------
+  //   left click / hold -> drop a falling stream of liquid
+  //   moving the cursor through the liquid -> push it (no button needed)
+  const mouse = { x: 0, y: 0, px: 0, py: 0, left: false, over: false };
+  const MOUSE_R = 85;
+
+  function setMouse(e) {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    mouse.x = t.clientX - r.left;
+    mouse.y = t.clientY - r.top;
+  }
+  function resetDrag() { mouse.px = mouse.x; mouse.py = mouse.y; }
+  function onDown(e) {
+    setMouse(e); resetDrag(); mouse.over = true;
+    if (e.touches || e.button === 0) mouse.left = true;
+  }
+  function onMove(e) {
+    if (!mouse.over) { setMouse(e); resetDrag(); mouse.over = true; return; } // entering: no jump
+    setMouse(e);
+    if (e.touches) e.preventDefault();
+  }
+  function onUp(e) {
+    if (!e || (e.type && e.type.startsWith("touch")) || e.button === 0) mouse.left = false;
+  }
+  function onLeave() { mouse.left = false; mouse.over = false; }
+
+  canvas.addEventListener("mousedown", onDown);
+  canvas.addEventListener("mousemove", onMove);
+  canvas.addEventListener("mouseenter", (e) => { setMouse(e); resetDrag(); mouse.over = true; });
+  canvas.addEventListener("mouseleave", onLeave);
+  window.addEventListener("mouseup", onUp);
+  window.addEventListener("blur", onLeave);
+  canvas.addEventListener("touchstart", onDown, { passive: false });
+  canvas.addEventListener("touchmove", onMove, { passive: false });
+  window.addEventListener("touchend", onLeave);
+
+  function applyMouse() {
+    // Left button (or touch): drop a falling stream of liquid
+    if (mouse.left) {
+      for (let s = 0; s < 3; s++) {
+        if (count >= MAX) break;
+        const i = count;
+        setParticle(i, mouse.x + rand(-5, 5), mouse.y + rand(-3, 3));
+        velX[i] = rand(-0.4, 0.4);     // keep it a tight column...
+        velY[i] = rand(3, 6);          // ...with an initial downward push so it falls
+        count++;
+      }
+    }
+
+    // Moving the cursor through the liquid pushes it (movement-driven; no click needed).
+    // Suppressed while dropping (left held) so pouring doesn't also fling the liquid.
+    let dragx = mouse.x - mouse.px;
+    let dragy = mouse.y - mouse.py;
+    if (dragx >  40) dragx =  40; else if (dragx < -40) dragx = -40;   // clamp big jumps
+    if (dragy >  40) dragy =  40; else if (dragy < -40) dragy = -40;
+    const speed = Math.sqrt(dragx * dragx + dragy * dragy);
+    if (mouse.over && !mouse.left && speed > 0.6) {
+      const r2 = MOUSE_R * MOUSE_R;
+      for (let i = 0; i < count; i++) {
+        const dx = posX[i] - mouse.x;
+        const dy = posY[i] - mouse.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < r2) {
+          const d = Math.sqrt(d2) || 1;
+          const falloff = 1 - d / MOUSE_R;
+          // carry liquid along with the motion + nudge it outward so it parts around the cursor
+          velX[i] += dragx * falloff * 0.85 + (dx / d) * falloff * speed * 0.12;
+          velY[i] += dragy * falloff * 0.85 + (dy / d) * falloff * speed * 0.12;
+        }
+      }
+    }
+
+    mouse.px = mouse.x; mouse.py = mouse.y;
+  }
+
+  // ---------- Core simulation step (Clavet et al., 2005) ----------
+  function simulate() {
+    const n = count;
+    const cs = params.radius;
+    const h = cs, h2 = h * h;
+    const gy = params.gravity;
+    const sigma = params.viscosity, beta = params.thickness;
+    const k = params.stiffness, kNear = params.stiffness * 6, rho0 = params.density;
+    const margin = 4;
+    const maxMag = cs * 0.5;   // per-pair pressure-displacement cap (stability)
+
+    // 1. apply external forces (gravity + mouse)
+    for (let i = 0; i < n; i++) velY[i] += gy * dt;
+    applyMouse();
+
+    // 2. viscosity impulses — pairwise, each pair handled once via j > i
+    if (sigma > 0 || beta > 0) {
+      buildGrid();
+      const cols = gCols, rows = gRows;
+      for (let i = 0; i < n; i++) {
+        const xi = posX[i], yi = posY[i];
+        let cx = (xi / cs) | 0, cy = (yi / cs) | 0;
+        if (cx < 0) cx = 0; else if (cx >= cols) cx = cols - 1;
+        if (cy < 0) cy = 0; else if (cy >= rows) cy = rows - 1;
+        const gx0 = cx > 0 ? cx - 1 : 0, gx1 = cx < cols - 1 ? cx + 1 : cols - 1;
+        const gy0 = cy > 0 ? cy - 1 : 0, gy1 = cy < rows - 1 ? cy + 1 : rows - 1;
+        for (let gxx = gx0; gxx <= gx1; gxx++) {
+          for (let gyy = gy0; gyy <= gy1; gyy++) {
+            let j = cellHead[gyy * cols + gxx];
+            while (j !== -1) {
+              if (j > i) {
+                let dx = posX[j] - xi, dy = posY[j] - yi;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < h2 && d2 > 0) {
+                  const d = Math.sqrt(d2);
+                  dx /= d; dy /= d;
+                  const u = (velX[i] - velX[j]) * dx + (velY[i] - velY[j]) * dy;
+                  if (u > 0) {
+                    let I = dt * (1 - d / h) * (sigma * u + beta * u * u);
+                    // Clamp: viscosity may only cancel the approach velocity, never
+                    // reverse it. Without this the quadratic term injects energy and
+                    // the fluid explodes at high thickness (honey / lava).
+                    if (I > u) I = u;
+                    const ix = I * dx * 0.5, iy = I * dy * 0.5;
+                    velX[i] -= ix; velY[i] -= iy;
+                    velX[j] += ix; velY[j] += iy;
+                  }
+                }
+              }
+              j = nextIdx[j];
+            }
+          }
+        }
+      }
+    }
+
+    // 3. advance to predicted positions (cap speed so nothing moves more than ~one
+    //    interaction radius per step — a CFL-style safety net against any blow-up)
+    const maxV = cs * 0.8, maxV2 = maxV * maxV;
+    for (let i = 0; i < n; i++) {
+      let vx = velX[i], vy = velY[i];
+      const s2 = vx * vx + vy * vy;
+      if (s2 > maxV2) { const s = maxV / Math.sqrt(s2); vx *= s; vy *= s; velX[i] = vx; velY[i] = vy; }
+      prevX[i] = posX[i]; prevY[i] = posY[i];
+      posX[i] += vx * dt; posY[i] += vy * dt;
+    }
+
+    // 4. double density relaxation (incompressibility + surface tension)
+    buildGrid();
+    {
+      const cols = gCols, rows = gRows;
+      for (let i = 0; i < n; i++) {
+        const xi = posX[i], yi = posY[i];
+        let cx = (xi / cs) | 0, cy = (yi / cs) | 0;
+        if (cx < 0) cx = 0; else if (cx >= cols) cx = cols - 1;
+        if (cy < 0) cy = 0; else if (cy >= rows) cy = rows - 1;
+        const gx0 = cx > 0 ? cx - 1 : 0, gx1 = cx < cols - 1 ? cx + 1 : cols - 1;
+        const gy0 = cy > 0 ? cy - 1 : 0, gy1 = cy < rows - 1 ? cy + 1 : rows - 1;
+
+        // first pass: densities
+        let rho = 0, rhoNear = 0;
+        for (let gxx = gx0; gxx <= gx1; gxx++) {
+          for (let gyy = gy0; gyy <= gy1; gyy++) {
+            let j = cellHead[gyy * cols + gxx];
+            while (j !== -1) {
+              if (j !== i) {
+                const dx = posX[j] - xi, dy = posY[j] - yi;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < h2) {
+                  const q = 1 - Math.sqrt(d2) / h;
+                  rho += q * q; rhoNear += q * q * q;
+                }
+              }
+              j = nextIdx[j];
+            }
+          }
+        }
+        const P = k * (rho - rho0), Pnear = kNear * rhoNear;
+
+        // second pass: displacements
+        let dispx = 0, dispy = 0;
+        for (let gxx = gx0; gxx <= gx1; gxx++) {
+          for (let gyy = gy0; gyy <= gy1; gyy++) {
+            let j = cellHead[gyy * cols + gxx];
+            while (j !== -1) {
+              if (j !== i) {
+                let dx = posX[j] - xi, dy = posY[j] - yi;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < h2 && d2 > 0) {
+                  const d = Math.sqrt(d2);
+                  const q = 1 - d / h;
+                  let mag = dt * dt * (P * q + Pnear * q * q);
+                  // bound pressure displacement so a density spike can't launch particles
+                  if (mag > maxMag) mag = maxMag; else if (mag < -maxMag) mag = -maxMag;
+                  dx /= d; dy /= d;
+                  const Dx = dx * mag * 0.5, Dy = dy * mag * 0.5;
+                  posX[j] += Dx; posY[j] += Dy;
+                  dispx -= Dx; dispy -= Dy;
+                }
+              }
+              j = nextIdx[j];
+            }
+          }
+        }
+        posX[i] += dispx; posY[i] += dispy;
+      }
+    }
+
+    // 5. boundaries
+    for (let i = 0; i < n; i++) {
+      if (posX[i] < margin) posX[i] = margin; else if (posX[i] > W - margin) posX[i] = W - margin;
+      if (posY[i] < margin) posY[i] = margin; else if (posY[i] > H - margin) posY[i] = H - margin;
+    }
+
+    // 6. derive velocity from movement (+ gentle wall friction)
+    for (let i = 0; i < n; i++) {
+      velX[i] = (posX[i] - prevX[i]) / dt;
+      velY[i] = (posY[i] - prevY[i]) / dt;
+      if (posX[i] <= margin || posX[i] >= W - margin) velY[i] *= 0.96;
+      if (posY[i] <= margin || posY[i] >= H - margin) velX[i] *= 0.96;
+    }
+  }
+
+  // ---------- Sprite cache (pre-rendered glow, drawn with drawImage) ----------
+  // Building gradients per-frame is very expensive, so we bake the glow once into
+  // offscreen canvases and just blit them. Speed mode uses a palette of hue sprites.
+  const SPEED_BUCKETS = 24;
+  const sprites = { radius: -1, size: 0, blob: null, speed: [] };
+
+  function makeGlowSprite(size, glowR, midColor, coreColor) {
+    const off = document.createElement("canvas");
+    off.width = size; off.height = size;
+    const o = off.getContext("2d");
+    const c = size / 2;
+    const g = o.createRadialGradient(c, c, 0, c, c, glowR);
+    g.addColorStop(0.0, coreColor);
+    g.addColorStop(0.35, midColor);
+    g.addColorStop(1.0, "rgba(0,0,0,0)");
+    o.fillStyle = g;
+    o.beginPath();
+    o.arc(c, c, glowR, 0, 6.2832);
+    o.fill();
+    return off;
+  }
+
+  function buildSprites(r) {
+    const glowR = r * 0.75;
+    const size = Math.ceil(glowR * 2) + 2;
+    sprites.size = size;
+    sprites.blob = makeGlowSprite(size, glowR, "rgba(70,150,255,0.20)", "rgba(200,230,255,0.42)");
+    sprites.speed = [];
+    for (let i = 0; i < SPEED_BUCKETS; i++) {
+      const hue = 210 - (i / (SPEED_BUCKETS - 1)) * 195;   // blue (slow) -> red (fast)
+      const mid = `hsla(${hue}, 95%, 55%, 0.20)`;
+      const core = `hsla(${hue}, 100%, 80%, 0.42)`;
+      sprites.speed.push(makeGlowSprite(size, glowR, mid, core));
+    }
+    sprites.radius = r;
+  }
+
+  // ---------- "Liquid" metaball mode ----------
+  const gooBlur = document.getElementById("gooBlur");
+  const gooLight = document.getElementById("gooLight");
+  let gooOn = false, lastGooR = -1;
+  let liquidGrad = null, gradH = -1;
+
+  function ensureLiquidGrad() {
+    if (liquidGrad && gradH === H) return;
+    // water palette: pale aqua at the surface deepening to teal-blue below
+    liquidGrad = ctx.createLinearGradient(0, 0, 0, H);
+    liquidGrad.addColorStop(0.0,  "#bdeeff");   // bright aqua surface (light catches it)
+    liquidGrad.addColorStop(0.35, "#5fc2ef");
+    liquidGrad.addColorStop(0.7,  "#2a8fd8");
+    liquidGrad.addColorStop(1.0,  "#0d5aac");   // deep blue at the bottom
+    gradH = H;
+  }
+
+  function renderLiquid(r) {
+    if (lastGooR !== r) { gooBlur.setAttribute("stdDeviation", (r * 0.34).toFixed(2)); lastGooR = r; }
+    if (!gooOn) { canvas.style.filter = "url(#goo)"; gooOn = true; }
+
+    // drift the specular highlight slowly so the surface shimmers like real water
+    const t = performance.now() * 0.001;
+    gooLight.setAttribute("x", (W * 0.5 + Math.cos(t * 0.5) * W * 0.35).toFixed(0));
+    gooLight.setAttribute("y", (H * 0.28 + Math.sin(t * 0.4) * 60).toFixed(0));
+
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, W, H);                    // transparent — page background shows behind
+    ensureLiquidGrad();
+    ctx.fillStyle = liquidGrad;
+    const br = r * 0.62;
+    for (let i = 0; i < count; i++) {
+      ctx.beginPath();
+      ctx.arc(posX[i], posY[i], br, 0, 6.2832);
+      ctx.fill();
+    }
+  }
+
+  // ---------- Rendering ----------
+  function render() {
+    const mode = params.renderMode;
+    const r = params.radius;
+
+    if (mode === "liquid") { renderLiquid(r); return; }
+
+    if (gooOn) { canvas.style.filter = "none"; gooOn = false; }
+    ctx.fillStyle = "#070b18";
+    ctx.fillRect(0, 0, W, H);
+
+    if (mode === "dots") {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "#6db3ff";
+      for (let i = 0; i < count; i++) {
+        ctx.beginPath();
+        ctx.arc(posX[i], posY[i], 2.4, 0, 6.2832);
+        ctx.fill();
+      }
+      return;
+    }
+
+    if (sprites.radius !== r) buildSprites(r);
+    const size = sprites.size, half = size / 2;
+
+    ctx.globalCompositeOperation = "lighter";
+    if (mode === "speed") {
+      const speedSprites = sprites.speed;
+      const last = SPEED_BUCKETS - 1;
+      for (let i = 0; i < count; i++) {
+        const sp = Math.sqrt(velX[i] * velX[i] + velY[i] * velY[i]) / 9;
+        let b = (sp * last) | 0; if (b > last) b = last;
+        ctx.drawImage(speedSprites[b], posX[i] - half, posY[i] - half);
+      }
+    } else {
+      const blob = sprites.blob;
+      for (let i = 0; i < count; i++) {
+        ctx.drawImage(blob, posX[i] - half, posY[i] - half);
+      }
+    }
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  // ---------- Main loop ----------
+  let lastT = performance.now(), frames = 0, fpsT = 0;
+  let simAcc = 0, drawAcc = 0;   // accumulated ms for the current reporting window
+  const fpsEl = document.getElementById("fps");
+  const pcountEl = document.getElementById("pcount");
+  const simEl = document.getElementById("simms");
+  const drawEl = document.getElementById("drawms");
+
+  function loop(now) {
+    const elapsed = now - lastT; lastT = now;
+
+    const t0 = performance.now();
+    if (!paused) simulate();
+    const t1 = performance.now();
+    render();
+    const t2 = performance.now();
+    simAcc += t1 - t0; drawAcc += t2 - t1;
+
+    frames++; fpsT += elapsed;
+    if (fpsT >= 500) {
+      // separate sim vs draw timings so it's easy to see which one is the bottleneck
+      fpsEl.textContent = Math.round((frames * 1000) / fpsT);
+      simEl.textContent = (simAcc / frames).toFixed(1);
+      drawEl.textContent = (drawAcc / frames).toFixed(1);
+      frames = 0; fpsT = 0; simAcc = 0; drawAcc = 0;
+    }
+    pcountEl.textContent = count;
+
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- Resize ----------
+  function resize() {
+    // The fluid is rendered as soft glows, so hi-DPI sharpness buys nothing but
+    // costs 4x the pixels. Render at 1x for a big, free performance win.
+    DPR = 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+
+  // ---------- UI wiring ----------
+  const sliders = ["viscosity", "thickness", "gravity", "density", "stiffness", "radius", "count"];
+  const fmt = {
+    viscosity: v => v.toFixed(2),
+    thickness: v => v.toFixed(2),
+    gravity:   v => v.toFixed(2),
+    density:   v => v.toFixed(1),
+    stiffness: v => v.toFixed(3),
+    radius:    v => v.toFixed(0) + " px",
+    count:     v => v.toFixed(0),
+  };
+
+  function syncSlider(id) {
+    const el = document.getElementById(id);
+    el.value = params[id];
+    document.getElementById(id + "V").textContent = fmt[id](params[id]);
+  }
+
+  sliders.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener("input", () => {
+      params[id] = parseFloat(el.value);
+      document.getElementById(id + "V").textContent = fmt[id](params[id]);
+      if (id === "count") adjustCount(params[id]);
+    });
+  });
+
+  function adjustCount(target) {
+    target = Math.min(Math.round(target), MAX);
+    if (target > count) {
+      while (count < target) addParticle(rand(W * 0.3, W * 0.7), rand(H * 0.1, H * 0.4));
+    } else {
+      count = target;
+    }
+  }
+
+  // render mode segmented control
+  document.querySelectorAll("#renderMode button").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#renderMode button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      params.renderMode = b.dataset.render;
+    });
+  });
+
+  // presets
+  document.querySelectorAll("#presets button").forEach(b => {
+    b.addEventListener("click", () => {
+      const p = presets[b.dataset.preset];
+      Object.assign(params, p);
+      sliders.forEach(syncSlider);
+    });
+  });
+
+  // buttons
+  const pauseBtn = document.getElementById("pauseBtn");
+  pauseBtn.addEventListener("click", () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? "▶ Play" : "⏸ Pause";
+    pauseBtn.classList.toggle("primary", paused);
+  });
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    spawnBlock(Math.round(params.count));
+  });
+
+  // collapse / show panel
+  const panel = document.getElementById("panel");
+  const toggleBtn = document.getElementById("toggleBtn");
+  panel.addEventListener("dblclick", (e) => {
+    if (e.target === panel || e.target.tagName === "H1") togglePanel();
+  });
+  toggleBtn.addEventListener("click", togglePanel);
+  function togglePanel() {
+    panel.classList.toggle("collapsed");
+    toggleBtn.classList.toggle("show", panel.classList.contains("collapsed"));
+  }
+
+  // ---------- Boot ----------
+  resize();
+  sliders.forEach(syncSlider);
+  spawnBlock(params.count);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
