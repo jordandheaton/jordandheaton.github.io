@@ -5,3 +5,8 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# temp preview/export artifacts
+_preview_files/
+_rpreview*
+_preview*
