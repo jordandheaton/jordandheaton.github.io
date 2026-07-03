@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Process Improvement Analysis | Jordan Heaton</title>
+  <meta name="description" content="A measured process improvement case study: mapping a daily routine, testing two changes, and cutting average run time by 33% across five trials.">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #1e3a8a;
+      --blue: #3b82f6;
+      --teal: #0d9488;
+      --ink: #1e293b;
+      --muted: #5b6779;
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --amber: #d97706;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.7;
+    }
+
+    h1, h2, h3, .stat-num { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #16295f 0%, #1e3a8a 55%, #2563eb 100%);
+      color: #fff;
+      padding: 72px 24px 60px;
+      text-align: center;
+    }
+    .hero .kicker {
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #93c5fd;
+      margin-bottom: 14px;
+    }
+    .hero h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); letter-spacing: -0.5px; line-height: 1.15; }
+    .hero p.sub { color: #c7d7f5; max-width: 620px; margin: 16px auto 0; font-size: 1.02rem; }
+    .hero .meta { margin-top: 22px; font-size: 0.85rem; color: #93c5fd; }
+    .hero .actions { margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero a.btn {
+      display: inline-block;
+      padding: 11px 22px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      text-decoration: none;
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+    .hero a.btn.light { background: #fff; color: var(--navy); }
+    .hero a.btn.light:hover { transform: translateY(-2px); }
+    .hero a.btn.ghost { border: 1px solid rgba(255,255,255,0.45); color: #fff; }
+    .hero a.btn.ghost:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+
+    /* Headline stats */
+    .stats-band {
+      max-width: 880px;
+      margin: -34px auto 0;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      position: relative;
+      z-index: 2;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 14px;
+      text-align: center;
+      box-shadow: 0 8px 20px -12px rgba(30, 58, 138, 0.35);
+    }
+    .stat-num { font-size: 1.5rem; font-weight: 700; color: var(--navy); }
+    .stat-lbl { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
+    .stat-num.good { color: var(--teal); }
+
+    /* Sections */
+    main { max-width: 880px; margin: 0 auto; padding: 30px 20px 60px; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 36px;
+      margin-top: 26px;
+    }
+    section h2 {
+      color: var(--navy);
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+      letter-spacing: -0.3px;
+    }
+    section p { color: var(--muted); margin-bottom: 12px; }
+    section p:last-child { margin-bottom: 0; }
+    .step-label {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 6px;
+    }
+
+    /* Flowchart */
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 22px 0 6px;
+    }
+    .flow .node {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--navy);
+      font-weight: 600;
+      font-size: 0.88rem;
+      padding: 10px 16px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .flow .node.start, .flow .node.end { background: var(--navy); color: #fff; border-color: var(--navy); border-radius: 999px; }
+    .flow .arrow { color: #94a3b8; font-weight: 700; }
+
+    /* Improvement cards */
+    .improve-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 20px; }
+    .improve {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      background: #fbfcfe;
+      border-top: 4px solid var(--teal);
+    }
+    .improve h3 { color: var(--navy); font-size: 1.05rem; margin-bottom: 8px; }
+    .improve p { font-size: 0.93rem; }
+    .improve .pill {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--teal);
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-radius: 999px;
+      padding: 3px 10px;
+      margin-bottom: 10px;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0 6px;
+      font-size: 0.93rem;
+    }
+    th, td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--border); }
+    th {
+      background: #f1f5f9;
+      color: var(--navy);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    tbody tr:hover { background: #f8fafc; }
+    tr.avg-row td { font-weight: 700; color: var(--navy); background: #eff6ff; border-bottom: none; }
+    td.delta { color: var(--teal); font-weight: 600; }
+
+    /* Chart */
+    .chart-wrap { margin: 20px 0 4px; }
+    .chart-legend { display: flex; gap: 20px; justify-content: center; font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+    .chart-legend .key { display: inline-flex; align-items: center; gap: 7px; }
+    .chart-legend .swatch { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
+
+    blockquote {
+      border-left: 3px solid var(--blue);
+      padding: 6px 0 6px 18px;
+      margin: 18px 0;
+      color: var(--ink);
+      font-style: italic;
+    }
+
+    footer {
+      text-align: center;
+      padding: 10px 16px 44px;
+      color: #94a3b8;
+      font-size: 0.88rem;
+    }
+    footer a { color: var(--blue); font-weight: 600; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 720px) {
+      .stats-band { grid-template-columns: repeat(2, 1fr); }
+      .improve-grid { grid-template-columns: 1fr; }
+      section { padding: 24px 20px; }
+      .flow .arrow { display: none; }
+      .flow { flex-direction: column; }
+      .flow .node { width: 100%; text-align: center; white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <p class="kicker">Process Improvement Case Study</p>
+    <h1>Redesigning a morning routine with data</h1>
+    <p class="sub">Map the process, test two targeted changes, measure five trials of each, and prove
+       the improvement. A small system, treated with the same rigor as a big one.</p>
+    <p class="meta">Jordan Heaton · Brigham Young University · London study abroad</p>
+    <div class="actions">
+      <a class="btn light" href="Process%20Analysis%20Project.pdf" target="_blank" rel="noopener">Read the original PDF</a>
+      <a class="btn ghost" href="../index.html">Back to portfolio</a>
+    </div>
+  </header>
+
+  <div class="stats-band">
+    <div class="stat"><div class="stat-num">43.6</div><div class="stat-lbl">Baseline avg (min)</div></div>
+    <div class="stat"><div class="stat-num good">29.4</div><div class="stat-lbl">Improved avg (min)</div></div>
+    <div class="stat"><div class="stat-num good">-14.2</div><div class="stat-lbl">Minutes saved / day</div></div>
+    <div class="stat"><div class="stat-num good">33%</div><div class="stat-lbl">Faster overall</div></div>
+  </div>
+
+  <main>
+    <section>
+      <span class="step-label">01 · Context</span>
+      <h2>The problem</h2>
+      <p>After moving to a new place for a London study abroad, my old morning process stopped working.
+         So I treated it like any other process problem: I fixed the sequence, tracked it for a week
+         starting Sunday, June 7, and used that baseline to test improvements.</p>
+      <p>The baseline sequence, from the moment I wake up:</p>
+      <div class="flow">
+        <span class="node start">Wake up</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node">Shower</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node">Shave</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node">Get dressed</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node">Eat breakfast</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node">Brush teeth</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node end">Out the door</span>
+      </div>
+    </section>
+
+    <section>
+      <span class="step-label">02 · Redesign</span>
+      <h2>Two targeted changes</h2>
+      <p>Instead of overhauling everything, I went after the two slowest and most variable parts of
+         the routine.</p>
+      <div class="improve-grid">
+        <div class="improve">
+          <span class="pill">Change 1 · Time-boxing</span>
+          <h3>Timers in the bathroom</h3>
+          <p>Showering and shaving ate the biggest chunk of the morning. A 10-minute shower timer and a
+             5-minute shave timer cap the bathroom at 15 minutes. The limit stops the lingering without
+             rushing the result.</p>
+        </div>
+        <div class="improve">
+          <span class="pill">Change 2 · Shifting work upstream</span>
+          <h3>Prep the night before</h3>
+          <p>Clothes get laid out each evening, and breakfast becomes grab-and-go (overnight oats or a
+             premade smoothie). The decisions move to the evening, when there's time and energy, and
+             vanish from the morning rush.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <span class="step-label">03 · Results</span>
+      <h2>Five trials each, no overlap</h2>
+      <p>Every improved trial beat every baseline trial. The improved process was also far more
+         predictable: a 4-minute spread instead of a 13-minute one.</p>
+
+      <table>
+        <thead>
+          <tr><th>Trial</th><th>Original (min)</th><th>Improved (min)</th><th>Saved</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>42</td><td>32</td><td class="delta">-10</td></tr>
+          <tr><td>2</td><td>37</td><td>28</td><td class="delta">-9</td></tr>
+          <tr><td>3</td><td>40</td><td>29</td><td class="delta">-11</td></tr>
+          <tr><td>4</td><td>50</td><td>28</td><td class="delta">-22</td></tr>
+          <tr><td>5</td><td>49</td><td>30</td><td class="delta">-19</td></tr>
+          <tr class="avg-row"><td>Avg</td><td>43.6</td><td>29.4</td><td class="delta">-14.2</td></tr>
+        </tbody>
+      </table>
+
+      <div class="chart-wrap">
+        <svg viewBox="0 0 640 300" role="img" aria-label="Line chart comparing original and improved process times across five trials" style="width:100%; height:auto;">
+          <!-- gridlines -->
+          <g stroke="#e2e8f0" stroke-width="1">
+            <line x1="60" y1="40"  x2="610" y2="40"/>
+            <line x1="60" y1="90"  x2="610" y2="90"/>
+            <line x1="60" y1="140" x2="610" y2="140"/>
+            <line x1="60" y1="190" x2="610" y2="190"/>
+            <line x1="60" y1="240" x2="610" y2="240"/>
+          </g>
+          <!-- y labels: scale 0-60 min => y = 240 - min*(200/60) -->
+          <g fill="#94a3b8" font-size="12" text-anchor="end">
+            <text x="50" y="244">0</text>
+            <text x="50" y="194">15</text>
+            <text x="50" y="144">30</text>
+            <text x="50" y="94">45</text>
+            <text x="50" y="44">60</text>
+          </g>
+          <!-- x labels -->
+          <g fill="#94a3b8" font-size="12" text-anchor="middle">
+            <text x="115" y="266">Trial 1</text>
+            <text x="225" y="266">Trial 2</text>
+            <text x="335" y="266">Trial 3</text>
+            <text x="445" y="266">Trial 4</text>
+            <text x="555" y="266">Trial 5</text>
+          </g>
+          <!-- axes -->
+          <line x1="60" y1="40" x2="60" y2="240" stroke="#cbd5e1" stroke-width="1.5"/>
+          <line x1="60" y1="240" x2="610" y2="240" stroke="#cbd5e1" stroke-width="1.5"/>
+          <!-- original: 42,37,40,50,49 -->
+          <polyline fill="none" stroke="#1e3a8a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
+            points="115,100 225,116.7 335,106.7 445,73.3 555,76.7"/>
+          <g fill="#1e3a8a">
+            <circle cx="115" cy="100" r="5"/><circle cx="225" cy="116.7" r="5"/>
+            <circle cx="335" cy="106.7" r="5"/><circle cx="445" cy="73.3" r="5"/>
+            <circle cx="555" cy="76.7" r="5"/>
+          </g>
+          <!-- improved: 32,28,29,28,30 -->
+          <polyline fill="none" stroke="#0d9488" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
+            points="115,133.3 225,146.7 335,143.3 445,146.7 555,140"/>
+          <g fill="#0d9488">
+            <circle cx="115" cy="133.3" r="5"/><circle cx="225" cy="146.7" r="5"/>
+            <circle cx="335" cy="143.3" r="5"/><circle cx="445" cy="146.7" r="5"/>
+            <circle cx="555" cy="140" r="5"/>
+          </g>
+        </svg>
+        <div class="chart-legend">
+          <span class="key"><span class="swatch" style="background:#1e3a8a"></span> Original process</span>
+          <span class="key"><span class="swatch" style="background:#0d9488"></span> Improved process</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <span class="step-label">04 · Analysis</span>
+      <h2>What the numbers say</h2>
+      <p>The average dropped from 43.6 to 29.4 minutes, about 14 minutes saved every morning. Just as
+         important, the variance collapsed. The baseline's worst mornings hit 49 and 50 minutes,
+         usually from a slow start or a distraction. The improved trials stayed in a tight 28-to-32
+         band because the structure removed the places where drift happened.</p>
+      <p>The timers never lowered the quality of the routine itself. Showers stayed thorough and shaves
+         complete, so the time came out of lingering, not out of the work. The night-before prep helped
+         more than expected: deciding on clothes and food in the evening cut the mental clutter, not
+         just the minutes. Even on the one trial where I forgot the timer, the routine felt smoother
+         than baseline.</p>
+    </section>
+
+    <section>
+      <span class="step-label">05 · Reflection</span>
+      <h2>Why this matters beyond breakfast</h2>
+      <p>The changes were small. The method is the point: map the current state, find the slowest and
+         most variable steps, redesign, and verify with tracked results. That loop is the daily work of
+         operations and supply chain roles, and this project made me confident I can run it, whether the
+         process is one person's morning or a team's workflow.</p>
+      <blockquote>Process improvement isn't only about speed. The improved routine was calmer and more
+         organized, and that consistency turned out to be worth as much as the 14 minutes.</blockquote>
+      <p>I came away thinking of continuous improvement as a habit I want to keep, at work and at home.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Part of the portfolio of <a href="../index.html">Jordan Heaton</a> · Read the
+       <a href="Process%20Analysis%20Project.pdf" target="_blank" rel="noopener">original write-up (PDF)</a></p>
+  </footer>
+
+</body>
+</html>
