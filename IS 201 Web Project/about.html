@@ -3,66 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Art of Ballroom Dance</title>
+    <title>The Art of Ballroom | Jordan Heaton</title>
+    <meta name="description" content="A look inside competitive ballroom dance: the styles, the discipline, and why Jordan Heaton has been chasing it since fifth grade.">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="Styles/about_style.css">
 </head>
 <body>
 
     <header id="top">
-        <h1>Welcome to the World of Ballroom Dance</h1>
+        <p class="kicker">A passion project by Jordan Heaton</p>
+        <h1>The Art of Ballroom</h1>
+        <p class="subtitle">Where athleticism meets artistry, ten dances at a time.</p>
         <nav>
-            <a href="#video-section">Watch a Formation</a> | 
-            <a href="#styles-section">Dance Styles</a>
+            <a href="#story">The Story</a>
+            <a href="#video-section">Watch a Formation</a>
+            <a href="#styles-section">The Ten Dances</a>
         </nav>
-        <div style="margin-top:12px;">
-            <button onclick="location.href='index.html'" style="padding:8px 14px; background-color:#0062B8; color:#fff; border:none; border-radius:6px; cursor:pointer;">Home</button>
-        </div>
     </header>
 
-    <div class="content-container intro-div">
-        <h2>A Passion for Movement</h2>
-        <p>Ballroom dancing is a deeply rewarding artistic sport. It requires a tremendous amount of discipline, partnership, and technique. From Adult Amateur Ballroom competitions to the dazzling floors of professional showcases, it's a world where athleticism meets artistry.</p>
-        <p>Some of the most breathtaking routines in the Standard category come from professionals like Sergiu Rusu & Dorota Makar. Their elegance, poise, and footwork serve as a constant inspiration to dancers everywhere.</p>
-    </div>
+    <main>
+        <section id="story" class="content-container">
+            <div class="split">
+                <div class="split-text">
+                    <h2>A passion for movement</h2>
+                    <p>I started ballroom in fifth grade for two reasons: my older brother did it, and I
+                       wanted to be better than him at everything. What began as sibling rivalry turned
+                       into the discipline that has shaped my life more than any other. Years later I've
+                       competed across the country with the top BYU youth teams, finished as a national
+                       vice champion, and trained under coaches from Poland, Russia, Italy, and Canada.</p>
+                    <p>Ballroom asks for a strange combination of things: the conditioning of a sprinter,
+                       the precision of a violinist, and the ability to communicate with a partner without
+                       saying a word. Ten minutes of back-to-back dances will leave anyone ready to
+                       crumble. That's the part I love.</p>
+                </div>
+                <figure class="split-photo">
+                    <img src="Images/Nationals.jpg" alt="Jordan Heaton competing in International Standard at nationals in the Marriott Center">
+                    <figcaption>Competing at nationals in the Marriott Center at BYU.</figcaption>
+                </figure>
+            </div>
+        </section>
 
-    <div id="video-section" class="content-container video-div">
-        <h2>Formation Dance Highlight</h2>
-        <p>Formations take standard and Latin techniques and expand them into synchronized team routines. Here is a captivating performance by the BYU Youth Dancesport "A" Team:</p>
-        
-        <iframe width="560" height="315" src="https://www.youtube.com/embed/W3EGDDER7HY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        
-        <br>
-        <a href="#top" class="back-to-top">↑ Back to Top</a>
-    </div>
+        <section id="video-section" class="content-container">
+            <h2>Formation: ballroom as a team sport</h2>
+            <p>Formation teams take Standard and Latin technique and expand them into synchronized routines
+               for sixteen dancers. When it works, every movement lands at the same instant, and it's the
+               closest thing to human perfection I've seen on a dance floor. Here's a performance by the
+               BYU Youth Dancesport "A" Team:</p>
 
-    <div id="styles-section" class="content-container list-div">
-        <h2>Primary Dance Categories</h2>
-        
-        <ol>
-            <li><strong>International Standard</strong>
-                <ul>
-                    <li>Waltz</li>
-                    <li>Tango</li>
-                    <li>Viennese Waltz</li>
-                    <li>Foxtrot</li>
-                    <li>Quickstep</li>
-                </ul>
-            </li>
-            <li><strong>International Latin</strong>
-                <ul>
-                    <li>Cha-Cha-Cha</li>
-                    <li>Samba</li>
-                    <li>Rumba</li>
-                    <li>Paso Doble</li>
-                    <li>Jive</li>
-                </ul>
-            </li>
-        </ol>
-        
-        <img src="https://blog.dancevision.com/hubfs/maxresdefault-4.jpg" alt="Ballroom Dance Latin Jive" class="dance-img">
-        <br>
-        <a href="#top" class="back-to-top">↑ Back to Top</a>
-    </div>
+            <div class="video-frame">
+                <iframe src="https://www.youtube.com/embed/W3EGDDER7HY"
+                    title="BYU Youth Dancesport A Team formation performance"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+            </div>
+        </section>
+
+        <section id="styles-section" class="content-container">
+            <h2>The ten competitive dances</h2>
+            <p>International-style competition splits into two categories of five dances each. Most
+               competitors specialize; formation teams train both.</p>
+
+            <div class="style-grid">
+                <div class="style-card standard">
+                    <h3>International Standard</h3>
+                    <p class="style-desc">Smooth, sweeping, and always in closed hold. Judged on frame,
+                       footwork, and how effortlessly two people can move as one.</p>
+                    <ul>
+                        <li>Waltz</li>
+                        <li>Tango</li>
+                        <li>Viennese Waltz</li>
+                        <li>Foxtrot</li>
+                        <li>Quickstep</li>
+                    </ul>
+                </div>
+                <div class="style-card latin">
+                    <h3>International Latin</h3>
+                    <p class="style-desc">Sharp, rhythmic, and expressive. Latin trades the closed hold for
+                       speed, hip action, and personality that reaches the back row.</p>
+                    <ul>
+                        <li>Cha-Cha-Cha</li>
+                        <li>Samba</li>
+                        <li>Rumba</li>
+                        <li>Paso Doble</li>
+                        <li>Jive</li>
+                    </ul>
+                </div>
+            </div>
+
+            <a href="#top" class="back-to-top">Back to top</a>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <p>Part of the portfolio of <a href="../index.html">Jordan Heaton</a> · Brigham Young University</p>
+    </footer>
 
 </body>
 </html>

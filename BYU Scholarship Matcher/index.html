@@ -3,22 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BYU Scholarship Matcher</title>
+  <title>AI Scholarship Matcher</title>
+  <meta name="description" content="Match yourself to BYU and national scholarships based on your talents and skills, track deadlines, and get AI help planning applications and essays." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body>
 
   <nav class="navbar">
-    <span class="brand"><i class="fas fa-graduation-cap"></i> BYU Scholarship Matcher</span>
+    <span class="brand"><i class="fas fa-graduation-cap"></i> AI Scholarship Matcher</span>
+    <a class="nav-back" href="../index.html"><i class="fas fa-arrow-left"></i> Portfolio</a>
   </nav>
 
   <header class="hero">
-    <h1><i class="fas fa-graduation-cap"></i> Find the scholarships you qualify for</h1>
+    <h1>Find the scholarships you qualify for</h1>
     <p>
-      Tell me your GPA, major, and situation. I'll surface the BYU scholarships you're eligible
-      for, when they're due, and — powered by AI — a personalized plan to stack them.
+      Tell me your GPA, class level, and what you're good at. I'll surface BYU scholarships and
+      national awards that match your talents and skills, show you when they're due, and help you
+      plan the applications and the essays.
     </p>
+    <p class="hero-sub">Built with BYU students in mind. The national awards work for anyone.</p>
   </header>
 
   <!-- FORM -->
@@ -49,14 +56,20 @@
       </div>
 
       <div class="field full">
+        <label>Talents &amp; skills (pick everything that applies)</label>
+        <div id="talents" class="talents"></div>
+      </div>
+
+      <div class="field full">
         <label for="interests">Interests, goals, or anything that makes you stand out (optional)</label>
-        <input type="text" id="interests" placeholder="e.g. ballroom dance, Spanish fluency, wants to study abroad" />
+        <input type="text" id="interests" placeholder="e.g. sports, travel, a language you speak, a project you led" />
       </div>
 
       <div class="checks">
         <label class="check"><input type="checkbox" id="studyAbroad" /> Interested in studying abroad</label>
         <label class="check"><input type="checkbox" id="firstGen" /> First-generation college student</label>
         <label class="check"><input type="checkbox" id="international" /> International student</label>
+        <label class="check"><input type="checkbox" id="minority" /> Heritage-based awards apply to me (e.g. Hispanic or underrepresented background)</label>
       </div>
 
       <div class="actions">
@@ -68,11 +81,41 @@
   <!-- RESULTS -->
   <div id="results-wrap">
     <p id="results-summary" class="results-summary"></p>
+
+    <div id="results-toolbar" class="toolbar" hidden>
+      <div class="toolbar-group">
+        <label for="filter-scope">Show</label>
+        <select id="filter-scope">
+          <option value="all">All awards</option>
+          <option value="byu">BYU only</option>
+          <option value="national">National only</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <label for="filter-due">Deadline</label>
+        <select id="filter-due">
+          <option value="all">Any time</option>
+          <option value="90">Next 90 days</option>
+          <option value="30">Next 30 days</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <label for="sort-by">Sort by</label>
+        <select id="sort-by">
+          <option value="match">Best match</option>
+          <option value="deadline">Deadline (soonest)</option>
+        </select>
+      </div>
+      <button id="shortlist-toggle" class="shortlist-btn" type="button">
+        <i class="fas fa-star"></i> Shortlist (<span id="shortlist-count">0</span>)
+      </button>
+    </div>
+
     <div id="results"></div>
   </div>
 
   <!-- AI STRATEGIST -->
-  <section id="ai-section" class="panel" hidden>
+  <section id="ai-section" class="panel panel-ai" hidden>
     <h2><i class="fas fa-robot"></i> AI Application Strategist</h2>
     <p class="ai-intro">
       Get a personalized plan: which scholarships to prioritize, how to stack them, an essay angle,
@@ -92,7 +135,7 @@
         <span id="key-status"></span>
       </div>
       <p class="settings-help">
-        Stored only in your browser (localStorage) and sent directly to Anthropic — never to any
+        Stored only in your browser (localStorage) and sent directly to Anthropic, never to any
         server. Leave blank to use the built-in advisor. For a public demo, use a spending-capped key.
       </p>
     </div>
@@ -100,9 +143,45 @@
     <div id="ai-output" class="ai-output"></div>
   </section>
 
+  <!-- ESSAY HELPER -->
+  <section id="essay-section" class="panel" hidden>
+    <h2><i class="fas fa-pen-nib"></i> Essay Helper</h2>
+    <p class="essay-intro">
+      Pick a scholarship, paste the real essay prompt, and work on your draft here. Get an outline
+      to start, feedback when you have words on the page, and an AI-tone check before you submit.
+      Your draft stays saved in this browser.
+    </p>
+
+    <div class="essay-grid">
+      <div class="field">
+        <label for="essay-scholarship">Scholarship</label>
+        <select id="essay-scholarship">
+          <option value="">General / not tied to one scholarship</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="essay-prompt">The essay prompt (paste it exactly)</label>
+        <input type="text" id="essay-prompt" placeholder="e.g. Describe a time you showed leadership in your community." />
+      </div>
+      <div class="field full">
+        <label for="essay-draft">Your draft <span id="draft-saved" class="draft-saved"></span></label>
+        <textarea id="essay-draft" rows="10" placeholder="Write or paste your draft here. It autosaves locally."></textarea>
+      </div>
+    </div>
+
+    <div class="ai-controls essay-actions">
+      <button id="essay-outline" class="btn"><i class="fas fa-list-ol"></i> Build an outline</button>
+      <button id="essay-feedback" class="btn secondary"><i class="fas fa-comments"></i> Get feedback</button>
+      <button id="essay-tone" class="btn secondary"><i class="fas fa-spell-check"></i> AI-tone check</button>
+    </div>
+
+    <div id="essay-output" class="ai-output"></div>
+  </section>
+
   <p class="disclaimer">
-    Built by Jordan Heaton. Scholarship details are gathered from official BYU pages and may change —
-    always confirm amounts and deadlines on the linked official page before applying.
+    Built by Jordan Heaton. Scholarship details come from official provider pages where possible
+    (cards marked "Verify details" used secondary sources). Amounts and deadlines change, so always
+    confirm on the linked official page before applying.
   </p>
 
   <script src="data.js"></script>
