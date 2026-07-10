@@ -13,137 +13,98 @@
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="#top" class="brand"><span class="dot">JH</span> Jordan Heaton</a>
-      <div class="nav-links">
-        <a href="#work">Work</a>
-        <a href="#about">About</a>
-        <a href="#contact">Contact</a>
-        <a class="pill" href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
-      </div>
-      <button class="nav-toggle" aria-label="Menu"><i class="fas fa-bars"></i></button>
-    </div>
-  </nav>
+  <!-- Falling keycaps: back layer (behind the tray) -->
+  <canvas id="keys-back" class="keys keys-back" aria-hidden="true"></canvas>
 
-  <!-- HERO -->
-  <header class="hero" id="top">
-    <canvas id="bg" class="bg-canvas"></canvas>
-    <div class="dot-overlay"></div>
-    <div class="wrap hero-content">
-      <span class="kicker"><span class="ping"></span> Brigham Young University · Provo, UT</span>
-      <h1>Hi, I'm <span class="grad-text">Jordan Heaton</span>.</h1>
-      <p class="roles">I'm a <span class="rot"></span></p>
-      <p class="lead">
-        I'm a curious business student at BYU who mixes systems analysis, data, and a bit of code
-        into things people actually use, like an AI scholarship matcher and a real-time liquid simulation.
-      </p>
-      <p class="mission">
-        I aim to foster harmonious relationships between parties through leading with empathy,
-        sacrifice, and open-mindedness so that I can help create environments where people feel
-        valued, understood, and uplifted.
-      </p>
-      <div class="cta">
-        <a href="#work" class="btn primary"><i class="fas fa-arrow-down"></i> View my work</a>
-        <a href="#contact" class="btn ghost"><i class="fas fa-paper-plane"></i> Get in touch</a>
-      </div>
-      <div class="socials">
-        <a href="https://linkedin.com/in/jordan-heaton-589a36405" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
-        <a href="mailto:jordandheaton@gmail.com" aria-label="Email"><i class="fas fa-envelope"></i></a>
-        <a href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener" aria-label="Résumé"><i class="fas fa-file-lines"></i></a>
-      </div>
-    </div>
-    <a href="#work" class="scroll-hint" aria-label="Scroll"><i class="fas fa-chevron-down"></i></a>
+  <!-- Slim top bar -->
+  <header class="topbar">
+    <a href="#" class="brand"><span class="dot">JH</span> Jordan Heaton</a>
+    <nav class="topbar-socials" aria-label="Social links">
+      <a href="https://linkedin.com/in/jordan-heaton-589a36405" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+      <a href="mailto:jordandheaton@gmail.com" aria-label="Email"><i class="fas fa-envelope"></i></a>
+      <a href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener" aria-label="Résumé"><i class="fas fa-file-lines"></i></a>
+    </nav>
   </header>
 
-  <!-- WORK -->
-  <section id="work">
-    <div class="wrap">
-      <div class="section-head reveal">
-        <span class="eyebrow">Selected Work</span>
-        <h2>Projects &amp; experiments</h2>
-        <p>A mix of things I've built for class, for fun, and to solve real problems. Click any card to open it.</p>
+  <!-- Bento tray -->
+  <main class="tray">
+    <div class="bento" id="bento">
+
+      <!-- INTRO -->
+      <section class="tile tile--intro" aria-labelledby="intro-h">
+        <span class="eyebrow" id="intro-h">Introduction</span>
+        <p class="lead">
+          I'm a curious business student at BYU who mixes systems analysis, data, and a bit of code
+          into things people actually use, like an AI scholarship matcher and a real-time liquid simulation.
+        </p>
+        <button class="mission-toggle" type="button" aria-expanded="false" aria-controls="mission-body">
+          <i class="fas fa-compass"></i> My mission <i class="fas fa-chevron-down caret"></i>
+        </button>
+        <p class="mission" id="mission-body" hidden>
+          I aim to foster harmonious relationships between parties through leading with empathy,
+          sacrifice, and open-mindedness so that I can help create environments where people feel
+          valued, understood, and uplifted.
+        </p>
+      </section>
+
+      <!-- HERO -->
+      <section class="tile tile--hero" aria-labelledby="hero-h">
+        <span class="kicker"><span class="ping"></span> Brigham Young University · Provo, UT</span>
+        <h1 id="hero-h">Hi, I'm <span class="grad-text">Jordan Heaton</span>.</h1>
+        <p class="roles">I'm a <span class="rot"></span></p>
+      </section>
+
+      <!-- Photo orb + circuit traces (centerpiece; overlays the grid on desktop,
+           flows inline between hero and projects on mobile) -->
+      <div class="orb-layer" aria-hidden="true">
+        <svg class="circuit" viewBox="0 0 600 360" preserveAspectRatio="xMidYMid meet">
+          <g class="traces"></g>
+          <g class="nodes"></g>
+        </svg>
+        <div class="orb">
+          <img src="IS%20201%20Web%20Project/Images/DSC00294_2.jpg" alt="Jordan Heaton" />
+        </div>
       </div>
 
-      <div class="grid">
-        <a class="card reveal" href="BYU%20Scholarship%20Matcher/index.html" target="_blank" rel="noopener">
-          <span class="kind">Web App</span>
-          <div class="icon"><i class="fas fa-graduation-cap"></i></div>
-          <h3>AI Scholarship Matcher <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
-          <p>Matches students to scholarships based on their talents and skills, from sports and the arts to leadership and travel. Tracks deadlines, builds a short list, and uses Claude to help plan applications and shape essays.</p>
-          <div class="tags"><span class="tag">JavaScript</span><span class="tag">Claude API</span><span class="tag">UX</span></div>
-        </a>
+      <!-- STAT — GPA -->
+      <section class="tile tile--statgpa" aria-label="Cumulative GPA">
+        <div class="statgpa-head">
+          <span class="statgpa-label">Cumulative GPA</span>
+          <span class="statgpa-flag">Solver Optimized</span>
+        </div>
+        <div class="statgpa-num"><span class="bracket">[</span><span class="grad-text">4.0</span><span class="bracket">]</span></div>
+      </section>
 
-        <a class="card reveal" href="myplanBYU/index.html" target="_blank" rel="noopener">
-          <span class="kind">Web App</span>
-          <div class="icon"><i class="fas fa-map-location-dot"></i></div>
-          <h3>myplanBYU <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
-          <p>A MyMAP-style degree sequence optimizer: pick any major, minors, and certificates, and an in-browser constraint solver builds a semester-by-semester plan around prerequisites, cohort blocks, and five weighted life priorities.</p>
-          <div class="tags"><span class="tag">Optimization</span><span class="tag">JavaScript</span><span class="tag">Constraint Solver</span></div>
-        </a>
+      <!-- STATS -->
+      <section class="tile tile--stats" aria-label="Highlights">
+        <div class="stat-row">
+          <span class="stat-key grad-text">National</span>
+          <span class="stat-val">Vice-Champion, Ballroom</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key grad-text">EN / ES</span>
+          <span class="stat-val">Fluent in Spanish</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key grad-text">Europe</span>
+          <span class="stat-val">Business Study Abroad</span>
+        </div>
+      </section>
 
-        <a class="card reveal" href="Liquid%20Simulator/liquid-simulator.html" target="_blank" rel="noopener">
-          <span class="kind">Simulation</span>
-          <div class="icon"><i class="fas fa-water"></i></div>
-          <h3>Liquid Simulator <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
-          <p>A real-time, interactive liquid &amp; particle physics simulation running on HTML canvas, with live controls to tune the fluid.</p>
-          <div class="tags"><span class="tag">Canvas</span><span class="tag">Physics</span><span class="tag">JavaScript</span></div>
-        </a>
-
-        <a class="card reveal" href="IS%20201%20Web%20Project/index.html" target="_blank" rel="noopener">
-          <span class="kind">Website</span>
-          <div class="icon"><i class="fas fa-id-card"></i></div>
-          <h3>Interactive Résumé <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
-          <p>A responsive personal résumé site built from scratch, with a sticky nav, sidebar profile, and clean typographic sections.</p>
-          <div class="tags"><span class="tag">HTML</span><span class="tag">CSS</span><span class="tag">Responsive</span></div>
-        </a>
-
-        <a class="card reveal" href="IS%20201%20Web%20Project/game.html" target="_blank" rel="noopener">
-          <span class="kind">Game</span>
-          <div class="icon"><i class="fas fa-crosshairs"></i></div>
-          <h3>BYU Target Chaser <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
-          <p>A fast little browser arcade game with combos, power-ups, lives, and a local high score. Built with vanilla JavaScript.</p>
-          <div class="tags"><span class="tag">JavaScript</span><span class="tag">Game</span></div>
-        </a>
-
-        <a class="card reveal" href="Process%20Analysis%20Project/index.html" target="_blank" rel="noopener">
-          <span class="kind">Case Study</span>
-          <div class="icon"><i class="fas fa-diagram-project"></i></div>
-          <h3>Process Improvement Analysis <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
-          <p>A measured case study of a real daily workflow: mapping the baseline, testing two changes, and cutting the average run time by 14 minutes across five trials.</p>
-          <div class="tags"><span class="tag">Process Design</span><span class="tag">Data Analysis</span><span class="tag">Case Study</span></div>
-        </a>
-
-        <a class="card reveal" href="IS%20201%20Web%20Project/about.html" target="_blank" rel="noopener">
-          <span class="kind">Feature</span>
-          <div class="icon"><i class="fas fa-shoe-prints"></i></div>
-          <h3>The Art of Ballroom <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
-          <p>A passion page on competitive ballroom dance: the styles, the discipline, and a featured formation performance.</p>
-          <div class="tags"><span class="tag">HTML</span><span class="tag">Passion Project</span></div>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section id="about">
-    <div class="wrap">
-      <div class="section-head reveal">
+      <!-- ABOUT (expandable) -->
+      <section class="tile tile--about" aria-labelledby="about-h">
         <span class="eyebrow">About</span>
-        <h2>A little about me</h2>
-      </div>
-      <div class="about-grid">
-        <div class="about-text reveal">
-          <p>
-            I grew up in Orem, Utah, and I've never been great at sitting still. Skiing in the winter,
-            ultimate frisbee in the summer, twenty-hour dance weeks, and a Blender tutorial at age ten
-            that turned into a lasting hobby. These days I'm an aspiring <strong>Information Systems</strong>
-            student at <strong>Brigham Young University</strong>, working toward the
-            <strong>Marriott School of Business</strong>, and the habit hasn't changed. I show up fully
-            wherever I land, whether that's a ballroom competition floor or a Spanish-speaking mission
-            in Atlanta.
-          </p>
+        <h2 id="about-h">A little about me</h2>
+        <p>
+          I grew up in Orem, Utah, and I've never been great at sitting still. Skiing in the winter,
+          ultimate frisbee in the summer, twenty-hour dance weeks, and a Blender tutorial at age ten
+          that turned into a lasting hobby. These days I'm an aspiring <strong>Information Systems</strong>
+          student at <strong>Brigham Young University</strong>, working toward the
+          <strong>Marriott School of Business</strong>, and the habit hasn't changed. I show up fully
+          wherever I land, whether that's a ballroom competition floor or a Spanish-speaking mission
+          in Atlanta.
+        </p>
+        <div class="about-more" id="about-more" hidden>
           <p>
             Years of training with coaches from <strong>Poland, Russia, Italy, and Canada</strong> taught
             me as much about discipline and cross-cultural communication as any classroom has. So did the
@@ -155,49 +116,202 @@
             that actually serve people</strong>. Right now I'm exploring what that looks like at the
             intersection of technology, business, and global markets.
           </p>
-          <div class="stats">
-            <div class="stat"><div class="num grad-text">3.98</div><div class="lbl">Cumulative GPA</div></div>
-            <div class="stat"><div class="num grad-text">National</div><div class="lbl">Vice-Champion, Ballroom</div></div>
-            <div class="stat"><div class="num grad-text">EN / ES</div><div class="lbl">Fluent in Spanish</div></div>
-            <div class="stat"><div class="num grad-text">Europe</div><div class="lbl">Business Study Abroad</div></div>
+        </div>
+        <button class="read-more" type="button" aria-expanded="false" aria-controls="about-more">
+          <span class="rm-label">Read more</span> <i class="fas fa-chevron-down caret"></i>
+        </button>
+      </section>
+
+      <!-- SKILLS -->
+      <section class="tile tile--skills" aria-label="Skills">
+        <span class="eyebrow">Toolkit</span>
+        <div class="skill-chips">
+          <span class="skill">Excel &amp; VBA</span>
+          <span class="skill">Data Modeling</span>
+          <span class="skill">Optimization (Solver)</span>
+          <span class="skill">Business &amp; Systems Analysis</span>
+          <span class="skill">Investment Analysis</span>
+          <span class="skill">Process Management</span>
+          <span class="skill">HTML / CSS</span>
+          <span class="skill">Blender 3D</span>
+          <span class="skill">Cross-Cultural Communication</span>
+        </div>
+      </section>
+
+      <!-- PROJECTS (expanding gallery) -->
+      <section class="tile tile--projects" aria-labelledby="projects-h">
+        <button class="projects-trigger" type="button" aria-expanded="false" aria-controls="projects-panel">
+          <div class="tile-icon"><i class="fas fa-diagram-project"></i></div>
+          <h2 id="projects-h">Projects &amp; experiments</h2>
+          <p>A mix of things I've built for class, for fun, and to solve real problems. Click any card to open it.</p>
+          <div class="proj-hints" aria-hidden="true">
+            <span><i class="fas fa-graduation-cap"></i></span>
+            <span><i class="fas fa-water"></i></span>
+            <span><i class="fas fa-id-card"></i></span>
+            <span><i class="fas fa-crosshairs"></i></span>
+            <span><i class="fas fa-diagram-project"></i></span>
+            <span><i class="fas fa-shoe-prints"></i></span>
           </div>
+          <span class="expand-badge"><i class="fas fa-up-right-and-down-left-from-center"></i> Open</span>
+        </button>
+      </section>
+
+      <!-- EXPLORE (command palette) -->
+      <section class="tile tile--explore" aria-labelledby="explore-h">
+        <div class="palette-head">
+          <i class="fas fa-magnifying-glass"></i>
+          <span id="explore-h">Explore</span>
         </div>
-        <div class="about-photo reveal">
-          <img src="IS%20201%20Web%20Project/Images/DSC00294_2.jpg" alt="Jordan Heaton" />
+        <span class="palette-group">ACTIONS</span>
+        <ul class="palette-list">
+          <li class="palette-row" data-action="resume">
+            <i class="fas fa-file-lines"></i>
+            <span class="pr-label">Open résumé</span>
+            <kbd>R</kbd>
+          </li>
+          <li class="palette-row" data-action="email">
+            <i class="fas fa-envelope"></i>
+            <span class="pr-label">Email me</span>
+            <kbd>E</kbd>
+          </li>
+          <li class="palette-row" data-action="linkedin">
+            <i class="fab fa-linkedin"></i>
+            <span class="pr-label">LinkedIn</span>
+            <kbd>L</kbd>
+          </li>
+          <li class="palette-row" data-action="projects">
+            <i class="fas fa-diagram-project"></i>
+            <span class="pr-label">Open projects</span>
+            <kbd>P</kbd>
+          </li>
+          <li class="palette-row" data-action="about">
+            <i class="fas fa-user"></i>
+            <span class="pr-label">About me</span>
+            <kbd>A</kbd>
+          </li>
+        </ul>
+        <p class="palette-caption">Keyboard shortcuts</p>
+      </section>
+
+      <!-- CONTACT -->
+      <section class="tile tile--contact" aria-labelledby="contact-h">
+        <span class="eyebrow">Contact</span>
+        <h2 id="contact-h">Let's build something.</h2>
+        <p>Open to internships and projects in business analysis, finance, and product. The fastest way to reach me is email.</p>
+        <div class="contact-btns">
+          <a href="mailto:jordandheaton@gmail.com" class="btn primary"><i class="fas fa-envelope"></i> Email me</a>
+          <a href="https://linkedin.com/in/jordan-heaton-589a36405" target="_blank" rel="noopener" class="btn ghost"><i class="fab fa-linkedin"></i> LinkedIn</a>
         </div>
-      </div>
+        <p class="email"><a href="mailto:jordandheaton@gmail.com">jordandheaton@gmail.com</a></p>
+      </section>
 
-      <div class="skills reveal">
-        <span class="skill">Excel &amp; VBA</span>
-        <span class="skill">Data Modeling</span>
-        <span class="skill">Optimization (Solver)</span>
-        <span class="skill">Business &amp; Systems Analysis</span>
-        <span class="skill">Investment Analysis</span>
-        <span class="skill">Process Management</span>
-        <span class="skill">HTML / CSS</span>
-        <span class="skill">Blender 3D</span>
-        <span class="skill">Cross-Cultural Communication</span>
-      </div>
+      <!-- RÉSUMÉ -->
+      <section class="tile tile--resume" aria-labelledby="resume-h">
+        <div class="resume-top">
+          <span class="eyebrow">Résumé &amp; CV</span>
+          <i class="fas fa-sparkles resume-spark"></i>
+        </div>
+        <div class="resume-btns">
+          <a href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener" class="btn primary glow"><i class="fas fa-download"></i> Download PDF</a>
+        </div>
+      </section>
+
+      <!-- myplanBYU project card is intentionally omitted for now.
+           To re-add: include a gallery card in #projects-panel (portfolio.js PROJECTS array)
+           and a hint icon above, linking to myplanBYU/index.html. -->
+
     </div>
-  </section>
+  </main>
 
-  <!-- CONTACT -->
-  <section id="contact" class="contact">
-    <div class="wrap reveal">
-      <span class="eyebrow">Contact</span>
-      <h2>Let's build something.</h2>
-      <p>Open to internships and projects in business analysis, finance, and product. The fastest way to reach me is email.</p>
-      <div class="cta">
-        <a href="mailto:jordandheaton@gmail.com" class="btn primary"><i class="fas fa-envelope"></i> Email me</a>
-        <a href="https://linkedin.com/in/jordan-heaton-589a36405" target="_blank" rel="noopener" class="btn ghost"><i class="fab fa-linkedin"></i> LinkedIn</a>
+  <!-- Expanded projects gallery (dialog) -->
+  <div class="projects-overlay" id="projects-panel" role="dialog" aria-modal="true" aria-labelledby="gallery-h" hidden>
+    <div class="gallery-shell">
+      <div class="gallery-head">
+        <div>
+          <span class="eyebrow">Selected Work</span>
+          <h2 id="gallery-h">Projects &amp; experiments</h2>
+        </div>
+        <button class="gallery-close" type="button" aria-label="Close projects">&times;</button>
       </div>
-      <p class="email"><a href="mailto:jordandheaton@gmail.com">jordandheaton@gmail.com</a></p>
-    </div>
-  </section>
 
-  <footer>
-    <div class="wrap">© <span id="year"></span> Jordan Heaton · Built from scratch with HTML, CSS &amp; JavaScript</div>
+      <div class="gallery-viewport">
+        <button class="gallery-arrow prev" type="button" aria-label="Previous project"><i class="fas fa-chevron-left"></i></button>
+        <div class="gallery-track" id="gallery-track">
+
+          <a class="proj-card" data-theme="scholar" href="BYU%20Scholarship%20Matcher/index.html" target="_blank" rel="noopener">
+            <i class="fas fa-graduation-cap proj-bg-icon" aria-hidden="true"></i>
+            <div class="proj-body">
+              <span class="kind">Web App</span>
+              <h3>AI Scholarship Matcher <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
+              <p>Matches students to scholarships based on their talents and skills, from sports and the arts to leadership and travel. Tracks deadlines, builds a short list, and uses Claude to help plan applications and shape essays.</p>
+              <div class="tags"><span class="tag">JavaScript</span><span class="tag">Claude API</span><span class="tag">UX</span></div>
+            </div>
+          </a>
+
+          <a class="proj-card" data-theme="liquid" href="Liquid%20Simulator/liquid-simulator.html" target="_blank" rel="noopener">
+            <i class="fas fa-water proj-bg-icon" aria-hidden="true"></i>
+            <div class="proj-body">
+              <span class="kind">Simulation</span>
+              <h3>Liquid Simulator <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
+              <p>A real-time, interactive liquid &amp; particle physics simulation running on HTML canvas, with live controls to tune the fluid.</p>
+              <div class="tags"><span class="tag">Canvas</span><span class="tag">Physics</span><span class="tag">JavaScript</span></div>
+            </div>
+          </a>
+
+          <a class="proj-card" data-theme="resume" href="IS%20201%20Web%20Project/index.html" target="_blank" rel="noopener">
+            <i class="fas fa-id-card proj-bg-icon" aria-hidden="true"></i>
+            <div class="proj-body">
+              <span class="kind">Website</span>
+              <h3>Interactive Résumé <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
+              <p>A responsive personal résumé site built from scratch, with a sticky nav, sidebar profile, and clean typographic sections.</p>
+              <div class="tags"><span class="tag">HTML</span><span class="tag">CSS</span><span class="tag">Responsive</span></div>
+            </div>
+          </a>
+
+          <a class="proj-card" data-theme="game" href="IS%20201%20Web%20Project/game.html" target="_blank" rel="noopener">
+            <i class="fas fa-crosshairs proj-bg-icon" aria-hidden="true"></i>
+            <div class="proj-body">
+              <span class="kind">Game</span>
+              <h3>BYU Target Chaser <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
+              <p>A fast little browser arcade game with combos, power-ups, lives, and a local high score. Built with vanilla JavaScript.</p>
+              <div class="tags"><span class="tag">JavaScript</span><span class="tag">Game</span></div>
+            </div>
+          </a>
+
+          <a class="proj-card" data-theme="process" href="Process%20Analysis%20Project/index.html" target="_blank" rel="noopener">
+            <i class="fas fa-diagram-project proj-bg-icon" aria-hidden="true"></i>
+            <div class="proj-body">
+              <span class="kind">Case Study</span>
+              <h3>Process Improvement Analysis <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
+              <p>A measured case study of a real daily workflow: mapping the baseline, testing two changes, and cutting the average run time by 14 minutes across five trials.</p>
+              <div class="tags"><span class="tag">Process Design</span><span class="tag">Data Analysis</span><span class="tag">Case Study</span></div>
+            </div>
+          </a>
+
+          <a class="proj-card" data-theme="ballroom" href="IS%20201%20Web%20Project/about.html" target="_blank" rel="noopener">
+            <i class="fas fa-shoe-prints proj-bg-icon" aria-hidden="true"></i>
+            <div class="proj-body">
+              <span class="kind">Feature</span>
+              <h3>The Art of Ballroom <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
+              <p>A passion page on competitive ballroom dance: the styles, the discipline, and a featured formation performance.</p>
+              <div class="tags"><span class="tag">HTML</span><span class="tag">Passion Project</span></div>
+            </div>
+          </a>
+
+        </div>
+        <button class="gallery-arrow next" type="button" aria-label="Next project"><i class="fas fa-chevron-right"></i></button>
+      </div>
+
+      <div class="gallery-dots" id="gallery-dots" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    © <span id="year"></span> Jordan Heaton · Built from scratch with HTML, CSS &amp; JavaScript
   </footer>
+
+  <!-- Falling keycaps: front layer (cuts in front of the tray) -->
+  <canvas id="keys-front" class="keys keys-front" aria-hidden="true"></canvas>
 
   <script src="portfolio.js"></script>
 </body>
