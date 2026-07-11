@@ -1,21 +1,91 @@
 /* portfolio.js — bento hub interactions
-   Typewriter, tile cursor-glow, year, circuit orb, falling keycaps,
-   projects gallery, about/mission expanders, command-palette shortcuts. */
+   Ambient liquid-glow background, orb circuit, typewriter, tile glow,
+   projects gallery + marquee, about/mission expanders, command palette. */
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- Footer year ---------- */
 document.getElementById("year").textContent = new Date().getFullYear();
 
-/* ---------- Rotating role typewriter (ported from original) ---------- */
-const roles = [
-  "Bridge-Builder",
-  "Global Citizen",
-  "Systems Thinker",
-  "Lifelong Explorer",
-  "Curious Mind",
-  "Servant Leader",
-];
+/* ---------- Ambient liquid glow (Layer 2: morphing fluid orbs) ---------- */
+(function ambientGlow() {
+  const canvas = document.getElementById("glow");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const SCALE = 0.5; // render at half-res; CSS blur(80px) hides the difference
+  let W, H, raf;
+
+  const palette = [
+    [138, 92, 255],   // violet
+    [88, 60, 245],    // electric indigo
+    [160, 110, 255],  // bright purple
+    [104, 66, 214],   // deep indigo
+  ];
+  const blobs = palette.map((c, i) => ({
+    color: c,
+    x: Math.random(), y: Math.random(),
+    r: 0.3 + Math.random() * 0.2,
+    dx: (Math.random() - 0.5) * 0.00018,
+    dy: (Math.random() - 0.5) * 0.00018,
+    phase: Math.random() * Math.PI * 2,
+    wob: 0.06 + Math.random() * 0.05,
+    seed: i,
+  }));
+
+  function size() {
+    W = canvas.width = Math.round(window.innerWidth * SCALE);
+    H = canvas.height = Math.round(window.innerHeight * SCALE);
+  }
+  size();
+  window.addEventListener("resize", size);
+
+  function blobPath(b, t) {
+    // wobbly closed blob so shapes morph over time
+    const cx = b.x * W, cy = b.y * H;
+    const base = b.r * Math.min(W, H);
+    const pts = 8;
+    ctx.beginPath();
+    for (let i = 0; i <= pts; i++) {
+      const a = (i / pts) * Math.PI * 2;
+      const rr = base * (1 + Math.sin(a * 3 + t * 0.0006 + b.phase) * b.wob + Math.cos(a * 2 - t * 0.0004) * b.wob * 0.6);
+      const px = cx + Math.cos(a) * rr;
+      const py = cy + Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    const g = ctx.createRadialGradient(cx, cy, base * 0.1, cx, cy, base);
+    g.addColorStop(0, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.72)`);
+    g.addColorStop(0.5, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.3)`);
+    g.addColorStop(1, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0)`);
+    ctx.fillStyle = g;
+    ctx.fill();
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = "lighter";
+    blobs.forEach((b) => {
+      b.x += b.dx; b.y += b.dy;
+      if (b.x < -0.2 || b.x > 1.2) b.dx *= -1;
+      if (b.y < -0.2 || b.y > 1.2) b.dy *= -1;
+      blobPath(b, t);
+    });
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  if (reduceMotion) {
+    draw(0);
+  } else {
+    (function loop(t) { draw(t); raf = requestAnimationFrame(loop); })(0);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) cancelAnimationFrame(raf);
+      else raf = requestAnimationFrame(function loop(t) { draw(t); raf = requestAnimationFrame(loop); });
+    });
+  }
+})();
+
+/* ---------- Rotating role typewriter ---------- */
+const roles = ["Bridge-Builder", "Global Citizen", "Systems Thinker", "Lifelong Explorer", "Curious Mind", "Servant Leader"];
 const rot = document.querySelector(".rot");
 if (rot) {
   if (reduceMotion) {
@@ -25,20 +95,15 @@ if (rot) {
     (function typeLoop() {
       const word = roles[ri];
       rot.textContent = word.slice(0, ci);
-      if (!deleting && ci < word.length) {
-        ci++; setTimeout(typeLoop, 55);
-      } else if (!deleting && ci === word.length) {
-        deleting = true; setTimeout(typeLoop, 1600);
-      } else if (deleting && ci > 0) {
-        ci--; setTimeout(typeLoop, 28);
-      } else {
-        deleting = false; ri = (ri + 1) % roles.length; setTimeout(typeLoop, 250);
-      }
+      if (!deleting && ci < word.length) { ci++; setTimeout(typeLoop, 55); }
+      else if (!deleting && ci === word.length) { deleting = true; setTimeout(typeLoop, 1600); }
+      else if (deleting && ci > 0) { ci--; setTimeout(typeLoop, 28); }
+      else { deleting = false; ri = (ri + 1) % roles.length; setTimeout(typeLoop, 250); }
     })();
   }
 }
 
-/* ---------- Tile cursor glow (ported --mx/--my) ---------- */
+/* ---------- Tile cursor glow ---------- */
 document.querySelectorAll(".tile").forEach((tile) => {
   tile.addEventListener("mousemove", (e) => {
     const r = tile.getBoundingClientRect();
@@ -47,33 +112,31 @@ document.querySelectorAll(".tile").forEach((tile) => {
   });
 });
 
-/* ---------- Circuit traces around the orb (SVG) ---------- */
+/* ---------- Circuit traces from the orb ring ---------- */
 (function buildCircuit() {
   const traces = document.querySelector(".circuit .traces");
   const nodes = document.querySelector(".circuit .nodes");
   if (!traces || !nodes) return;
   const svgNS = "http://www.w3.org/2000/svg";
-  // viewBox is 600x360, orb centered ~ (300,180). Traces elbow outward to node dots.
-  const cx = 300, cy = 180;
+  const cx = 200, cy = 200;       // viewBox center = orb center
+  const startR = 112;             // just outside the binary band (r≈104)
   const specs = [
-    { angle: 200, len: 210, warm: false, pulse: true },
-    { angle: 160, len: 230, warm: true,  pulse: true },
-    { angle: 340, len: 220, warm: false, pulse: true },
-    { angle: 20,  len: 240, warm: true,  pulse: false },
-    { angle: 250, len: 150, warm: false, pulse: false },
-    { angle: 290, len: 150, warm: true,  pulse: false },
-    { angle: 110, len: 150, warm: false, pulse: false },
-    { angle: 70,  len: 150, warm: false, pulse: false },
+    { angle: 210, len: 70, warm: false, pulse: true },
+    { angle: 150, len: 80, warm: true,  pulse: true },
+    { angle: 330, len: 78, warm: false, pulse: true },
+    { angle: 30,  len: 82, warm: true,  pulse: false },
+    { angle: 255, len: 60, warm: false, pulse: false },
+    { angle: 285, len: 58, warm: true,  pulse: false },
+    { angle: 105, len: 60, warm: false, pulse: false },
+    { angle: 75,  len: 58, warm: false, pulse: false },
   ];
   specs.forEach((s) => {
     const a = (s.angle * Math.PI) / 180;
-    const startR = 96;
     const sx = cx + Math.cos(a) * startR;
     const sy = cy + Math.sin(a) * startR;
-    // elbow: go out radially, then turn horizontal to the node
     const midx = cx + Math.cos(a) * (startR + s.len * 0.55);
     const midy = cy + Math.sin(a) * (startR + s.len * 0.55);
-    const ex = midx + (Math.cos(a) > 0 ? 1 : -1) * s.len * 0.42;
+    const ex = midx + (Math.cos(a) > 0 ? 1 : -1) * s.len * 0.6;
     const ey = midy;
     const d = `M ${sx.toFixed(1)} ${sy.toFixed(1)} L ${midx.toFixed(1)} ${midy.toFixed(1)} L ${ex.toFixed(1)} ${ey.toFixed(1)}`;
 
@@ -90,146 +153,15 @@ document.querySelectorAll(".tile").forEach((tile) => {
     }
 
     const halo = document.createElementNS(svgNS, "circle");
-    halo.setAttribute("cx", ex.toFixed(1));
-    halo.setAttribute("cy", ey.toFixed(1));
-    halo.setAttribute("r", "7");
+    halo.setAttribute("cx", ex.toFixed(1)); halo.setAttribute("cy", ey.toFixed(1)); halo.setAttribute("r", "7");
     halo.setAttribute("class", "node-halo" + (s.warm ? " warm" : ""));
     nodes.appendChild(halo);
 
     const dot = document.createElementNS(svgNS, "circle");
-    dot.setAttribute("cx", ex.toFixed(1));
-    dot.setAttribute("cy", ey.toFixed(1));
-    dot.setAttribute("r", "3.2");
+    dot.setAttribute("cx", ex.toFixed(1)); dot.setAttribute("cy", ey.toFixed(1)); dot.setAttribute("r", "3.2");
     dot.setAttribute("class", "node" + (s.warm ? " warm" : ""));
     nodes.appendChild(dot);
   });
-})();
-
-/* ---------- Falling keycaps ---------- */
-(function keycaps() {
-  const back = document.getElementById("keys-back");
-  const front = document.getElementById("keys-front");
-  if (!back || !front) return;
-  const glyphs = ["⌘", "⇧", "K", "J", "H", "↵", "esc", "tab"];
-  const layers = [
-    { canvas: back, count: window.innerWidth < 680 ? 7 : 14, speed: 1, big: false, alpha: 0.62 },
-    { canvas: front, count: window.innerWidth < 680 ? 2 : 3, speed: 1.5, big: true, alpha: 0.55 },
-  ];
-  let dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let W = window.innerWidth, H = window.innerHeight;
-
-  function makeKey(layer) {
-    const size = (layer.big ? 46 : 30) + Math.random() * (layer.big ? 26 : 22);
-    return {
-      x: Math.random() * W,
-      y: Math.random() * H - H,
-      size,
-      glyph: glyphs[(Math.random() * glyphs.length) | 0],
-      vy: (0.25 + Math.random() * 0.55) * layer.speed,
-      sway: 0.4 + Math.random() * 0.9,
-      swayPhase: Math.random() * Math.PI * 2,
-      rot: (Math.random() - 0.5) * 0.5,
-      vr: (Math.random() - 0.5) * 0.004,
-    };
-  }
-
-  layers.forEach((layer) => {
-    const ctx = layer.canvas.getContext("2d");
-    layer.ctx = ctx;
-    layer.keys = Array.from({ length: layer.count }, () => makeKey(layer));
-  });
-
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth; H = window.innerHeight;
-    layers.forEach((layer) => {
-      layer.canvas.width = W * dpr;
-      layer.canvas.height = H * dpr;
-      layer.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    });
-  }
-  resize();
-  window.addEventListener("resize", resize);
-
-  function drawKey(ctx, k, alpha) {
-    ctx.save();
-    ctx.translate(k.x, k.y);
-    ctx.rotate(k.rot);
-    ctx.globalAlpha = alpha;
-    const s = k.size, r = s * 0.24;
-    // 3D side (darker, offset down)
-    roundRect(ctx, -s / 2, -s / 2 + 5, s, s, r);
-    ctx.fillStyle = "rgba(58, 46, 100, 0.9)";
-    ctx.fill();
-    // top face
-    roundRect(ctx, -s / 2, -s / 2, s, s, r);
-    const grad = ctx.createLinearGradient(0, -s / 2, 0, s / 2);
-    grad.addColorStop(0, "rgba(78, 64, 132, 0.98)");
-    grad.addColorStop(1, "rgba(46, 36, 84, 0.98)");
-    ctx.fillStyle = grad;
-    ctx.fill();
-    // purple rim-light + warm glow
-    ctx.lineWidth = 1.2;
-    ctx.strokeStyle = "rgba(176, 156, 255, 0.85)";
-    ctx.stroke();
-    ctx.shadowColor = "rgba(255, 157, 92, 0.5)";
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = "rgba(255, 157, 92, 0.25)";
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    // glyph
-    ctx.fillStyle = "rgba(228, 222, 255, 0.95)";
-    ctx.font = `600 ${s * (k.glyph.length > 1 ? 0.26 : 0.4)}px "Space Grotesk", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(k.glyph, 0, 0);
-    ctx.restore();
-  }
-
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  let raf;
-  function frame() {
-    layers.forEach((layer) => {
-      const ctx = layer.ctx;
-      ctx.clearRect(0, 0, W, H);
-      layer.keys.forEach((k) => {
-        k.y += k.vy;
-        k.swayPhase += 0.01;
-        k.x += Math.sin(k.swayPhase) * k.sway * 0.3;
-        k.rot += k.vr;
-        if (k.y - k.size > H) Object.assign(k, makeKey(layer), { y: -k.size });
-        drawKey(ctx, k, layer.alpha);
-      });
-    });
-    raf = requestAnimationFrame(frame);
-  }
-
-  function renderStatic() {
-    layers.forEach((layer) => {
-      const ctx = layer.ctx;
-      ctx.clearRect(0, 0, W, H);
-      layer.keys.forEach((k) => { k.y = Math.random() * H; drawKey(ctx, k, layer.alpha); });
-    });
-  }
-
-  if (reduceMotion) {
-    renderStatic();
-  } else {
-    frame();
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) { cancelAnimationFrame(raf); }
-      else { raf = requestAnimationFrame(frame); }
-    });
-  }
 })();
 
 /* ---------- Mission + About expanders ---------- */
@@ -241,10 +173,7 @@ function wireToggle(btnSel, bodyId, labelSel) {
     const open = btn.getAttribute("aria-expanded") === "true";
     btn.setAttribute("aria-expanded", String(!open));
     body.hidden = open;
-    if (labelSel) {
-      const lbl = btn.querySelector(labelSel);
-      if (lbl) lbl.textContent = open ? "Read more" : "Read less";
-    }
+    if (labelSel) { const lbl = btn.querySelector(labelSel); if (lbl) lbl.textContent = open ? "Read more" : "Read less"; }
   });
 }
 wireToggle(".mission-toggle", "mission-body", null);
@@ -264,11 +193,9 @@ wireToggle(".read-more", "about-more", ".rm-label");
 
   let lastFocus = null;
 
-  // dots
   cards.forEach((_, i) => {
     const b = document.createElement("button");
-    b.type = "button";
-    b.setAttribute("aria-label", `Go to project ${i + 1}`);
+    b.type = "button"; b.setAttribute("aria-label", `Go to project ${i + 1}`);
     b.addEventListener("click", () => scrollToCard(i));
     dotsWrap.appendChild(b);
   });
@@ -285,14 +212,8 @@ wireToggle(".read-more", "about-more", ".rm-label");
     });
     return best;
   }
-  function updateDots() {
-    const idx = currentIndex();
-    dots.forEach((d, i) => d.classList.toggle("active", i === idx));
-  }
-  function scrollToCard(i) {
-    const card = cards[Math.max(0, Math.min(cards.length - 1, i))];
-    card.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  }
+  function updateDots() { const idx = currentIndex(); dots.forEach((d, i) => d.classList.toggle("active", i === idx)); }
+  function scrollToCard(i) { cards[Math.max(0, Math.min(cards.length - 1, i))].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }
   track.addEventListener("scroll", () => window.requestAnimationFrame(updateDots), { passive: true });
   prev?.addEventListener("click", () => scrollToCard(currentIndex() - 1));
   next?.addEventListener("click", () => scrollToCard(currentIndex() + 1));
@@ -302,6 +223,7 @@ wireToggle(".read-more", "about-more", ".rm-label");
     overlay.hidden = false;
     requestAnimationFrame(() => overlay.classList.add("open"));
     trigger.setAttribute("aria-expanded", "true");
+    document.body.classList.add("modal-open");
     document.body.style.overflow = "hidden";
     closeBtn?.focus();
     updateDots();
@@ -310,6 +232,7 @@ wireToggle(".read-more", "about-more", ".rm-label");
   function close() {
     overlay.classList.remove("open");
     trigger.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("modal-open");
     document.body.style.overflow = "";
     document.removeEventListener("keydown", onKey);
     setTimeout(() => { overlay.hidden = true; }, 300);
@@ -317,12 +240,10 @@ wireToggle(".read-more", "about-more", ".rm-label");
   }
   function onKey(e) {
     if (e.key === "Escape") { e.preventDefault(); close(); return; }
-    if (e.key === "ArrowRight") { scrollToCard(currentIndex() + 1); }
-    if (e.key === "ArrowLeft") { scrollToCard(currentIndex() - 1); }
+    if (e.key === "ArrowRight") scrollToCard(currentIndex() + 1);
+    if (e.key === "ArrowLeft") scrollToCard(currentIndex() - 1);
     if (e.key === "Tab") {
-      // simple focus trap within overlay
-      const focusables = overlay.querySelectorAll('a[href], button');
-      const list = Array.from(focusables).filter((el) => !el.disabled);
+      const list = Array.from(overlay.querySelectorAll('a[href], button')).filter((el) => !el.disabled);
       if (!list.length) return;
       const first = list[0], last = list[list.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -333,8 +254,6 @@ wireToggle(".read-more", "about-more", ".rm-label");
   trigger.addEventListener("click", open);
   closeBtn?.addEventListener("click", close);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
-
-  // expose for command palette
   window.__openProjects = open;
 })();
 
@@ -360,20 +279,14 @@ wireToggle(".read-more", "about-more", ".rm-label");
     setTimeout(() => row.classList.remove("flash"), 180);
   }
 
-  // click rows
   document.querySelectorAll(".palette-row").forEach((row) => {
-    row.addEventListener("click", () => {
-      const a = row.dataset.action;
-      flash(a); actions[a]?.();
-    });
+    row.addEventListener("click", () => { const a = row.dataset.action; flash(a); actions[a]?.(); });
   });
 
-  // keyboard
   document.addEventListener("keydown", (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-    // don't hijack keys while the projects dialog is open (it has its own handler)
     const overlay = document.getElementById("projects-panel");
     if (overlay && !overlay.hidden) return;
     const action = keyMap[e.key.toLowerCase()];

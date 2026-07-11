@@ -13,8 +13,17 @@
 </head>
 <body>
 
-  <!-- Falling keycaps: back layer (behind the tray) -->
-  <canvas id="keys-back" class="keys keys-back" aria-hidden="true"></canvas>
+  <!-- Layer 1+2: ambient liquid glow (deep base via CSS, morphing orbs on canvas) -->
+  <canvas id="glow" class="glow-canvas" aria-hidden="true"></canvas>
+  <!-- Layer 3: fine grain / noise overlay -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- Static decorative keycaps in the top corner -->
+  <div class="corner-keys" aria-hidden="true">
+    <span class="kc kc-cmd"><i class="fas fa-terminal"></i> command</span>
+    <span class="kc kc-k">K</span>
+    <span class="kc kc-esc">esc</span>
+  </div>
 
   <!-- Slim top bar -->
   <header class="topbar">
@@ -34,8 +43,9 @@
       <section class="tile tile--intro" aria-labelledby="intro-h">
         <span class="eyebrow" id="intro-h">Introduction</span>
         <p class="lead">
-          I'm a curious business student at BYU who mixes systems analysis, data, and a bit of code
-          into things people actually use, like an AI scholarship matcher and a real-time liquid simulation.
+          I'm a curious business student at BYU who mixes systems analysis, data, and
+          a bit of code into things people actually use, like an AI scholarship matcher and
+          a real-time liquid simulation.
         </p>
         <button class="mission-toggle" type="button" aria-expanded="false" aria-controls="mission-body">
           <i class="fas fa-compass"></i> My mission <i class="fas fa-chevron-down caret"></i>
@@ -47,19 +57,22 @@
         </p>
       </section>
 
-      <!-- HERO -->
+      <!-- HERO (filled accent tile) -->
       <section class="tile tile--hero" aria-labelledby="hero-h">
         <span class="kicker"><span class="ping"></span> Brigham Young University · Provo, UT</span>
-        <h1 id="hero-h">Hi, I'm <span class="grad-text">Jordan Heaton</span>.</h1>
+        <h1 id="hero-h">Hi, I'm <span class="grad-text">Jordan</span>.</h1>
         <p class="roles">I'm a <span class="rot"></span></p>
       </section>
 
-      <!-- Photo orb + circuit traces (centerpiece; overlays the grid on desktop,
-           flows inline between hero and projects on mobile) -->
+      <!-- Photo orb: binary band + circuit + profile (centerpiece) -->
       <div class="orb-layer" aria-hidden="true">
-        <svg class="circuit" viewBox="0 0 600 360" preserveAspectRatio="xMidYMid meet">
+        <svg class="circuit" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <path id="ring-path" d="M 200,200 m -104,0 a 104,104 0 1,1 208,0 a 104,104 0 1,1 -208,0" />
+          </defs>
           <g class="traces"></g>
           <g class="nodes"></g>
+          <text class="binary" dy="3"><textPath href="#ring-path" startOffset="0%">01001010 01001000 00101011 10110100 01010011 0010110</textPath></text>
         </svg>
         <div class="orb">
           <img src="IS%20201%20Web%20Project/Images/DSC00294_2.jpg" alt="Jordan Heaton" />
@@ -138,21 +151,35 @@
         </div>
       </section>
 
-      <!-- PROJECTS (expanding gallery) -->
+      <!-- PROJECTS (auto-scrolling marquee; opens gallery) -->
       <section class="tile tile--projects" aria-labelledby="projects-h">
         <button class="projects-trigger" type="button" aria-expanded="false" aria-controls="projects-panel">
-          <div class="tile-icon"><i class="fas fa-diagram-project"></i></div>
-          <h2 id="projects-h">Projects &amp; experiments</h2>
-          <p>A mix of things I've built for class, for fun, and to solve real problems. Click any card to open it.</p>
-          <div class="proj-hints" aria-hidden="true">
-            <span><i class="fas fa-graduation-cap"></i></span>
-            <span><i class="fas fa-water"></i></span>
-            <span><i class="fas fa-id-card"></i></span>
-            <span><i class="fas fa-crosshairs"></i></span>
-            <span><i class="fas fa-diagram-project"></i></span>
-            <span><i class="fas fa-shoe-prints"></i></span>
+          <div class="proj-head">
+            <div class="tile-icon"><i class="fas fa-diagram-project"></i></div>
+            <div class="proj-head-text">
+              <h2 id="projects-h">Projects &amp; experiments</h2>
+              <p>A mix of things I've built for class, for fun, and to solve real problems.</p>
+              <span class="expand-badge"><i class="fas fa-up-right-and-down-left-from-center"></i> Click to browse</span>
+            </div>
           </div>
-          <span class="expand-badge"><i class="fas fa-up-right-and-down-left-from-center"></i> Open</span>
+          <div class="marquee">
+            <div class="marquee-track">
+              <!-- set A -->
+              <span class="mini-card theme-scholar"><i class="fas fa-graduation-cap"></i><b>AI Scholarship Matcher</b></span>
+              <span class="mini-card theme-liquid"><i class="fas fa-water"></i><b>Liquid Simulator</b></span>
+              <span class="mini-card theme-resume"><i class="fas fa-id-card"></i><b>Interactive Résumé</b></span>
+              <span class="mini-card theme-game"><i class="fas fa-crosshairs"></i><b>BYU Target Chaser</b></span>
+              <span class="mini-card theme-process"><i class="fas fa-diagram-project"></i><b>Process Analysis</b></span>
+              <span class="mini-card theme-ballroom"><i class="fas fa-shoe-prints"></i><b>The Art of Ballroom</b></span>
+              <!-- set B (duplicate for seamless loop) -->
+              <span class="mini-card theme-scholar" aria-hidden="true"><i class="fas fa-graduation-cap"></i><b>AI Scholarship Matcher</b></span>
+              <span class="mini-card theme-liquid" aria-hidden="true"><i class="fas fa-water"></i><b>Liquid Simulator</b></span>
+              <span class="mini-card theme-resume" aria-hidden="true"><i class="fas fa-id-card"></i><b>Interactive Résumé</b></span>
+              <span class="mini-card theme-game" aria-hidden="true"><i class="fas fa-crosshairs"></i><b>BYU Target Chaser</b></span>
+              <span class="mini-card theme-process" aria-hidden="true"><i class="fas fa-diagram-project"></i><b>Process Analysis</b></span>
+              <span class="mini-card theme-ballroom" aria-hidden="true"><i class="fas fa-shoe-prints"></i><b>The Art of Ballroom</b></span>
+            </div>
+          </div>
         </button>
       </section>
 
@@ -208,17 +235,16 @@
       <!-- RÉSUMÉ -->
       <section class="tile tile--resume" aria-labelledby="resume-h">
         <div class="resume-top">
-          <span class="eyebrow">Résumé &amp; CV</span>
+          <span class="eyebrow" id="resume-h">Résumé &amp; CV</span>
           <i class="fas fa-sparkles resume-spark"></i>
         </div>
-        <div class="resume-btns">
-          <a href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener" class="btn primary glow"><i class="fas fa-download"></i> Download PDF</a>
-        </div>
+        <p class="resume-note">Full history, skills, and awards in one page.</p>
+        <a href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener" class="btn primary glow"><i class="fas fa-download"></i> Download PDF</a>
       </section>
 
       <!-- myplanBYU project card is intentionally omitted for now.
-           To re-add: include a gallery card in #projects-panel (portfolio.js PROJECTS array)
-           and a hint icon above, linking to myplanBYU/index.html. -->
+           To re-add: add a mini-card in the marquee, a gallery card in #projects-panel,
+           and it will link to myplanBYU/index.html. -->
 
     </div>
   </main>
@@ -238,8 +264,15 @@
         <button class="gallery-arrow prev" type="button" aria-label="Previous project"><i class="fas fa-chevron-left"></i></button>
         <div class="gallery-track" id="gallery-track">
 
-          <a class="proj-card" data-theme="scholar" href="BYU%20Scholarship%20Matcher/index.html" target="_blank" rel="noopener">
-            <i class="fas fa-graduation-cap proj-bg-icon" aria-hidden="true"></i>
+          <a class="proj-card theme-scholar" href="BYU%20Scholarship%20Matcher/index.html" target="_blank" rel="noopener">
+            <span class="proj-art" aria-hidden="true">
+              <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">
+                <rect width="400" height="260" fill="url(#g-scholar)"/>
+                <defs><linearGradient id="g-scholar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#1a1440"/></linearGradient></defs>
+                <g fill="#fff" opacity="0.9"><path d="M200 70 L300 105 L200 140 L100 105 Z"/><path d="M160 128 v34 c0 18 80 18 80 0 v-34 l-40 14 Z" opacity="0.85"/><path d="M300 105 v40" stroke="#ffd28a" stroke-width="3"/><circle cx="300" cy="150" r="6" fill="#ffd28a"/></g>
+                <g fill="#fff" opacity="0.5"><circle cx="60" cy="60" r="2"/><circle cx="340" cy="200" r="2"/><circle cx="90" cy="210" r="1.6"/><circle cx="320" cy="70" r="1.6"/></g>
+              </svg>
+            </span>
             <div class="proj-body">
               <span class="kind">Web App</span>
               <h3>AI Scholarship Matcher <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
@@ -248,8 +281,17 @@
             </div>
           </a>
 
-          <a class="proj-card" data-theme="liquid" href="Liquid%20Simulator/liquid-simulator.html" target="_blank" rel="noopener">
-            <i class="fas fa-water proj-bg-icon" aria-hidden="true"></i>
+          <a class="proj-card theme-liquid" href="Liquid%20Simulator/liquid-simulator.html" target="_blank" rel="noopener">
+            <span class="proj-art" aria-hidden="true">
+              <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">
+                <rect width="400" height="260" fill="url(#g-liquid)"/>
+                <defs><linearGradient id="g-liquid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f7fe0"/><stop offset="1" stop-color="#0a1b3a"/></linearGradient></defs>
+                <path d="M0 150 Q100 120 200 150 T400 150 V260 H0 Z" fill="#ffffff" opacity="0.16"/>
+                <path d="M0 180 Q100 150 200 180 T400 180 V260 H0 Z" fill="#ffffff" opacity="0.14"/>
+                <path d="M0 210 Q100 185 200 210 T400 210 V260 H0 Z" fill="#ffffff" opacity="0.18"/>
+                <g fill="#dff0ff" opacity="0.55"><circle cx="120" cy="120" r="5"/><circle cx="150" cy="95" r="3"/><circle cx="270" cy="130" r="4"/><circle cx="300" cy="100" r="2.5"/></g>
+              </svg>
+            </span>
             <div class="proj-body">
               <span class="kind">Simulation</span>
               <h3>Liquid Simulator <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
@@ -258,8 +300,16 @@
             </div>
           </a>
 
-          <a class="proj-card" data-theme="resume" href="IS%20201%20Web%20Project/index.html" target="_blank" rel="noopener">
-            <i class="fas fa-id-card proj-bg-icon" aria-hidden="true"></i>
+          <a class="proj-card theme-resume" href="IS%20201%20Web%20Project/index.html" target="_blank" rel="noopener">
+            <span class="proj-art" aria-hidden="true">
+              <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">
+                <rect width="400" height="260" fill="url(#g-resume)"/>
+                <defs><linearGradient id="g-resume" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b6cff"/><stop offset="1" stop-color="#141033"/></linearGradient></defs>
+                <rect x="130" y="40" width="140" height="200" rx="8" fill="#fff" opacity="0.14"/>
+                <circle cx="165" cy="80" r="16" fill="#fff" opacity="0.5"/>
+                <g fill="#fff" opacity="0.45"><rect x="150" y="115" width="100" height="7" rx="3"/><rect x="150" y="132" width="80" height="6" rx="3"/><rect x="150" y="152" width="96" height="6" rx="3"/><rect x="150" y="168" width="70" height="6" rx="3"/><rect x="150" y="188" width="90" height="6" rx="3"/></g>
+              </svg>
+            </span>
             <div class="proj-body">
               <span class="kind">Website</span>
               <h3>Interactive Résumé <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
@@ -268,8 +318,15 @@
             </div>
           </a>
 
-          <a class="proj-card" data-theme="game" href="IS%20201%20Web%20Project/game.html" target="_blank" rel="noopener">
-            <i class="fas fa-crosshairs proj-bg-icon" aria-hidden="true"></i>
+          <a class="proj-card theme-game" href="IS%20201%20Web%20Project/game.html" target="_blank" rel="noopener">
+            <span class="proj-art" aria-hidden="true">
+              <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">
+                <rect width="400" height="260" fill="url(#g-game)"/>
+                <defs><linearGradient id="g-game" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset="1" stop-color="#2a1030"/></linearGradient></defs>
+                <g stroke="#ffffff" opacity="0.12" stroke-width="1"><path d="M0 90 H400 M0 140 H400 M0 190 H400 M90 0 V260 M200 0 V260 M310 0 V260"/></g>
+                <g transform="translate(200 130)"><circle r="42" fill="none" stroke="#fff" stroke-width="4" opacity="0.85"/><circle r="22" fill="none" stroke="#fff" stroke-width="4" opacity="0.85"/><circle r="5" fill="#fff"/><path d="M-58 0 H-46 M46 0 H58 M0 -58 V-46 M0 46 V58" stroke="#fff" stroke-width="4"/></g>
+              </svg>
+            </span>
             <div class="proj-body">
               <span class="kind">Game</span>
               <h3>BYU Target Chaser <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
@@ -278,8 +335,15 @@
             </div>
           </a>
 
-          <a class="proj-card" data-theme="process" href="Process%20Analysis%20Project/index.html" target="_blank" rel="noopener">
-            <i class="fas fa-diagram-project proj-bg-icon" aria-hidden="true"></i>
+          <a class="proj-card theme-process" href="Process%20Analysis%20Project/index.html" target="_blank" rel="noopener">
+            <span class="proj-art" aria-hidden="true">
+              <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">
+                <rect width="400" height="260" fill="url(#g-process)"/>
+                <defs><linearGradient id="g-process" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#39b7a1"/><stop offset="1" stop-color="#0c2b2a"/></linearGradient></defs>
+                <g stroke="#fff" opacity="0.55" stroke-width="3" fill="none"><path d="M70 90 H150 M210 90 H290 M170 120 V170 M110 170 H250"/></g>
+                <g fill="#fff" opacity="0.85"><rect x="40" y="72" width="34" height="34" rx="6"/><rect x="150" y="72" width="34" height="34" rx="6"/><rect x="290" y="72" width="34" height="34" rx="6"/><rect x="153" y="152" width="34" height="34" rx="6"/></g>
+              </svg>
+            </span>
             <div class="proj-body">
               <span class="kind">Case Study</span>
               <h3>Process Improvement Analysis <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
@@ -288,8 +352,15 @@
             </div>
           </a>
 
-          <a class="proj-card" data-theme="ballroom" href="IS%20201%20Web%20Project/about.html" target="_blank" rel="noopener">
-            <i class="fas fa-shoe-prints proj-bg-icon" aria-hidden="true"></i>
+          <a class="proj-card theme-ballroom" href="IS%20201%20Web%20Project/about.html" target="_blank" rel="noopener">
+            <span class="proj-art" aria-hidden="true">
+              <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">
+                <rect width="400" height="260" fill="url(#g-ballroom)"/>
+                <defs><linearGradient id="g-ballroom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c065d8"/><stop offset="1" stop-color="#2a0f36"/></linearGradient><radialGradient id="spot" cx="0.5" cy="0" r="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+                <path d="M150 0 L110 260 H290 L250 0 Z" fill="url(#spot)"/>
+                <g fill="#1a0a24" opacity="0.85" transform="translate(200 150)"><circle cy="-46" r="12"/><path d="M-3 -34 C-18 -20 -20 6 -8 40 L-2 40 C-6 8 2 -8 6 -20 C12 -6 10 20 6 40 L12 40 C22 4 16 -22 3 -34 Z"/></g>
+              </svg>
+            </span>
             <div class="proj-body">
               <span class="kind">Feature</span>
               <h3>The Art of Ballroom <span class="arrow"><i class="fas fa-arrow-up-right-from-square"></i></span></h3>
@@ -309,9 +380,6 @@
   <footer class="site-footer">
     © <span id="year"></span> Jordan Heaton · Built from scratch with HTML, CSS &amp; JavaScript
   </footer>
-
-  <!-- Falling keycaps: front layer (cuts in front of the tray) -->
-  <canvas id="keys-front" class="keys keys-front" aria-hidden="true"></canvas>
 
   <script src="portfolio.js"></script>
 </body>
