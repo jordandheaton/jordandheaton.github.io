@@ -4,9 +4,9 @@
 
 :root {
   --bg: #0B0B14;            /* deep midnight-indigo base */
-  --glass: rgba(16, 13, 30, 0.55);
-  --glass-2: rgba(23, 19, 42, 0.62);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass: rgba(17, 14, 33, 0.52);
+  --glass-2: rgba(24, 19, 45, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.13);
   --glass-border-hi: rgba(179, 156, 255, 0.45);
   --text: #eceaf6;
   --muted: #9a94b8;
@@ -173,17 +173,37 @@ a { color: inherit; text-decoration: none; }
   border-radius: var(--radius);
   padding: 18px;
   overflow: hidden;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -20px 40px -30px rgba(139,108,255,0.4), 0 18px 46px -30px rgba(0,0,0,0.8);
+  /* the refraction: heavy blur + saturation/brightness lift warps the moving
+     lava light as it passes behind the pane */
+  backdrop-filter: blur(28px) saturate(1.45) brightness(1.06);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45) brightness(1.06);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.22),          /* polished top bevel */
+    inset 1px 0 0 rgba(255, 255, 255, 0.07),
+    inset -1px 0 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),           /* bottom edge catch-light */
+    inset 0 -26px 48px -32px rgba(139, 108, 255, 0.35),
+    0 20px 50px -28px rgba(0, 0, 0, 0.85);
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
   display: flex; flex-direction: column;
 }
-/* liquid-glass sheen across the top */
+/* glass surface: top sheen + bottom-edge glint + a slow traveling light sweep */
 .tile::after {
   content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0) 32%);
-  opacity: 0.7;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0) 30%),
+    radial-gradient(120% 55% at 82% 108%, rgba(255,255,255,0.12), transparent 46%),
+    linear-gradient(115deg, transparent 42%, rgba(255,255,255,0.09) 50%, transparent 58%);
+  background-size: 100% 100%, 100% 100%, 300% 100%;
+  background-repeat: no-repeat;
+  background-position: 0 0, 0 0, 20% 0;
+  animation: glass-sweep 11s ease-in-out infinite;
+}
+.bento .tile:nth-child(odd)::after { animation-delay: -3.5s; }
+.bento .tile:nth-child(3n)::after { animation-delay: -7s; }
+@keyframes glass-sweep {
+  0%, 46%  { background-position: 0 0, 0 0, 18% 0; }
+  78%, 100% { background-position: 0 0, 0 0, 82% 0; }
 }
 /* cursor glow */
 .tile::before {
@@ -254,14 +274,50 @@ a { color: inherit; text-decoration: none; }
 .stat-key { font-family: "Space Grotesk"; font-weight: 700; font-size: 0.95rem; }
 .stat-val { color: var(--muted); font-size: 0.75rem; margin-top: 1px; }
 
-/* ---------- ABOUT ---------- */
-.tile--about h2 { font-size: 1.2rem; margin: 6px 0 10px; letter-spacing: -0.4px; }
-.tile--about p { color: var(--muted); font-size: 0.85rem; margin-bottom: 10px; line-height: 1.45; }
-.tile--about p strong { color: var(--text); font-weight: 600; }
-.about-more[hidden] { display: none; }
-.read-more { margin-top: auto; align-self: flex-start; background: none; border: none; color: var(--accent-2); cursor: pointer; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; padding: 4px 0; }
-.read-more .caret { transition: transform 0.25s ease; font-size: 0.72rem; }
-.read-more[aria-expanded="true"] .caret { transform: rotate(180deg); }
+/* ---------- ABOUT (tile is a trigger; full story lives in the overlay) ---------- */
+.tile--about { padding: 0; }
+.about-trigger {
+  all: unset; box-sizing: border-box; cursor: pointer;
+  display: flex; flex-direction: column; height: 100%; width: 100%;
+  padding: 18px; position: relative; color: var(--text);
+}
+.about-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.about-trigger h2 { font-size: 1.2rem; margin: 6px 0 8px; letter-spacing: -0.4px; }
+.about-trigger p { color: var(--muted); font-size: 0.85rem; line-height: 1.45; }
+.about-trigger .expand-badge { position: absolute; top: 18px; right: 18px; }
+.about-thumbs { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
+.about-thumbs img {
+  width: 33%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.about-trigger:hover .about-thumbs img { border-color: var(--glass-border-hi); }
+.about-trigger:hover .about-thumbs img:nth-child(2) { transform: translateY(-3px); }
+
+/* ---------- About overlay body: photo filmstrip + story ---------- */
+.about-body { overflow-y: auto; scrollbar-width: thin; }
+.about-photos {
+  display: flex; gap: 14px; overflow-x: auto; padding: 8px 4px 16px;
+  scroll-snap-type: x proximity; scrollbar-width: thin;
+}
+.about-photos::-webkit-scrollbar { height: 8px; }
+.about-photos::-webkit-scrollbar-thumb { background: var(--glass-border-hi); border-radius: 8px; }
+.about-photos img {
+  height: 240px; width: auto; flex: none; border-radius: 14px; scroll-snap-align: center;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 14px 30px -16px rgba(0, 0, 0, 0.8);
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+.about-photos img:nth-child(odd) { transform: rotate(-1.2deg); }
+.about-photos img:nth-child(even) { transform: rotate(1.2deg); }
+.about-photos img:hover { transform: rotate(0) scale(1.04); border-color: var(--glass-border-hi); }
+.about-story { columns: 2; column-gap: 32px; margin-top: 14px; }
+.about-story p { color: var(--muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 14px; break-inside: avoid; }
+.about-story p strong { color: var(--text); font-weight: 600; }
+@media (max-width: 820px) {
+  .about-story { columns: 1; }
+  .about-photos img { height: 170px; }
+}
 
 /* ---------- SKILLS ---------- */
 .tile--skills { gap: 12px; justify-content: center; }
@@ -354,36 +410,30 @@ body.modal-open .marquee-track { animation-play-state: paused; }
 .circuit .socket { fill: #0c0a16; }
 .circuit .socket-rim { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 1.5; }
 .circuit .socket-inner { fill: none; stroke: rgba(139,108,255,0.3); stroke-width: 1.2; }
+/* the photo reads as a glossy coin/pin set into the socket:
+   no border ring — just a convex gloss, an inner bottom shadow for bulge,
+   and a small drop shadow onto the socket */
 .orb {
   position: absolute; z-index: 2; top: 50%; left: 50%;
   width: 37.3%; height: 37.3%; transform: translate(-50%, -50%);
-  border-radius: 50%; padding: 3px; background: var(--grad);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 46px -4px rgba(139,108,255,0.6);
+  border-radius: 50%;
+  box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.65);
 }
-.orb img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; border: 2px solid #0c0a16; }
-/* rotating conic glow ring + soft breathing halo for a little pazazz */
+.orb img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+/* curved specular highlight across the top — the "bulge" catching light */
 .orb::before {
-  content: ""; position: absolute; inset: -7px; border-radius: 50%; z-index: -1;
-  background: conic-gradient(from 0deg, #8b6cff, #c084fc, #ff9d5c, #8b6cff);
-  filter: blur(9px); opacity: 0.85;
-  animation: orb-spin 6s linear infinite;
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background:
+    radial-gradient(ellipse 62% 42% at 32% 16%, rgba(255,255,255,0.5), rgba(255,255,255,0.1) 58%, transparent 68%),
+    radial-gradient(ellipse 90% 55% at 50% -14%, rgba(255,255,255,0.22), transparent 55%);
 }
+/* rim shading: dark lower-inner edge + thin light catch on the top edge */
 .orb::after {
-  content: ""; position: absolute; inset: -3px; border-radius: 50%; z-index: -1;
-  box-shadow: 0 0 34px 6px rgba(139,108,255,0.45);
-  animation: orb-pulse 3.4s ease-in-out infinite;
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  box-shadow:
+    inset 0 -16px 26px -12px rgba(0, 0, 0, 0.6),
+    inset 0 3px 5px -2px rgba(255, 255, 255, 0.55);
 }
-@keyframes orb-spin { to { transform: rotate(360deg); } }
-@keyframes orb-pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
-
-/* ---------- Carved circuit motifs on tiles ---------- */
-.carve { position: absolute; z-index: 0; width: 120px; height: 120px; opacity: 0.85; pointer-events: none; }
-.carve-tr { top: 0; right: 0; }
-.carve-br { bottom: 0; right: 0; transform: scaleX(-1) scaleY(-1); }
-.carve-groove { fill: none; stroke: rgba(0,0,0,0.45); stroke-width: 3; filter: drop-shadow(0 1px 0 rgba(255,255,255,0.06)); }
-.carve-node { fill: var(--accent); filter: drop-shadow(0 0 6px rgba(139,108,255,0.9)); }
-.carve-node.warm { fill: var(--warm); filter: drop-shadow(0 0 7px rgba(255,157,92,0.95)); }
-.tile > .carve ~ * { position: relative; z-index: 1; }
 
 /* ---------- Projects gallery overlay ---------- */
 .projects-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(6,4,14,0.8); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: grid; place-items: center; padding: 30px; opacity: 0; transition: opacity 0.28s ease; }
@@ -476,6 +526,6 @@ body.modal-open .marquee-track { animation-play-state: paused; }
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
-  .kicker .ping, .marquee-track, .blob, .orb::before, .orb::after { animation: none; }
+  .kicker .ping, .marquee-track, .blob, .tile::after { animation: none; }
   .roles .rot { border-right-color: transparent; }
 }

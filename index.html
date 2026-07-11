@@ -13,24 +13,6 @@
 </head>
 <body>
 
-  <!-- Reusable carved-circuit motifs (etched traces + glowing node) -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <defs>
-      <g id="carve-a">
-        <path class="carve-groove" d="M4 20 H40 L58 38 H92" />
-        <path class="carve-groove" d="M58 38 V70" />
-        <circle class="carve-node warm" cx="92" cy="38" r="5.5"/>
-        <circle class="carve-node" cx="58" cy="70" r="4"/>
-      </g>
-      <g id="carve-b">
-        <path class="carve-groove" d="M110 16 H70 L52 44 H12" />
-        <path class="carve-groove" d="M52 44 V86" />
-        <circle class="carve-node" cx="12" cy="44" r="4"/>
-        <circle class="carve-node warm" cx="52" cy="86" r="5.5"/>
-      </g>
-    </defs>
-  </svg>
-
   <!-- Lava-lamp background: deep base + 3D spheres at varying depths + grain -->
   <div class="lava" aria-hidden="true">
     <div class="blob b1"></div>
@@ -103,7 +85,6 @@
 
       <!-- STATS -->
       <section class="tile tile--stats" aria-label="Highlights">
-        <svg class="carve carve-br" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-b"/></svg>
         <div class="stat-row">
           <span class="stat-key grad-text">National</span>
           <span class="stat-val">Vice-Champion, Ballroom</span>
@@ -118,33 +99,23 @@
         </div>
       </section>
 
-      <!-- ABOUT (expandable) -->
+      <!-- ABOUT (opens the photo + story overlay) -->
       <section class="tile tile--about" aria-labelledby="about-h">
-        <svg class="carve carve-tr" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-a"/></svg>
-        <span class="eyebrow">About</span>
-        <h2 id="about-h">A little about me</h2>
-        <p>
-          I grew up in Orem, Utah, and I've never been great at sitting still.<span class="about-more" id="about-more" hidden> Skiing in the winter,
-          ultimate frisbee in the summer, twenty-hour dance weeks, and a Blender tutorial at age ten
-          that turned into a lasting hobby. These days I'm an aspiring <strong>Information Systems</strong>
-          student at <strong>Brigham Young University</strong>, working toward the
-          <strong>Marriott School of Business</strong>, and the habit hasn't changed. I show up fully
-          wherever I land, whether that's a ballroom competition floor or a Spanish-speaking mission
-          in Atlanta. Years of training with coaches from <strong>Poland, Russia, Italy, and Canada</strong> taught
-          me as much about discipline and cross-cultural communication as any classroom has. So did the
-          traveling I can't seem to stop doing: Egypt, Greece, Israel, France, Italy, England, and a
-          humanitarian trip to Guatemala. What ties it all together is that I care about building
-          <strong>systems, and relationships, that actually serve people</strong>. Right now I'm exploring
-          what that looks like at the intersection of technology, business, and global markets.</span>
-        </p>
-        <button class="read-more" type="button" aria-expanded="false" aria-controls="about-more">
-          <span class="rm-label">Read more</span> <i class="fas fa-chevron-down caret"></i>
+        <button class="about-trigger" type="button" aria-expanded="false" aria-controls="about-panel">
+          <span class="eyebrow">About</span>
+          <h2 id="about-h">A little about me</h2>
+          <p>I grew up in Orem, Utah, and I've never been great at sitting still.</p>
+          <span class="about-thumbs" aria-hidden="true">
+            <img src="Images/CAopenFriday-70.jpg" alt="" loading="lazy" />
+            <img src="Images/CIMG1091.JPG" alt="" loading="lazy" />
+            <img src="Images/DSCN3550%20(1).jpg" alt="" loading="lazy" />
+          </span>
+          <span class="expand-badge"><i class="fas fa-up-right-and-down-left-from-center"></i> Open</span>
         </button>
       </section>
 
       <!-- SKILLS -->
       <section class="tile tile--skills" aria-label="Skills">
-        <svg class="carve carve-br" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-b"/></svg>
         <span class="eyebrow">Toolkit</span>
         <div class="skill-chips">
           <span class="skill">Excel &amp; VBA</span>
@@ -230,7 +201,6 @@
 
       <!-- CONTACT + RÉSUMÉ -->
       <section class="tile tile--contact" aria-labelledby="contact-h">
-        <svg class="carve carve-tr" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-a"/></svg>
         <span class="eyebrow">Contact</span>
         <h2 id="contact-h">Let's build something.</h2>
         <p>Open to internships and projects in business analysis, finance, and product. The fastest way to reach me is email.</p>
@@ -373,6 +343,53 @@
       </div>
 
       <div class="gallery-dots" id="gallery-dots" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <!-- Expanded about (dialog): photo filmstrip + full story -->
+  <div class="projects-overlay" id="about-panel" role="dialog" aria-modal="true" aria-labelledby="aboutpanel-h" hidden>
+    <div class="gallery-shell">
+      <div class="gallery-head">
+        <div>
+          <span class="eyebrow">About</span>
+          <h2 id="aboutpanel-h">A little about me</h2>
+        </div>
+        <button class="gallery-close about-close" type="button" aria-label="Close about">&times;</button>
+      </div>
+
+      <div class="about-body">
+        <div class="about-photos">
+          <img src="Images/CIMG1091.JPG" alt="Young Jordan making faces with his dad" loading="lazy" />
+          <img src="Images/CAopenFriday-70.jpg" alt="Jordan competing in ballroom dance" loading="lazy" />
+          <img src="Images/PXL_20220602_085627906.PORTRAIT.jpg" alt="Jordan riding a camel at the pyramids of Giza" loading="lazy" />
+          <img src="Images/PXL_20260604_193939167.MP~2.jpg" alt="Jordan at the Eiffel Tower at sunset" loading="lazy" />
+          <img src="Images/PXL_20260529_190848489~2.jpg" alt="Jordan at Mont Saint-Michel, France" loading="lazy" />
+          <img src="Images/DSCN3550%20(1).jpg" alt="Jordan scuba diving over a reef" loading="lazy" />
+          <img src="Images/1E1159B4-5E1C-4703-9BE3-A0BAF3A6EBE1.JPG" alt="Jordan eating pizza in Naples in a BYU shirt" loading="lazy" />
+        </div>
+        <div class="about-story">
+          <p>
+            I grew up in Orem, Utah, and I've never been great at sitting still. Skiing in the winter,
+            ultimate frisbee in the summer, twenty-hour dance weeks, and a Blender tutorial at age ten
+            that turned into a lasting hobby. These days I'm an aspiring <strong>Information Systems</strong>
+            student at <strong>Brigham Young University</strong>, working toward the
+            <strong>Marriott School of Business</strong>, and the habit hasn't changed. I show up fully
+            wherever I land, whether that's a ballroom competition floor or a Spanish-speaking mission
+            in Atlanta.
+          </p>
+          <p>
+            Years of training with coaches from <strong>Poland, Russia, Italy, and Canada</strong> taught
+            me as much about discipline and cross-cultural communication as any classroom has. So did the
+            traveling I can't seem to stop doing: Egypt, Greece, Israel, France, Italy, England, and a
+            humanitarian trip to Guatemala.
+          </p>
+          <p>
+            What ties it all together is that I care about building <strong>systems, and relationships,
+            that actually serve people</strong>. Right now I'm exploring what that looks like at the
+            intersection of technology, business, and global markets.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 

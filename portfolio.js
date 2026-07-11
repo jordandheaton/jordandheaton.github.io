@@ -53,25 +53,63 @@ window.addEventListener("resize", positionOrb);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(positionOrb);
 positionOrb();
 
-/* ---------- Mission + About expanders ---------- */
-function wireToggle(btnSel, bodyId, labelSel) {
-  const btn = document.querySelector(btnSel);
-  const body = document.getElementById(bodyId);
+/* ---------- Mission popover ---------- */
+(function mission() {
+  const btn = document.querySelector(".mission-toggle");
+  const body = document.getElementById("mission-body");
   if (!btn || !body) return;
   btn.addEventListener("click", () => {
     const open = btn.getAttribute("aria-expanded") === "true";
     btn.setAttribute("aria-expanded", String(!open));
     body.hidden = open;
-    if (labelSel) { const lbl = btn.querySelector(labelSel); if (lbl) lbl.textContent = open ? "Read more" : "Read less"; }
-    positionOrb();
   });
-}
-wireToggle(".mission-toggle", "mission-body", null);
-wireToggle(".read-more", "about-more", ".rm-label");
-// the mission popover overlays its own toggle button; clicking it dismisses it
-document.getElementById("mission-body")?.addEventListener("click", () => {
-  document.querySelector(".mission-toggle")?.click();
-});
+  // the popover overlays its own toggle button; clicking it dismisses it
+  body.addEventListener("click", () => btn.click());
+})();
+
+/* ---------- About overlay (photos + full story) ---------- */
+(function aboutModal() {
+  const trigger = document.querySelector(".about-trigger");
+  const overlay = document.getElementById("about-panel");
+  const closeBtn = overlay?.querySelector(".about-close");
+  if (!trigger || !overlay) return;
+  let lastFocus = null;
+
+  function open() {
+    lastFocus = document.activeElement;
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add("open"));
+    trigger.setAttribute("aria-expanded", "true");
+    document.body.classList.add("modal-open");
+    document.body.style.overflow = "hidden";
+    closeBtn?.focus();
+    document.addEventListener("keydown", onKey);
+  }
+  function close() {
+    overlay.classList.remove("open");
+    trigger.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("modal-open");
+    document.body.style.overflow = "";
+    document.removeEventListener("keydown", onKey);
+    setTimeout(() => { overlay.hidden = true; }, 300);
+    if (lastFocus) lastFocus.focus();
+  }
+  function onKey(e) {
+    if (e.key === "Escape") { e.preventDefault(); close(); return; }
+    if (e.key === "Tab") {
+      const list = Array.from(overlay.querySelectorAll('a[href], button')).filter((el) => !el.disabled);
+      if (!list.length) return;
+      const first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+
+  trigger.addEventListener("click", open);
+  closeBtn?.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  window.__openAbout = open;
+})();
 
 /* ---------- Projects gallery ---------- */
 (function gallery() {
@@ -158,11 +196,7 @@ document.getElementById("mission-body")?.addEventListener("click", () => {
     email:    () => { window.location.href = "mailto:jordandheaton@gmail.com"; },
     linkedin: () => window.open("https://linkedin.com/in/jordan-heaton-589a36405", "_blank", "noopener"),
     projects: () => window.__openProjects && window.__openProjects(),
-    about:    () => {
-      const btn = document.querySelector(".read-more");
-      if (btn && btn.getAttribute("aria-expanded") !== "true") btn.click();
-      document.querySelector(".tile--about")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    },
+    about:    () => window.__openAbout && window.__openAbout(),
   };
   const keyMap = { r: "resume", e: "email", l: "linkedin", p: "projects", a: "about" };
 
@@ -181,8 +215,7 @@ document.getElementById("mission-body")?.addEventListener("click", () => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-    const overlay = document.getElementById("projects-panel");
-    if (overlay && !overlay.hidden) return;
+    if (document.body.classList.contains("modal-open")) return; // a dialog owns the keys
     const action = keyMap[e.key.toLowerCase()];
     if (!action) return;
     e.preventDefault();
