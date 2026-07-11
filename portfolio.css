@@ -49,72 +49,74 @@ a { color: inherit; text-decoration: none; }
 .eyebrow { color: var(--accent-2); font-weight: 600; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
 
-/* ---------- Lava-lamp background: 3D glowing orbs drifting in deep indigo ---------- */
+/* ---------- Lava-lamp background: 3D spheres floating at varying depths ---------- */
 .lava {
   position: fixed; inset: 0; z-index: -2;
   overflow: hidden; pointer-events: none;
-  background:
-    radial-gradient(120% 90% at 50% -10%, #141122 0%, #0B0B14 55%);
+  background: radial-gradient(130% 100% at 50% 40%, #12102a 0%, #0c0a1c 45%, #070610 100%);
 }
-/* depth vignette: darkens the edges so the space feels like the inside of a lamp */
+/* depth vignette so the field recedes into the dark like the reference */
 .lava::after {
   content: ""; position: absolute; inset: 0;
-  background: radial-gradient(ellipse 90% 80% at 50% 45%, transparent 52%, rgba(2, 2, 8, 0.55) 100%);
+  background: radial-gradient(ellipse 100% 90% at 50% 45%, transparent 46%, rgba(2, 1, 8, 0.68) 100%);
 }
-.blob {
-  position: absolute; border-radius: 50%;
-  filter: blur(100px);
-  will-change: transform;
+/* Each sphere: soft upper-left sheen -> lit body -> shadow -> faint rim light.
+   Per-blob blur creates depth of field (some crisp in front, some soft behind). */
+.blob { position: absolute; border-radius: 50%; will-change: transform; }
+.blob::after {
+  /* glossy specular highlight, upper-left */
+  content: ""; position: absolute; top: 12%; left: 16%; width: 34%; height: 28%;
+  border-radius: 50%; background: radial-gradient(circle at 40% 40%, rgba(255,255,255,0.5), transparent 70%);
+  filter: blur(6px);
 }
-/* each blob is lit from the upper-left so it reads as a 3D sphere, not a flat wash */
-.b1 {
-  width: 58vw; height: 58vw; top: -14%; left: -14%;
-  background: radial-gradient(circle at 32% 28%,
-    rgba(196, 152, 255, 0.85) 0%, rgba(139, 92, 246, 0.55) 42%,
-    rgba(70, 34, 160, 0.18) 72%, transparent 82%);
-  animation: drift-1 25s ease-in-out infinite alternate;
+.blob::before {
+  /* iridescent rim on the shadow side */
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 68% 74%, rgba(255,120,190,0.28), transparent 42%),
+              radial-gradient(circle at 30% 78%, rgba(90,160,255,0.22), transparent 46%);
+  mix-blend-mode: screen;
 }
-.b2 {
-  width: 48vw; height: 48vw; bottom: -18%; right: -12%;
-  background: radial-gradient(circle at 35% 30%,
-    rgba(129, 118, 255, 0.8) 0%, rgba(76, 54, 226, 0.5) 45%,
-    rgba(40, 24, 130, 0.15) 74%, transparent 82%);
-  animation: drift-2 20s ease-in-out infinite alternate;
-}
-.b3 {
-  width: 40vw; height: 40vw; top: 26%; right: 14%;
-  background: radial-gradient(circle at 30% 26%,
-    rgba(170, 126, 255, 0.72) 0%, rgba(112, 66, 236, 0.42) 46%,
-    rgba(52, 26, 140, 0.12) 74%, transparent 82%);
-  animation: drift-3 15s ease-in-out infinite alternate;
-}
-.b4 {
-  width: 32vw; height: 32vw; bottom: 4%; left: 20%;
-  background: radial-gradient(circle at 34% 30%,
-    rgba(126, 88, 246, 0.65) 0%, rgba(84, 46, 200, 0.4) 48%,
-    rgba(36, 18, 110, 0.12) 75%, transparent 83%);
-  animation: drift-4 22s ease-in-out infinite alternate;
-}
-@keyframes drift-1 {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(16vw, 12vh) scale(1.12); }
-  100% { transform: translate(30vw, 4vh) scale(0.92); }
-}
-@keyframes drift-2 {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(-14vw, -14vh) scale(0.9); }
-  100% { transform: translate(-26vw, -4vh) scale(1.14); }
-}
-@keyframes drift-3 {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(-10vw, 16vh) scale(1.16); }
-  100% { transform: translate(6vw, 26vh) scale(0.88); }
-}
-@keyframes drift-4 {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(12vw, -12vh) scale(1.1); }
-  100% { transform: translate(-8vw, -22vh) scale(0.94); }
-}
+.blob.soft::after, .blob.soft::before { display: none; }
+
+/* large, very soft background clouds (out of focus) */
+.b1 { width: 46vw; height: 46vw; top: -12%; left: -10%; filter: blur(70px);
+  background: radial-gradient(circle at 36% 32%, #7b5cf0 0%, #4a2ea6 46%, #241452 78%, transparent 88%);
+  animation: drift-1 26s ease-in-out infinite alternate; }
+.b1.soft, .b2.soft { }
+.b2 { width: 40vw; height: 40vw; bottom: -16%; right: -12%; filter: blur(66px);
+  background: radial-gradient(circle at 36% 32%, #6f5cff 0%, #3f2fbf 48%, #1e1470 80%, transparent 88%);
+  animation: drift-2 30s ease-in-out infinite alternate; }
+
+/* mid-depth defined spheres */
+.b3 { width: 30vw; height: 30vw; top: 6%; right: 8%; filter: blur(14px);
+  background: radial-gradient(circle at 36% 30%, #c6a7ff 0%, #9a78f2 26%, #6a44d6 58%, #33206e 84%, #4a2f9e 95%, transparent 100%);
+  animation: drift-3 22s ease-in-out infinite alternate; }
+.b4 { width: 26vw; height: 26vw; bottom: 2%; left: 12%; filter: blur(12px);
+  background: radial-gradient(circle at 35% 30%, #b39bff 0%, #8367ea 28%, #573ac2 60%, #2b1a66 86%, #402a92 96%, transparent 100%);
+  animation: drift-4 24s ease-in-out infinite alternate; }
+.b5 { width: 22vw; height: 22vw; top: 30%; left: 30%; filter: blur(20px);
+  background: radial-gradient(circle at 36% 32%, #a98cff 0%, #7a58e6 34%, #4b2fb4 66%, #281666 88%, transparent 100%);
+  animation: drift-5 28s ease-in-out infinite alternate; }
+
+/* small, crisp foreground spheres with visible sheen + iridescence */
+.b6 { width: 12vw; height: 12vw; top: 40%; left: 50%; filter: blur(2px);
+  background: radial-gradient(circle at 37% 30%, #d7c4ff 0%, #a385f5 30%, #6f4ce0 62%, #35206e 88%, #5b3fd0 97%, transparent 100%);
+  animation: drift-6 18s ease-in-out infinite alternate; }
+.b7 { width: 9vw; height: 9vw; bottom: 26%; left: 58%; filter: blur(1.5px);
+  background: radial-gradient(circle at 37% 30%, #e6d6ff 0%, #b39bff 28%, #7a58e6 60%, #3a2384 90%, transparent 100%);
+  animation: drift-7 20s ease-in-out infinite alternate; }
+.b8 { width: 15vw; height: 15vw; top: 22%; left: 6%; filter: blur(8px);
+  background: radial-gradient(circle at 36% 30%, #c3a6ff 0%, #8f6cf0 32%, #5836c6 64%, #2a1868 88%, transparent 100%);
+  animation: drift-8 23s ease-in-out infinite alternate; }
+
+@keyframes drift-1 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(10vw,8vh) scale(1.1)} }
+@keyframes drift-2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-10vw,-6vh) scale(1.08)} }
+@keyframes drift-3 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-7vw,9vh) scale(1.06)} 100%{transform:translate(4vw,16vh) scale(0.94)} }
+@keyframes drift-4 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(8vw,-7vh) scale(1.08)} 100%{transform:translate(-6vw,-14vh) scale(0.96)} }
+@keyframes drift-5 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(11vw,7vh) scale(1.1)} 100%{transform:translate(-9vw,-8vh) scale(0.92)} }
+@keyframes drift-6 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-9vw,11vh) scale(1.14)} 100%{transform:translate(7vw,-9vh) scale(0.9)} }
+@keyframes drift-7 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(9vw,-10vh) scale(1.12)} 100%{transform:translate(-7vw,8vh) scale(0.92)} }
+@keyframes drift-8 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-6vw,-9vh) scale(1.1)} 100%{transform:translate(9vw,7vh) scale(0.94)} }
 /* ---------- Layer 3: fine grain / noise ---------- */
 .grain {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
@@ -135,12 +137,18 @@ a { color: inherit; text-decoration: none; }
 .topbar-socials a:hover { color: var(--accent); transform: translateY(-2px); }
 
 /* ---------- Tray + bento grid ---------- */
-/* margin:auto vertically centers the bento in the leftover viewport space */
-.tray { position: relative; z-index: 10; width: 100%; max-width: var(--max); margin: auto; padding: 6px 28px 10px; }
+/* tray fills the space between topbar and footer so the bento can center in it */
+.tray { position: relative; z-index: 10; width: 100%; max-width: var(--max); margin: 0 auto; padding: 6px 28px 10px; flex: 1; display: flex; }
 .bento {
   position: relative;
+  width: 100%;
+  /* fill the tray; symmetric rows put the hero/orb seam at the exact vertical center */
+  flex: 1;
+  min-height: 660px; max-height: 860px;
+  margin: auto 0;
   display: grid;
-  grid-template-columns: 1fr 1.16fr 1.16fr 1fr;
+  grid-template-columns: 1fr 1.18fr 1.18fr 1fr;
+  grid-template-rows: 1fr 1fr 2fr;
   gap: var(--gap);
   grid-template-areas:
     "intro    hero     hero     statgpa"
@@ -234,12 +242,10 @@ a { color: inherit; text-decoration: none; }
 .mission[hidden] { display: none; }
 
 /* ---------- STAT GPA ---------- */
-.tile--statgpa { justify-content: center; }
-.statgpa-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.statgpa-label { color: var(--muted); font-size: 0.82rem; }
-.statgpa-flag { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: var(--warm); border: 1px solid rgba(255,157,92,0.35); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
-.statgpa-num { font-family: "Space Grotesk"; font-weight: 700; font-size: clamp(2.6rem, 5vw, 3.6rem); line-height: 1; margin-top: 10px; display: flex; align-items: center; gap: 4px; }
+.tile--statgpa { justify-content: center; align-items: center; text-align: center; }
+.statgpa-num { font-family: "Space Grotesk"; font-weight: 700; font-size: clamp(3rem, 5.4vw, 4.2rem); line-height: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .statgpa-num .bracket { color: var(--accent); opacity: 0.55; font-weight: 500; }
+.statgpa-label { color: var(--muted); font-size: 0.82rem; margin-top: 8px; letter-spacing: 0.5px; }
 
 /* ---------- STATS ---------- */
 .tile--stats { gap: 6px; justify-content: center; }
@@ -258,7 +264,7 @@ a { color: inherit; text-decoration: none; }
 .read-more[aria-expanded="true"] .caret { transform: rotate(180deg); }
 
 /* ---------- SKILLS ---------- */
-.tile--skills { gap: 10px; }
+.tile--skills { gap: 12px; justify-content: center; }
 .skill-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .skill { font-size: 0.7rem; color: var(--text); background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); padding: 4px 9px; border-radius: 8px; transition: border-color 0.2s ease, transform 0.15s ease; }
 .skill:hover { border-color: var(--glass-border-hi); transform: translateY(-2px); }
@@ -287,9 +293,9 @@ a { color: inherit; text-decoration: none; }
 @keyframes marquee { to { transform: translateX(calc(-50% - 6px)); } }
 body.modal-open .marquee-track { animation-play-state: paused; }
 .mini-card {
-  flex: none; width: 152px; height: 100%; max-height: 128px; min-height: 100px; border-radius: 14px; overflow: hidden;
+  flex: none; width: 168px; height: 100%; max-height: 172px; min-height: 108px; border-radius: 14px; overflow: hidden;
   position: relative; display: flex; flex-direction: column; justify-content: flex-end;
-  padding: 11px; border: 1px solid var(--glass-border); background: var(--theme-grad);
+  padding: 12px; border: 1px solid var(--glass-border); background: var(--theme-grad);
 }
 .mini-card::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,7,15,0.9), rgba(8,7,15,0.15)); }
 .mini-card i { position: absolute; top: 10px; right: 10px; font-size: 1.5rem; color: rgba(255,255,255,0.85); }
@@ -352,9 +358,23 @@ body.modal-open .marquee-track { animation-play-state: paused; }
   position: absolute; z-index: 2; top: 50%; left: 50%;
   width: 37.3%; height: 37.3%; transform: translate(-50%, -50%);
   border-radius: 50%; padding: 3px; background: var(--grad);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 42px -4px rgba(139,108,255,0.55);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 46px -4px rgba(139,108,255,0.6);
 }
 .orb img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; border: 2px solid #0c0a16; }
+/* rotating conic glow ring + soft breathing halo for a little pazazz */
+.orb::before {
+  content: ""; position: absolute; inset: -7px; border-radius: 50%; z-index: -1;
+  background: conic-gradient(from 0deg, #8b6cff, #c084fc, #ff9d5c, #8b6cff);
+  filter: blur(9px); opacity: 0.85;
+  animation: orb-spin 6s linear infinite;
+}
+.orb::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 50%; z-index: -1;
+  box-shadow: 0 0 34px 6px rgba(139,108,255,0.45);
+  animation: orb-pulse 3.4s ease-in-out infinite;
+}
+@keyframes orb-spin { to { transform: rotate(360deg); } }
+@keyframes orb-pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
 
 /* ---------- Carved circuit motifs on tiles ---------- */
 .carve { position: absolute; z-index: 0; width: 120px; height: 120px; opacity: 0.85; pointer-events: none; }
@@ -411,10 +431,10 @@ body.modal-open .marquee-track { animation-play-state: paused; }
   .tile--hero { -webkit-mask: radial-gradient(circle var(--notch) at 50% 100%, transparent calc(var(--notch) - 1px), #000 var(--notch)); mask: radial-gradient(circle var(--notch) at 50% 100%, transparent calc(var(--notch) - 1px), #000 var(--notch)); }
   .tile--projects { -webkit-mask: radial-gradient(circle var(--notch) at calc(100% + 5px) -10px, transparent calc(var(--notch) - 1px), #000 var(--notch)); mask: radial-gradient(circle var(--notch) at calc(100% + 5px) -10px, transparent calc(var(--notch) - 1px), #000 var(--notch)); }
   .tile--explore { -webkit-mask: radial-gradient(circle var(--notch) at -5px -10px, transparent calc(var(--notch) - 1px), #000 var(--notch)); mask: radial-gradient(circle var(--notch) at -5px -10px, transparent calc(var(--notch) - 1px), #000 var(--notch)); }
-  /* explore: head sits beside the socket; rows clear the socket's lower curve */
-  .tile--explore { padding-top: 20px; }
+  /* explore: palette centered in the tall tile, clear of the socket corner */
+  .tile--explore { justify-content: center; }
   .tile--explore .palette-head,
-  .tile--explore .palette-group { margin-left: 102px; }
+  .tile--explore .palette-group { margin-left: 96px; }
   .tile--explore .palette-list { margin-top: 6px; }
   /* projects: reserve the top-right corner for the socket */
   .proj-head { padding-right: 104px; }
@@ -456,6 +476,6 @@ body.modal-open .marquee-track { animation-play-state: paused; }
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
-  .kicker .ping, .marquee-track, .blob { animation: none; }
+  .kicker .ping, .marquee-track, .blob, .orb::before, .orb::after { animation: none; }
   .roles .rot { border-right-color: transparent; }
 }
