@@ -1,89 +1,11 @@
 /* portfolio.js — bento hub interactions
-   Ambient liquid-glow background, orb circuit, typewriter, tile glow,
-   projects gallery + marquee, about/mission expanders, command palette. */
+   Typewriter, tile glow, orb centering, projects gallery + marquee,
+   about/mission toggles, command palette. (Lava-lamp background is pure CSS.) */
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- Footer year ---------- */
 document.getElementById("year").textContent = new Date().getFullYear();
-
-/* ---------- Ambient liquid glow (Layer 2: morphing fluid orbs) ---------- */
-(function ambientGlow() {
-  const canvas = document.getElementById("glow");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const SCALE = 0.6; // render at reduced-res; CSS blur diffuses it
-  let W, H, raf;
-
-  const palette = [
-    [138, 92, 255],   // violet
-    [88, 60, 245],    // electric indigo
-    [160, 110, 255],  // bright purple
-    [104, 66, 214],   // deep indigo
-  ];
-  const blobs = palette.map((c, i) => ({
-    color: c,
-    x: Math.random(), y: Math.random(),
-    r: 0.26 + Math.random() * 0.14,
-    dx: (Math.random() - 0.5) * 0.00012,
-    dy: (Math.random() - 0.5) * 0.00012,
-    phase: Math.random() * Math.PI * 2,
-    wob: 0.12 + Math.random() * 0.08,   // stronger warp for a lava-lamp feel
-    seed: i,
-  }));
-
-  function size() {
-    W = canvas.width = Math.round(window.innerWidth * SCALE);
-    H = canvas.height = Math.round(window.innerHeight * SCALE);
-  }
-  size();
-  window.addEventListener("resize", size);
-
-  function blobPath(b, t) {
-    // wobbly closed blob so shapes morph over time
-    const cx = b.x * W, cy = b.y * H;
-    const base = b.r * Math.min(W, H);
-    const pts = 8;
-    ctx.beginPath();
-    for (let i = 0; i <= pts; i++) {
-      const a = (i / pts) * Math.PI * 2;
-      const rr = base * (1 + Math.sin(a * 3 + t * 0.0006 + b.phase) * b.wob + Math.cos(a * 2 - t * 0.0004) * b.wob * 0.6);
-      const px = cx + Math.cos(a) * rr;
-      const py = cy + Math.sin(a) * rr;
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    const g = ctx.createRadialGradient(cx, cy, base * 0.1, cx, cy, base);
-    g.addColorStop(0, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.92)`);
-    g.addColorStop(0.62, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.6)`);
-    g.addColorStop(0.9, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.12)`);
-    g.addColorStop(1, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0)`);
-    ctx.fillStyle = g;
-    ctx.fill();
-  }
-
-  function draw(t) {
-    ctx.clearRect(0, 0, W, H);
-    ctx.globalCompositeOperation = "lighter";
-    blobs.forEach((b) => {
-      b.x += b.dx; b.y += b.dy;
-      if (b.x < -0.2 || b.x > 1.2) b.dx *= -1;
-      if (b.y < -0.2 || b.y > 1.2) b.dy *= -1;
-      blobPath(b, t);
-    });
-    ctx.globalCompositeOperation = "source-over";
-  }
-
-  if (reduceMotion) {
-    draw(0);
-  } else {
-    (function loop(t) { draw(t); raf = requestAnimationFrame(loop); })(0);
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) cancelAnimationFrame(raf);
-      else raf = requestAnimationFrame(function loop(t) { draw(t); raf = requestAnimationFrame(loop); });
-    });
-  }
-})();
 
 /* ---------- Rotating role typewriter ---------- */
 const roles = ["Bridge-Builder", "Global Citizen", "Systems Thinker", "Lifelong Explorer", "Curious Mind", "Servant Leader"];
@@ -112,55 +34,6 @@ document.querySelectorAll(".tile").forEach((tile) => {
     tile.style.setProperty("--my", `${e.clientY - r.top}px`);
   });
 });
-
-/* ---------- Carved grooves radiating from the socket rim ---------- */
-(function buildCircuit() {
-  const traces = document.querySelector(".circuit .traces");
-  const nodes = document.querySelector(".circuit .nodes");
-  if (!traces || !nodes) return;
-  const svgNS = "http://www.w3.org/2000/svg";
-  const C = 220;                  // viewBox center = orb center
-  const RIM = 96;                 // socket rim radius; grooves start here
-  // angles in screen coords: 0=right, 90=down, 180=left, 270=up.
-  // Chosen to land in empty tile zones (hero flanks, projects/explore top corners).
-  const specs = [
-    { a: 215, len: 40, jog: -24, hero: true,  warm: false, dash: false },
-    { a: 325, len: 40, jog:  24, hero: true,  warm: true,  dash: true  },
-    { a: 158, len: 36, jog: -18, hero: false, warm: false, dash: false },
-    { a: 138, len: 24, jog: -12, hero: false, warm: true,  dash: false },
-    { a: 22,  len: 44, jog:  20, hero: false, warm: true,  dash: true  },
-    { a: 46,  len: 26, jog:  12, hero: false, warm: false, dash: false },
-  ];
-  specs.forEach((s) => {
-    const rad = (s.a * Math.PI) / 180;
-    const x1 = C + Math.cos(rad) * RIM, y1 = C + Math.sin(rad) * RIM;
-    const x2 = C + Math.cos(rad) * (RIM + s.len), y2 = C + Math.sin(rad) * (RIM + s.len);
-    const x3 = x2 + s.jog, y3 = y2;
-    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x3.toFixed(1)} ${y3.toFixed(1)}`;
-
-    const groove = document.createElementNS(svgNS, "path");
-    groove.setAttribute("d", d);
-    groove.setAttribute("class", "groove" + (s.hero ? " on-hero" : ""));
-    traces.appendChild(groove);
-
-    if (s.dash && !reduceMotion) {
-      const dash = document.createElementNS(svgNS, "path");
-      dash.setAttribute("d", d);
-      dash.setAttribute("class", "gdash" + (s.warm ? " warm" : ""));
-      traces.appendChild(dash);
-    }
-
-    const halo = document.createElementNS(svgNS, "circle");
-    halo.setAttribute("cx", x3.toFixed(1)); halo.setAttribute("cy", y3.toFixed(1)); halo.setAttribute("r", "6.5");
-    halo.setAttribute("class", "node-halo" + (s.warm ? " warm" : ""));
-    nodes.appendChild(halo);
-
-    const dot = document.createElementNS(svgNS, "circle");
-    dot.setAttribute("cx", x3.toFixed(1)); dot.setAttribute("cy", y3.toFixed(1)); dot.setAttribute("r", "3");
-    dot.setAttribute("class", "node" + (s.warm ? " warm" : ""));
-    nodes.appendChild(dot);
-  });
-})();
 
 /* ---------- Center the orb exactly on the hero/projects seam ---------- */
 function positionOrb() {
@@ -195,6 +68,10 @@ function wireToggle(btnSel, bodyId, labelSel) {
 }
 wireToggle(".mission-toggle", "mission-body", null);
 wireToggle(".read-more", "about-more", ".rm-label");
+// the mission popover overlays its own toggle button; clicking it dismisses it
+document.getElementById("mission-body")?.addEventListener("click", () => {
+  document.querySelector(".mission-toggle")?.click();
+});
 
 /* ---------- Projects gallery ---------- */
 (function gallery() {

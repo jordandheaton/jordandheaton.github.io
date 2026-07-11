@@ -31,17 +31,14 @@
     </defs>
   </svg>
 
-  <!-- Layer 1+2: ambient liquid glow (deep base via CSS, morphing orbs on canvas) -->
-  <canvas id="glow" class="glow-canvas" aria-hidden="true"></canvas>
-  <!-- Layer 3: fine grain / noise overlay -->
-  <div class="grain" aria-hidden="true"></div>
-
-  <!-- Static decorative keycaps in the top corner -->
-  <div class="corner-keys" aria-hidden="true">
-    <span class="kc kc-cmd"><i class="fas fa-terminal"></i> command</span>
-    <span class="kc kc-k">K</span>
-    <span class="kc kc-esc">esc</span>
+  <!-- Lava-lamp background: deep base + huge blurred 3D orbs + grain -->
+  <div class="lava" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="blob b4"></div>
   </div>
+  <div class="grain" aria-hidden="true"></div>
 
   <!-- Slim top bar -->
   <header class="topbar">
@@ -82,24 +79,12 @@
         <p class="roles">I'm a <span class="rot"></span></p>
       </section>
 
-      <!-- Photo orb: socket disk + etched binary arcs + carved traces + profile -->
+      <!-- Photo orb: dark socket disk that the tiles plug into, photo mounted inside -->
       <div class="orb-layer" aria-hidden="true">
         <svg class="circuit" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <!-- binary arcs sit just outside the socket rim, on the tile surfaces -->
-            <path id="arc-top" d="M 120.3 173.5 A 110 110 0 0 1 319.7 173.5" />
-            <path id="arc-bl" d="M 208.5 329.4 A 110 110 0 0 1 152.3 306.7" />
-            <path id="arc-br" d="M 287.7 306.7 A 110 110 0 0 1 223.8 329.9" />
-          </defs>
-          <!-- socket: fills the circular cavity carved out of the tiles -->
-          <circle class="socket" cx="220" cy="220" r="96" />
-          <circle class="socket-rim" cx="220" cy="220" r="95.5" />
-          <circle class="socket-inner" cx="220" cy="220" r="86" />
-          <g class="traces"></g>
-          <g class="nodes"></g>
-          <text class="binary binary-dark"><textPath href="#arc-top">1101011 100011 1001010110 010 001</textPath></text>
-          <text class="binary binary-light"><textPath href="#arc-bl">0101101001</textPath></text>
-          <text class="binary binary-light"><textPath href="#arc-br">1001011010</textPath></text>
+          <circle class="socket" cx="220" cy="220" r="100" />
+          <circle class="socket-rim" cx="220" cy="220" r="99" />
+          <circle class="socket-inner" cx="220" cy="220" r="89" />
         </svg>
         <div class="orb">
           <img src="IS%20201%20Web%20Project/Images/DSC00294_2.jpg" alt="Jordan Heaton" />
