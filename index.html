@@ -13,6 +13,24 @@
 </head>
 <body>
 
+  <!-- Reusable carved-circuit motifs (etched traces + glowing node) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="carve-a">
+        <path class="carve-groove" d="M4 20 H40 L58 38 H92" />
+        <path class="carve-groove" d="M58 38 V70" />
+        <circle class="carve-node warm" cx="92" cy="38" r="5.5"/>
+        <circle class="carve-node" cx="58" cy="70" r="4"/>
+      </g>
+      <g id="carve-b">
+        <path class="carve-groove" d="M110 16 H70 L52 44 H12" />
+        <path class="carve-groove" d="M52 44 V86" />
+        <circle class="carve-node" cx="12" cy="44" r="4"/>
+        <circle class="carve-node warm" cx="52" cy="86" r="5.5"/>
+      </g>
+    </defs>
+  </svg>
+
   <!-- Layer 1+2: ambient liquid glow (deep base via CSS, morphing orbs on canvas) -->
   <canvas id="glow" class="glow-canvas" aria-hidden="true"></canvas>
   <!-- Layer 3: fine grain / noise overlay -->
@@ -64,15 +82,24 @@
         <p class="roles">I'm a <span class="rot"></span></p>
       </section>
 
-      <!-- Photo orb: binary band + circuit + profile (centerpiece) -->
+      <!-- Photo orb: socket disk + etched binary arcs + carved traces + profile -->
       <div class="orb-layer" aria-hidden="true">
-        <svg class="circuit" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+        <svg class="circuit" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <path id="ring-path" d="M 200,200 m -104,0 a 104,104 0 1,1 208,0 a 104,104 0 1,1 -208,0" />
+            <!-- binary arcs sit just outside the socket rim, on the tile surfaces -->
+            <path id="arc-top" d="M 120.3 173.5 A 110 110 0 0 1 319.7 173.5" />
+            <path id="arc-bl" d="M 208.5 329.4 A 110 110 0 0 1 152.3 306.7" />
+            <path id="arc-br" d="M 287.7 306.7 A 110 110 0 0 1 223.8 329.9" />
           </defs>
+          <!-- socket: fills the circular cavity carved out of the tiles -->
+          <circle class="socket" cx="220" cy="220" r="96" />
+          <circle class="socket-rim" cx="220" cy="220" r="95.5" />
+          <circle class="socket-inner" cx="220" cy="220" r="86" />
           <g class="traces"></g>
           <g class="nodes"></g>
-          <text class="binary" dy="3"><textPath href="#ring-path" startOffset="0%">01001010 01001000 00101011 10110100 01010011 0010110</textPath></text>
+          <text class="binary binary-dark"><textPath href="#arc-top">1101011 100011 1001010110 010 001</textPath></text>
+          <text class="binary binary-light"><textPath href="#arc-bl">0101101001</textPath></text>
+          <text class="binary binary-light"><textPath href="#arc-br">1001011010</textPath></text>
         </svg>
         <div class="orb">
           <img src="IS%20201%20Web%20Project/Images/DSC00294_2.jpg" alt="Jordan Heaton" />
@@ -90,6 +117,7 @@
 
       <!-- STATS -->
       <section class="tile tile--stats" aria-label="Highlights">
+        <svg class="carve carve-br" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-b"/></svg>
         <div class="stat-row">
           <span class="stat-key grad-text">National</span>
           <span class="stat-val">Vice-Champion, Ballroom</span>
@@ -106,30 +134,23 @@
 
       <!-- ABOUT (expandable) -->
       <section class="tile tile--about" aria-labelledby="about-h">
+        <svg class="carve carve-tr" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-a"/></svg>
         <span class="eyebrow">About</span>
         <h2 id="about-h">A little about me</h2>
         <p>
-          I grew up in Orem, Utah, and I've never been great at sitting still. Skiing in the winter,
+          I grew up in Orem, Utah, and I've never been great at sitting still.<span class="about-more" id="about-more" hidden> Skiing in the winter,
           ultimate frisbee in the summer, twenty-hour dance weeks, and a Blender tutorial at age ten
           that turned into a lasting hobby. These days I'm an aspiring <strong>Information Systems</strong>
           student at <strong>Brigham Young University</strong>, working toward the
           <strong>Marriott School of Business</strong>, and the habit hasn't changed. I show up fully
           wherever I land, whether that's a ballroom competition floor or a Spanish-speaking mission
-          in Atlanta.
+          in Atlanta. Years of training with coaches from <strong>Poland, Russia, Italy, and Canada</strong> taught
+          me as much about discipline and cross-cultural communication as any classroom has. So did the
+          traveling I can't seem to stop doing: Egypt, Greece, Israel, France, Italy, England, and a
+          humanitarian trip to Guatemala. What ties it all together is that I care about building
+          <strong>systems, and relationships, that actually serve people</strong>. Right now I'm exploring
+          what that looks like at the intersection of technology, business, and global markets.</span>
         </p>
-        <div class="about-more" id="about-more" hidden>
-          <p>
-            Years of training with coaches from <strong>Poland, Russia, Italy, and Canada</strong> taught
-            me as much about discipline and cross-cultural communication as any classroom has. So did the
-            traveling I can't seem to stop doing: Egypt, Greece, Israel, France, Italy, England, and a
-            humanitarian trip to Guatemala.
-          </p>
-          <p>
-            What ties it all together is that I care about building <strong>systems, and relationships,
-            that actually serve people</strong>. Right now I'm exploring what that looks like at the
-            intersection of technology, business, and global markets.
-          </p>
-        </div>
         <button class="read-more" type="button" aria-expanded="false" aria-controls="about-more">
           <span class="rm-label">Read more</span> <i class="fas fa-chevron-down caret"></i>
         </button>
@@ -137,6 +158,7 @@
 
       <!-- SKILLS -->
       <section class="tile tile--skills" aria-label="Skills">
+        <svg class="carve carve-br" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-b"/></svg>
         <span class="eyebrow">Toolkit</span>
         <div class="skill-chips">
           <span class="skill">Excel &amp; VBA</span>
@@ -220,26 +242,17 @@
         <p class="palette-caption">Keyboard shortcuts</p>
       </section>
 
-      <!-- CONTACT -->
+      <!-- CONTACT + RÉSUMÉ -->
       <section class="tile tile--contact" aria-labelledby="contact-h">
+        <svg class="carve carve-tr" viewBox="0 0 120 120" aria-hidden="true"><use href="#carve-a"/></svg>
         <span class="eyebrow">Contact</span>
         <h2 id="contact-h">Let's build something.</h2>
         <p>Open to internships and projects in business analysis, finance, and product. The fastest way to reach me is email.</p>
         <div class="contact-btns">
           <a href="mailto:jordandheaton@gmail.com" class="btn primary"><i class="fas fa-envelope"></i> Email me</a>
-          <a href="https://linkedin.com/in/jordan-heaton-589a36405" target="_blank" rel="noopener" class="btn ghost"><i class="fab fa-linkedin"></i> LinkedIn</a>
+          <a href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener" class="btn ghost"><i class="fas fa-download"></i> Résumé</a>
         </div>
         <p class="email"><a href="mailto:jordandheaton@gmail.com">jordandheaton@gmail.com</a></p>
-      </section>
-
-      <!-- RÉSUMÉ -->
-      <section class="tile tile--resume" aria-labelledby="resume-h">
-        <div class="resume-top">
-          <span class="eyebrow" id="resume-h">Résumé &amp; CV</span>
-          <i class="fas fa-sparkles resume-spark"></i>
-        </div>
-        <p class="resume-note">Full history, skills, and awards in one page.</p>
-        <a href="Resume/Jordan_Heaton_Resume.pdf" target="_blank" rel="noopener" class="btn primary glow"><i class="fas fa-download"></i> Download PDF</a>
       </section>
 
       <!-- myplanBYU project card is intentionally omitted for now.

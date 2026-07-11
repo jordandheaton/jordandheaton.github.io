@@ -12,7 +12,7 @@ document.getElementById("year").textContent = new Date().getFullYear();
   const canvas = document.getElementById("glow");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const SCALE = 0.5; // render at half-res; CSS blur(80px) hides the difference
+  const SCALE = 0.6; // render at reduced-res; CSS blur diffuses it
   let W, H, raf;
 
   const palette = [
@@ -24,11 +24,11 @@ document.getElementById("year").textContent = new Date().getFullYear();
   const blobs = palette.map((c, i) => ({
     color: c,
     x: Math.random(), y: Math.random(),
-    r: 0.3 + Math.random() * 0.2,
-    dx: (Math.random() - 0.5) * 0.00018,
-    dy: (Math.random() - 0.5) * 0.00018,
+    r: 0.26 + Math.random() * 0.14,
+    dx: (Math.random() - 0.5) * 0.00012,
+    dy: (Math.random() - 0.5) * 0.00012,
     phase: Math.random() * Math.PI * 2,
-    wob: 0.06 + Math.random() * 0.05,
+    wob: 0.12 + Math.random() * 0.08,   // stronger warp for a lava-lamp feel
     seed: i,
   }));
 
@@ -54,8 +54,9 @@ document.getElementById("year").textContent = new Date().getFullYear();
     }
     ctx.closePath();
     const g = ctx.createRadialGradient(cx, cy, base * 0.1, cx, cy, base);
-    g.addColorStop(0, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.72)`);
-    g.addColorStop(0.5, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.3)`);
+    g.addColorStop(0, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.92)`);
+    g.addColorStop(0.62, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.6)`);
+    g.addColorStop(0.9, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0.12)`);
     g.addColorStop(1, `rgba(${b.color[0]}, ${b.color[1]}, ${b.color[2]}, 0)`);
     ctx.fillStyle = g;
     ctx.fill();
@@ -112,57 +113,72 @@ document.querySelectorAll(".tile").forEach((tile) => {
   });
 });
 
-/* ---------- Circuit traces from the orb ring ---------- */
+/* ---------- Carved grooves radiating from the socket rim ---------- */
 (function buildCircuit() {
   const traces = document.querySelector(".circuit .traces");
   const nodes = document.querySelector(".circuit .nodes");
   if (!traces || !nodes) return;
   const svgNS = "http://www.w3.org/2000/svg";
-  const cx = 200, cy = 200;       // viewBox center = orb center
-  const startR = 112;             // just outside the binary band (r≈104)
+  const C = 220;                  // viewBox center = orb center
+  const RIM = 96;                 // socket rim radius; grooves start here
+  // angles in screen coords: 0=right, 90=down, 180=left, 270=up.
+  // Chosen to land in empty tile zones (hero flanks, projects/explore top corners).
   const specs = [
-    { angle: 210, len: 70, warm: false, pulse: true },
-    { angle: 150, len: 80, warm: true,  pulse: true },
-    { angle: 330, len: 78, warm: false, pulse: true },
-    { angle: 30,  len: 82, warm: true,  pulse: false },
-    { angle: 255, len: 60, warm: false, pulse: false },
-    { angle: 285, len: 58, warm: true,  pulse: false },
-    { angle: 105, len: 60, warm: false, pulse: false },
-    { angle: 75,  len: 58, warm: false, pulse: false },
+    { a: 215, len: 40, jog: -24, hero: true,  warm: false, dash: false },
+    { a: 325, len: 40, jog:  24, hero: true,  warm: true,  dash: true  },
+    { a: 158, len: 36, jog: -18, hero: false, warm: false, dash: false },
+    { a: 138, len: 24, jog: -12, hero: false, warm: true,  dash: false },
+    { a: 22,  len: 44, jog:  20, hero: false, warm: true,  dash: true  },
+    { a: 46,  len: 26, jog:  12, hero: false, warm: false, dash: false },
   ];
   specs.forEach((s) => {
-    const a = (s.angle * Math.PI) / 180;
-    const sx = cx + Math.cos(a) * startR;
-    const sy = cy + Math.sin(a) * startR;
-    const midx = cx + Math.cos(a) * (startR + s.len * 0.55);
-    const midy = cy + Math.sin(a) * (startR + s.len * 0.55);
-    const ex = midx + (Math.cos(a) > 0 ? 1 : -1) * s.len * 0.6;
-    const ey = midy;
-    const d = `M ${sx.toFixed(1)} ${sy.toFixed(1)} L ${midx.toFixed(1)} ${midy.toFixed(1)} L ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+    const rad = (s.a * Math.PI) / 180;
+    const x1 = C + Math.cos(rad) * RIM, y1 = C + Math.sin(rad) * RIM;
+    const x2 = C + Math.cos(rad) * (RIM + s.len), y2 = C + Math.sin(rad) * (RIM + s.len);
+    const x3 = x2 + s.jog, y3 = y2;
+    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x3.toFixed(1)} ${y3.toFixed(1)}`;
 
-    const trace = document.createElementNS(svgNS, "path");
-    trace.setAttribute("d", d);
-    trace.setAttribute("class", "trace" + (s.warm ? " warm" : ""));
-    traces.appendChild(trace);
+    const groove = document.createElementNS(svgNS, "path");
+    groove.setAttribute("d", d);
+    groove.setAttribute("class", "groove" + (s.hero ? " on-hero" : ""));
+    traces.appendChild(groove);
 
-    if (s.pulse && !reduceMotion) {
-      const pulse = document.createElementNS(svgNS, "path");
-      pulse.setAttribute("d", d);
-      pulse.setAttribute("class", "pulse" + (s.warm ? " warm" : ""));
-      traces.appendChild(pulse);
+    if (s.dash && !reduceMotion) {
+      const dash = document.createElementNS(svgNS, "path");
+      dash.setAttribute("d", d);
+      dash.setAttribute("class", "gdash" + (s.warm ? " warm" : ""));
+      traces.appendChild(dash);
     }
 
     const halo = document.createElementNS(svgNS, "circle");
-    halo.setAttribute("cx", ex.toFixed(1)); halo.setAttribute("cy", ey.toFixed(1)); halo.setAttribute("r", "7");
+    halo.setAttribute("cx", x3.toFixed(1)); halo.setAttribute("cy", y3.toFixed(1)); halo.setAttribute("r", "6.5");
     halo.setAttribute("class", "node-halo" + (s.warm ? " warm" : ""));
     nodes.appendChild(halo);
 
     const dot = document.createElementNS(svgNS, "circle");
-    dot.setAttribute("cx", ex.toFixed(1)); dot.setAttribute("cy", ey.toFixed(1)); dot.setAttribute("r", "3.2");
+    dot.setAttribute("cx", x3.toFixed(1)); dot.setAttribute("cy", y3.toFixed(1)); dot.setAttribute("r", "3");
     dot.setAttribute("class", "node" + (s.warm ? " warm" : ""));
     nodes.appendChild(dot);
   });
 })();
+
+/* ---------- Center the orb exactly on the hero/projects seam ---------- */
+function positionOrb() {
+  const bento = document.getElementById("bento");
+  const hero = document.querySelector(".tile--hero");
+  const orb = document.querySelector(".orb-layer");
+  if (!bento || !hero || !orb) return;
+  // only when the orb is an absolute overlay (desktop); on mobile it flows inline
+  if (getComputedStyle(orb).position !== "absolute") { orb.style.left = orb.style.top = ""; return; }
+  const b = bento.getBoundingClientRect();
+  const h = hero.getBoundingClientRect();
+  orb.style.left = `${h.left - b.left + h.width / 2}px`;
+  orb.style.top = `${h.bottom - b.top}px`;
+}
+window.addEventListener("load", positionOrb);
+window.addEventListener("resize", positionOrb);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(positionOrb);
+positionOrb();
 
 /* ---------- Mission + About expanders ---------- */
 function wireToggle(btnSel, bodyId, labelSel) {
@@ -174,6 +190,7 @@ function wireToggle(btnSel, bodyId, labelSel) {
     btn.setAttribute("aria-expanded", String(!open));
     body.hidden = open;
     if (labelSel) { const lbl = btn.querySelector(labelSel); if (lbl) lbl.textContent = open ? "Read more" : "Read less"; }
+    positionOrb();
   });
 }
 wireToggle(".mission-toggle", "mission-body", null);
