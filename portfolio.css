@@ -334,7 +334,7 @@ a { color: inherit; text-decoration: none; }
 .projects-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .proj-head { display: flex; align-items: center; gap: 12px; padding: 16px 100px 8px 18px; }
 .tile-icon { flex: none; width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, rgba(139,108,255,0.3), rgba(255,157,92,0.14)); border: 1px solid var(--glass-border); display: grid; place-items: center; font-size: 1.1rem; color: var(--accent-2); }
-.proj-head-text { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.proj-head-text { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 210px; }
 .proj-head-text h2 { font-size: 1.05rem; letter-spacing: -0.4px; line-height: 1.1; }
 .proj-head-text p { color: var(--muted); font-size: 0.76rem; line-height: 1.3; }
 .expand-badge { margin-top: 2px; font-size: 0.68rem; color: var(--accent-2); border: 1px solid var(--glass-border); border-radius: 999px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px; background: rgba(139,108,255,0.08); white-space: nowrap; }
@@ -375,10 +375,10 @@ body.modal-open .marquee-track { animation-play-state: paused; }
 .palette-caption { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
 
 /* ---------- CONTACT ---------- */
-.tile--contact { justify-content: center; }
+.tile--contact { justify-content: center; align-items: center; text-align: center; }
 .tile--contact h2 { font-size: 1.2rem; margin: 6px 0 8px; letter-spacing: -0.4px; }
 .tile--contact p { color: var(--muted); font-size: 0.8rem; line-height: 1.42; }
-.contact-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.contact-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
 .contact-btns .btn { padding: 8px 13px; font-size: 0.8rem; border-radius: 10px; }
 .email { margin-top: 10px; font-family: "Space Grotesk"; font-size: 0.85rem; }
 .email a { border-bottom: 1px solid var(--glass-border-hi); padding-bottom: 2px; transition: color 0.2s ease; }
@@ -465,15 +465,15 @@ body.modal-open .marquee-track { animation-play-state: paused; }
 
 /* ---------- Desktop: content keeps clear of the pin overlapping the corners ---------- */
 @media (min-width: 1101px) {
-  /* top-align so "Explore" sits at the same height as "Projects & experiments" */
+  /* "Explore" stays top-aligned with "Projects & experiments" (clears the pin);
+     the ACTIONS block below centers itself in the remaining space */
   .tile--explore { justify-content: flex-start; padding-top: 20px; }
-  /* one shared left edge for head, group label, and rows (clears the pin) */
-  .tile--explore .palette-head,
-  .tile--explore .palette-group,
-  .tile--explore .palette-list { margin-left: 92px; }
-  .tile--explore .palette-row { padding-left: 0; }
+  .tile--explore .palette-head { margin-left: 92px; }
+  .tile--explore .palette-actions { margin: auto; width: fit-content; }
   .tile--explore .palette-list { margin-top: 8px; }
-  .proj-head { padding-right: 100px; }
+  .tile--explore .palette-row { padding-left: 0; }
+  /* center the projects head text a bit more within the space left of the pin */
+  .proj-head { padding-right: 100px; justify-content: center; }
   /* trim the caption on desktop to keep the row short; kbd chips already say it */
   .palette-caption { display: none; }
 }
