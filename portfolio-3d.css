@@ -323,6 +323,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   grid-template-columns: repeat(4, 1fr); gap: 2vw;
   margin-top: 10vh; border-top: 1px solid var(--line); padding-top: 5vh;
 }
+.stat-strip li { text-align: center; } /* center each stat's number + label */
 .stat-num {
   display: block; font-family: var(--font-display); font-weight: 700;
   font-size: clamp(2.6rem, 5vw, 4.4rem); line-height: 1;
@@ -579,7 +580,10 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 /* ============================================================
    CONTACT
    ============================================================ */
-.contact { text-align: center; padding-bottom: 6vh; }
+.contact { text-align: center; padding-bottom: 6vh; overflow: hidden; }
+/* drifting data-bits behind the contact section (continues the WORK desktop field) */
+.contact-particles { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.contact > *:not(.contact-particles) { position: relative; z-index: 1; } /* keep text/buttons above the bits */
 .contact .section-head { justify-content: center; }
 .contact-title {
   font-family: var(--font-display); font-weight: 700; text-transform: uppercase;

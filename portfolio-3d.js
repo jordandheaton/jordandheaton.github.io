@@ -247,11 +247,19 @@
     // frames decoded at ~canvas resolution instead of 1440p (a phone can't hold
     // 148 full-res ImageBitmaps in RAM the way a desktop can)
     const seqLite = Math.min(window.screen.width, window.screen.height) < 700;
-    const VIDEO_PX = seqLite ? 1050 : 1500;  // pinned scroll: most of the open-up + the dive (in full view)
+    const VIDEO_PX = seqLite ? 1400 : 2000;  // pinned scroll: most of the open-up + the dive (in full view). Longer so we linger ~½s more on the opening
     const HOLD_PX = 0;      // release into the desk the instant the dive ends → title centers exactly when the camera stops
-    const OPEN_FRAC = 0.2;  // small slice of the open-up plays during entry; most is seen pinned/centered
+    const OPEN_FRAC = 0.12; // only a sliver of the open-up whips by during entry; the REST of the lid opening plays in the big centered view
     const SEQ_STEP = seqLite ? 2 : 1;
     const SEQ_RESIZE = seqLite ? { resizeWidth: 820, resizeQuality: "high" } : null;
+
+    /* ---- EXPERIMENTS (local only — set either back to false to restore) ----
+       AUTO_TYPE_TITLE : "SELECTED WORK" types itself on a timer (not scroll-driven)
+       LAPTOP_PLAY_MODE: the laptop opens as a self-playing clip that plays forward
+                         when you approach and reverses when you leave (not scrub) */
+    const AUTO_TYPE_TITLE  = true;   // "SELECTED WORK" types itself on a timer
+    const LAPTOP_PLAY_MODE = false;  // false = scroll-scrub the laptop open (kept); true = self-playing clip
+    const PLAY_SECONDS = 2.6; // (play-mode only) full open+dive duration, time-based
 
     /* Image-sequence player on a canvas — replaces video scrubbing (seeking a
        <video> per scroll frame is inherently janky). Frames are AI-interpolated
@@ -317,6 +325,65 @@
     const bar = document.querySelector(".bar");
     if (wgTitleText) wgTitleText.textContent = ""; // typed on scroll in the desk (below)
 
+    // power-on visuals (canvas cross-fade, bar text colour, bloom) as a function of
+    // "dive progress" dp (0 = screen just opening, 1 = fully dived/dark). Shared by
+    // both the scrub path and the self-playing path so they stay identical.
+    function diveVisuals(dp) {
+      const canvasOp = dp > 0.82 ? Math.max(0, 1 - (dp - 0.82) / 0.18) : 1;
+      if (workCanvas) workCanvas.style.opacity = String(canvasOp);
+      if (bar) bar.classList.toggle("bar--light", dp < 0.62);
+      if (workGlow) {
+        let g;
+        if (dp <= 0.48) g = 0;
+        else if (dp <= 0.60) g = (dp - 0.48) / 0.12;
+        else g = Math.max(0, 1 - (dp - 0.60) / 0.40);
+        workGlow.style.opacity = String(g);
+        const z = Math.max(0, (dp - 0.48) / 0.52);
+        workGlow.style.transform = "scale(" + (1 + Math.pow(z, 1.7) * 4.0).toFixed(3) + ")";
+      }
+    }
+
+    // EXPERIMENT: self-playing laptop. playhead is a float frame index that drifts
+    // toward playTarget (0 = closed, last = fully open/dived) at a TIME-based rate, so
+    // the clip lasts PLAY_SECONDS on any monitor (60/120/144Hz) and shows every frame
+    // — no skipping/judder. scrollFrame lets your scroll drag it forward faster (so you
+    // can scroll past it), and it can never enter the desk before the open completes.
+    let playhead = 0, playTarget = 0, scrollFrame = -1, lastT = 0, playRAF = 0, playRunning = false;
+    const PLAY_FPS = (SEQ_COUNT - 1) / PLAY_SECONDS; // frames advanced per second
+    function playDraw() {
+      const idx = Math.max(0, Math.min(SEQ_COUNT - 1, playhead));
+      drawFrame(idx);
+      const dp = Math.max(0, Math.min(1, (idx / (SEQ_COUNT - 1) - OPEN_FRAC) / (1 - OPEN_FRAC)));
+      diveVisuals(dp);
+    }
+    function playTick(now) {
+      const dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0; // clamp dt after tab-away
+      lastT = now;
+      // time-based drift toward the engaged target
+      if (playhead < playTarget) playhead = Math.min(playTarget, playhead + PLAY_FPS * dt);
+      else if (playhead > playTarget) playhead = Math.max(playTarget, playhead - PLAY_FPS * dt);
+      // scroll coupling (only while pinned): forward → scroll can push it ahead; this
+      // also guarantees a fully-open screen by the time the pin releases into the desk
+      if (scrollFrame >= 0 && playTarget > 0) playhead = Math.max(playhead, scrollFrame);
+      playhead = Math.max(0, Math.min(SEQ_COUNT - 1, playhead));
+      playDraw();
+      playRAF = requestAnimationFrame(playTick);
+    }
+    function startPlayLoop() { if (!playRunning) { playRunning = true; lastT = 0; playRAF = requestAnimationFrame(playTick); } }
+    function stopPlayLoop() { playRunning = false; cancelAnimationFrame(playRAF); }
+    if (LAPTOP_PLAY_MODE && workCanvas && !reduced) {
+      // keep the loop running while the work section is on screen (stop off-screen)
+      new IntersectionObserver((es) => es.forEach((e) => {
+        if (e.isIntersecting) startPlayLoop(); else stopPlayLoop();
+      }), { threshold: 0 }).observe(workSection);
+      ScrollTrigger.create({
+        trigger: "#work",
+        start: "top 62%",                                                  // "close enough" → play forward
+        onEnter:     () => { playTarget = SEQ_COUNT - 1; if (bar) bar.classList.add("bar--light"); startPlayLoop(); },
+        onLeaveBack: () => { playTarget = 0; scrollFrame = -1; startPlayLoop(); }, // "far away enough" → reverse it closed
+      });
+    }
+
     // Phase 0 (entry, NOT pinned): the laptop is already opening as the section
     // rises into view — draws frames 0 → OPEN_FRAC. No static hold.
     if (workCanvas) {
@@ -327,9 +394,10 @@
         scrub: reduced ? false : 0.8,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
-          drawFrame(self.progress * OPEN_FRAC * (SEQ_COUNT - 1));
           workCanvas.style.opacity = "1"; // always fully visible while opening
           if (bar) bar.classList.add("bar--light"); // laptop is on WHITE here → dark bar text
+          if (LAPTOP_PLAY_MODE) return;   // self-player draws the frames instead
+          drawFrame(self.progress * OPEN_FRAC * (SEQ_COUNT - 1));
         },
       });
     }
@@ -350,29 +418,15 @@
     tl.to(scrub, {
       p: 1, duration: VIDEO_PX, ease: "none",
       onUpdate: () => {
+        if (LAPTOP_PLAY_MODE) {
+          // hand the pinned scroll position to the self-player as a forward "floor"
+          scrollFrame = (OPEN_FRAC + scrub.p * (1 - OPEN_FRAC)) * (SEQ_COUNT - 1);
+          return; // frames + power-on visuals handled by the self-player
+        }
         const vp = OPEN_FRAC + scrub.p * (1 - OPEN_FRAC); // 0.2 → 1.0 of the sequence
         drawFrame(vp * (SEQ_COUNT - 1));
-        // cross-fade: the black screen dissolves into the section's near-black as
-        // "SELECTED WORK" fades in. On the way back UP the title's opacity mirrors
-        // the canvas, so it recedes WITH the laptop instead of hanging on screen.
-        const canvasOp = scrub.p > 0.82 ? Math.max(0, 1 - (scrub.p - 0.82) / 0.18) : 1;
-        if (workCanvas) workCanvas.style.opacity = String(canvasOp);
-        // bar text stays dark until the dark-blue engulfs the top of the frame
-        if (bar) bar.classList.toggle("bar--light", scrub.p < 0.62);
-        // power-on bloom: the screen lights up and the glow ZOOMS IN locked to the
-        // laptop screen as the camera dives, then fades out (long, gentle) as the
-        // title lands — so it reads like the display itself turning on.
-        if (workGlow) {
-          let g;
-          if (scrub.p <= 0.48) g = 0;
-          else if (scrub.p <= 0.60) g = (scrub.p - 0.48) / 0.12;       // bloom on (earlier)
-          else g = Math.max(0, 1 - (scrub.p - 0.60) / 0.40);           // long fade → 0 by the title landing
-          workGlow.style.opacity = String(g);
-          // scale the glow in lockstep with the dive so it stays on the screen
-          const z = Math.max(0, (scrub.p - 0.48) / 0.52);              // 0 at dive start → 1 at end
-          const sc = 1 + Math.pow(z, 1.7) * 4.0;                        // accelerating zoom to match the camera
-          workGlow.style.transform = "scale(" + sc.toFixed(3) + ")";
-        }
+        // cross-fade + bar colour + power-on bloom, all keyed to the dive progress
+        diveVisuals(scrub.p);
       },
     });
     tl.to({}, { duration: HOLD_PX }); // brief hold on the dark screen, then the pin releases into the desk
@@ -395,28 +449,50 @@
     // no auto-type flicker) then stays as the fixed backdrop the windows float over
     if (wgTitle && wgTitleText) {
       const fullTitle = wgTitle.dataset.text;
-      ScrollTrigger.create({
-        trigger: "#work-desk",
-        start: "top top",          // the sticky backdrop locks to CENTER exactly here → title types centered, never at the bottom
-        end: seqLite ? "top top-=40%" : "top top-=55%", // types over the next ~half screen while it stays centered (quicker on phones)
-        scrub: reduced ? false : 0.55,
-        onUpdate: (self) => {
-          const n = Math.round(self.progress * fullTitle.length);
-          if (wgTitleText.textContent.length !== n) wgTitleText.textContent = fullTitle.slice(0, n);
-          wgTitle.classList.toggle("go", self.progress > 0.985);
-        },
-      });
+      if (AUTO_TYPE_TITLE) {
+        // EXPERIMENT: types itself on a timer once the title is centered (not scroll-driven)
+        let typeTimer = null;
+        const startType = () => {
+          clearInterval(typeTimer);
+          let n = 0;
+          wgTitleText.textContent = "";
+          wgTitle.classList.remove("go");
+          typeTimer = setInterval(() => {
+            n++;
+            wgTitleText.textContent = fullTitle.slice(0, n);
+            if (n >= fullTitle.length) { clearInterval(typeTimer); wgTitle.classList.add("go"); }
+          }, 85); // ~1.1s for "SELECTED WORK"
+        };
+        ScrollTrigger.create({
+          trigger: "#work-desk",
+          start: "top top",          // fires when the sticky title locks to centre
+          onEnter: startType,        // scroll into it → type it out by itself
+          onLeaveBack: () => { clearInterval(typeTimer); wgTitleText.textContent = ""; wgTitle.classList.remove("go"); },
+        });
+      } else {
+        ScrollTrigger.create({
+          trigger: "#work-desk",
+          start: "top top",          // the sticky backdrop locks to CENTER exactly here → title types centered, never at the bottom
+          end: seqLite ? "top top-=40%" : "top top-=55%", // types over the next ~half screen while it stays centered (quicker on phones)
+          scrub: reduced ? false : 0.55,
+          onUpdate: (self) => {
+            const n = Math.round(self.progress * fullTitle.length);
+            if (wgTitleText.textContent.length !== n) wgTitleText.textContent = fullTitle.slice(0, n);
+            wgTitle.classList.toggle("go", self.progress > 0.985);
+          },
+        });
+      }
     }
 
-    // rising "data-bit" particles drifting up the dark desktop behind the windows
-    const pcv = document.getElementById("work-particles");
-    if (pcv && !reduced) {
-      const pctx = pcv.getContext("2d");
+    // rising "data-bit" particles drifting up the dark screen. Reusable so the same
+    // field continues from the WORK desktop down through the CONTACT section.
+    function spawnBits(canvas, observeEl) {
+      const pctx = canvas.getContext("2d");
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       let pw = 0, ph = 0, bits = [], praf = 0, prunning = false;
       function psize() {
-        pw = pcv.width = Math.round(pcv.clientWidth * dpr);
-        ph = pcv.height = Math.round(pcv.clientHeight * dpr);
+        pw = canvas.width = Math.round(canvas.clientWidth * dpr);
+        ph = canvas.height = Math.round(canvas.clientHeight * dpr);
         const n = Math.max(28, Math.round((pw * ph) / (32000 * dpr)));
         bits = [];
         for (let i = 0; i < n; i++) {
@@ -442,17 +518,21 @@
       }
       psize();
       window.addEventListener("resize", psize);
-      // only animate while the desk is on screen (saves battery)
+      // only animate while that section is on screen (saves battery)
       new IntersectionObserver((es) => {
         es.forEach((e) => {
           if (e.isIntersecting && !prunning) { prunning = true; ptick(); }
           else if (!e.isIntersecting && prunning) { prunning = false; cancelAnimationFrame(praf); }
         });
-      }, { threshold: 0 }).observe(document.getElementById("work-desk"));
+      }, { threshold: 0 }).observe(observeEl);
+    }
 
-      // keep the data-bits hidden until the laptop (and its bezel) is fully gone — during the
-      // last of the dive the desk is already rising behind the fading screen, so un-gated dots
-      // would show over the bezel. Fade them in only once the dark desktop owns the frame.
+    const pcv = document.getElementById("work-particles");
+    if (pcv && !reduced) {
+      spawnBits(pcv, document.getElementById("work-desk"));
+      // keep the WORK data-bits hidden until the laptop (and its bezel) is fully gone —
+      // during the last of the dive the desk is already rising behind the fading screen,
+      // so un-gated dots would show over the bezel. Fade them in once the desktop owns it.
       gsap.set(pcv, { opacity: 0 });
       ScrollTrigger.create({
         trigger: "#work-desk",
@@ -462,6 +542,10 @@
         onUpdate: (self) => { pcv.style.opacity = String(self.progress); },
       });
     }
+
+    // continue the same drifting bits behind the CONTACT ("Let's Build Something") section
+    const ccv = document.getElementById("contact-particles");
+    if (ccv && !reduced) spawnBits(ccv, document.getElementById("contact"));
   }
 
   /* ============================================================
