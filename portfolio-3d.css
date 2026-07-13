@@ -1,0 +1,715 @@
+/* ============================================================
+   Jordan Heaton — 3D scroll portfolio
+   Dark, typography-forward, GSAP + Lenis driven.
+   Palette matches the bento hub: #070b18 / #4da3ff / #43e7d0
+   ============================================================ */
+
+:root {
+  --bg: #05070f;
+  --bg-2: #070b18;
+  --ink: #eaf2ff;
+  --muted: #8fa2c4;
+  --dim: #52627f;
+  --accent: #4da3ff;
+  --accent-2: #43e7d0;
+  --line: rgba(141, 165, 205, 0.16);
+  --card: rgba(13, 20, 38, 0.82);
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: auto; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+
+body {
+  background: #eef1f6; /* light everywhere except the black hero banner */
+  color: var(--ink);   /* kept light so hero text stays white on black; light sections override */
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono { font-family: var(--font-mono); letter-spacing: 0.08em; }
+
+::selection { background: rgba(77, 163, 255, 0.35); }
+
+a { color: inherit; text-decoration: none; }
+
+/* ---------- background layers ---------- */
+.bg-base {
+  position: fixed; inset: 0; z-index: -4;
+  background:
+    radial-gradient(120% 90% at 70% -10%, #0b1330 0%, transparent 60%),
+    radial-gradient(100% 80% at 10% 110%, #081226 0%, transparent 55%),
+    var(--bg);
+}
+/* techy network / plexus background (drawn in JS).
+   Only visible behind the transparent WORK section — every other
+   section paints an opaque background over it. */
+#bg-net {
+  position: fixed; inset: 0; z-index: -3;
+  width: 100%; height: 100%;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ---------- scroll progress ---------- */
+.progress-rail {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60;
+  background: rgba(141, 165, 205, 0.10);
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+/* ---------- top bar ---------- */
+.bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 34px;
+}
+.brand { display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-display); font-weight: 600; }
+.brand-dot {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  font-size: 0.8rem; letter-spacing: 0.05em; color: #04131f; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+.bar-links { display: flex; gap: 26px; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.bar-links a { color: var(--muted); transition: color 0.25s; }
+.bar-links a:hover { color: var(--ink); }
+.bar-socials { display: flex; align-items: center; gap: 18px; font-size: 1.05rem; }
+.bar-socials a { color: var(--muted); transition: color 0.25s, transform 0.25s; }
+.bar-socials a:hover { color: var(--accent-2); transform: translateY(-2px); }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+/* Thick black banner (christoph-gey style) — video is the banner background,
+   sized to the 21:9 hero footage so the camera never has to move */
+.hero {
+  position: relative; width: 100%;
+  aspect-ratio: 21 / 9;
+  min-height: 460px; max-height: 80vh;
+  background: #000;
+  border-bottom: 1px solid var(--line);
+}
+.hero-stage {
+  position: absolute; inset: 0; overflow: hidden;
+}
+
+/* big typography sits UNDER the video canvas; revealed by clip-path
+   as Jordan walks past it */
+.hero-type {
+  position: absolute; z-index: 2; /* above the opaque video; the reveal clip keeps it off his body */
+  left: 4.5vw; right: auto; top: 50%;
+  max-width: 58%;
+  transform: translateY(-50%);
+}
+
+.hero-kicker {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--accent-2); font-size: 0.72rem; letter-spacing: 0.22em; margin-bottom: 1.4vw;
+}
+.ping { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 12px var(--accent-2); animation: ping 2.2s infinite; }
+@keyframes ping { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 6.8vw, 7rem);
+  line-height: 0.94;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.ht-line { display: block; min-height: 0.94em; /* holds the line box while text types in */ }
+.ht-grad, .grad-text {
+  background: linear-gradient(92deg, var(--accent) 10%, var(--accent-2) 90%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ht-dot { color: var(--ink); -webkit-text-fill-color: var(--ink); }
+
+.hero-roles {
+  margin-top: 1.4vw; color: var(--muted);
+  font-size: clamp(0.85rem, 1.5vw, 1.15rem); letter-spacing: 0.18em;
+  min-height: 1.6em;
+}
+.decode-target { color: var(--ink); }
+.hero-roles { opacity: 0; transition: opacity 0.5s ease; }
+.hero-roles.on, body:not(.js) .hero-roles { opacity: 1; }
+
+/* hero video — black studio footage on the black banner, no keying.
+   The 4K render ends with him dead-center natively, so no shift.
+   If a future render ends off-center, add translateX here and set
+   VIDEO_SHIFT in portfolio-3d.js to match. */
+#hero-video {
+  position: absolute; inset: 0; z-index: 1;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+body.no-video #hero-video { display: none; }
+
+/* mission statement — right column, appears as he settles */
+.hero-mission {
+  position: absolute; z-index: 2;
+  right: 4.5vw; top: 50%;
+  transform: translateY(-50%) translateY(14px);
+  width: min(24rem, 26vw);
+  opacity: 0;
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+.hero-mission.show,
+body.no-video .hero-mission {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+.mission-label {
+  display: block;
+  color: var(--accent-2); font-size: 0.62rem; letter-spacing: 0.28em;
+  margin-bottom: 14px;
+}
+.hero-mission p {
+  color: var(--muted); font-size: 0.92rem; line-height: 1.75;
+}
+
+.hero-foot {
+  position: absolute; z-index: 3; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+  padding: 0 34px 18px;
+}
+.sq { width: 7px; height: 7px; background: var(--accent); flex: 0 0 auto; }
+
+/* typing block cursor (code-editor style) */
+.tcur {
+  display: inline-block;
+  width: 0.5em; height: 0.82em;
+  margin-left: 0.06em;
+  background: var(--accent-2);
+  vertical-align: baseline;
+  transform: translateY(0.06em);
+  animation: tcur-blink 0.8s steps(1) infinite;
+}
+@keyframes tcur-blink { 50% { opacity: 0; } }
+
+/* light credential band between the banner and the about section */
+.cred-strip {
+  background: #e8eefc;
+  border-bottom: 1px solid rgba(10, 16, 32, 0.12);
+  padding: 22px 5vw;
+}
+.cred-list {
+  list-style: none;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 16px 4vw;
+}
+.cred-list li {
+  display: flex; align-items: center; gap: 12px;
+  color: #0a1020;
+  font-size: 0.72rem; letter-spacing: 0.18em; font-weight: 700;
+}
+.cred-list li:nth-child(2) .sq { background: var(--accent-2); }
+.cred-list li:nth-child(3) .sq { background: #7c5cff; }
+.cred-list li:nth-child(4) .sq { background: #ff7a59; }
+
+.scroll-cue {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font-size: 0.62rem; letter-spacing: 0.3em; color: var(--dim);
+}
+.scroll-line {
+  width: 1px; height: 54px;
+  background: linear-gradient(180deg, var(--accent-2), transparent);
+  animation: scroll-drip 1.8s ease-in-out infinite;
+  transform-origin: top;
+}
+@keyframes scroll-drip { 0% { transform: scaleY(0); } 45% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* ============================================================
+   SECTION FURNITURE
+   ============================================================ */
+section { position: relative; padding: 16vh 7vw; }
+
+.section-head {
+  display: flex; align-items: baseline; gap: 26px;
+  margin-bottom: 6vh;
+}
+.section-head .index { display: none; } /* numbering removed */
+.section-head .label { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.3em; }
+.about .section-head { justify-content: center; }
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.8rem, 8vw, 7.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+/* generic reveal-from-below (hidden only when JS is running) */
+body.js .reveal { opacity: 0; transform: translateY(46px); }
+body.js.reduced .reveal { opacity: 1; transform: none; }
+
+/* ============================================================
+   ABOUT
+   ============================================================ */
+.about-lead {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5.4vw, 4.6rem);
+  line-height: 1.05; letter-spacing: -0.01em;
+  max-width: 20ch; margin-bottom: 7vh;
+}
+.about-lead em { font-style: normal; color: var(--accent-2); }
+
+.about-body-grid {
+  display: grid; grid-template-columns: 1fr 0.82fr; gap: 5vw;
+  align-items: center;
+  max-width: 1240px; margin: 0 auto;
+}
+.about-cols { color: var(--muted); font-size: 1.02rem; }
+.about-cols p + p { margin-top: 1.4em; }
+.about-cols strong { color: var(--ink); font-weight: 600; }
+
+/* film-strip photo gallery — drifts downward on a seamless loop.
+   Dark film body with sprocket-hole rails down both edges. */
+.about-gallery {
+  position: relative;
+  height: min(34rem, 62vh);
+  overflow: hidden;
+  background: #17181d;
+  padding: 0 26px;
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(12, 21, 38, 0.28);
+}
+.about-gallery::before,
+.about-gallery::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 26px; z-index: 3;
+  background-image: radial-gradient(circle, #eef1f6 0 3.1px, transparent 3.8px);
+  background-size: 26px 24px; background-repeat: repeat-y; background-position: center;
+}
+.about-gallery::before { left: 0; }
+.about-gallery::after  { right: 0; }
+.ag-track {
+  display: flex; flex-direction: column;
+  padding: 6px 0;
+  animation: ag-down 46s linear infinite;
+  will-change: transform;
+}
+.ag-track img {
+  width: 100%; display: block;
+  aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 1px;
+  margin-bottom: 8px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+/* per-photo framing so faces/bodies aren't cropped out (8-image loop) */
+.ag-track img:nth-child(8n+1) { object-position: center 20%; } /* ballroom — faces near the top */
+.ag-track img:nth-child(8n+5) { object-position: center 42%; } /* scuba — face upper-left */
+.ag-track img:nth-child(8n+7) { object-position: center 74%; } /* Mont Saint-Michel — full body lower */
+.ag-track img:nth-child(8n+4) { object-position: center 62%; } /* Eiffel — he stands low in frame */
+@keyframes ag-down {
+  from { transform: translateY(-50%); }
+  to   { transform: translateY(0); }
+}
+
+.stat-strip {
+  list-style: none; display: grid;
+  grid-template-columns: repeat(4, 1fr); gap: 2vw;
+  margin-top: 10vh; border-top: 1px solid var(--line); padding-top: 5vh;
+}
+.stat-num {
+  display: block; font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(2.6rem, 5vw, 4.4rem); line-height: 1;
+}
+.stat-sup { font-size: 0.45em; vertical-align: super; }
+.stat-label { display: block; margin-top: 10px; font-size: 0.62rem; letter-spacing: 0.18em; color: var(--dim); }
+
+/* ============================================================
+   WORK — 3D fly-through
+   ============================================================ */
+/* WORK is dark — you've dived INSIDE the laptop screen. Its dark bg
+   continues seamlessly from the video's black final frame. */
+.work { padding: 0; background: #0a0d15; } /* a notch brighter than pure black — the screen is ON */
+.work-pin {
+  position: relative; height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.work-head {
+  margin: 0 7vw; padding-top: 110px; z-index: 5; border-top: 0;
+  position: relative; display: flex;
+}
+.work-hint { margin-left: auto; color: #52627f; font-size: 0.62rem; letter-spacing: 0.22em; }
+
+/* scroll-scrubbed laptop intro video (fills the pinned viewport).
+   Starts on white (blends with the site above), ends on black (blends
+   with this section's dark bg). */
+.work-video {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: none;
+  pointer-events: none;
+}
+#work.work--video .work-video { display: block; }
+
+/* "power-on" bloom — a soft cool glow that swells as the camera dives into
+   the screen, so it reads like the display flicking on. JS drives its opacity. */
+.work-glow {
+  /* inset keeps the glow INSIDE the display area — it never spills onto the
+     bezel/rim or the base bar. Asymmetric top/bottom so the box centre lands on
+     the actual screen centre (which sits a touch above viewport middle). */
+  position: absolute; inset: 12% 11% 16% 11%; z-index: 1;
+  pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(42% 40% at 50% 50%, rgba(150,185,255,0.46), rgba(70,110,210,0.15) 46%, transparent 64%),
+    radial-gradient(70% 62% at 50% 50%, rgba(40,70,150,0.12), transparent 62%);
+  mix-blend-mode: screen;
+  transform-origin: 50% 50%;   /* zooms out from the screen centre, tracking the dive */
+  will-change: transform, opacity;
+}
+
+/* giant title behind the cards (russellnumo-style) — fallback when the
+   intro video can't load; opaque, typed in, glitches occasionally */
+.work-ghost {
+  position: absolute; inset: 0; z-index: 2;
+  display: grid; place-items: center;
+  pointer-events: none;
+}
+.work-ghost .wg {
+  position: relative; display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(3rem, 12vw, 14rem);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: #dbe6ff; /* light title on the dark "inside the screen" — cards sweep over it */
+  text-shadow: 0 0 30px rgba(77, 140, 255, 0.35);
+}
+.wg .wg-text { position: relative; z-index: 1; }
+.wg::before, .wg::after {
+  content: attr(data-text);
+  position: absolute; left: 0; top: 0; width: 100%;
+  opacity: 0; pointer-events: none;
+}
+.wg.go::before { color: #43e7d0; animation: wg-a 4.2s infinite steps(1); }
+.wg.go::after  { color: #ff4d6d; animation: wg-b 4.2s infinite steps(1); }
+@keyframes wg-a {
+  0%, 88%, 100% { opacity: 0; transform: translate(0,0); clip-path: inset(0 0 100% 0); }
+  89% { opacity: 0.85; transform: translate(-4px,-2px); clip-path: inset(10% 0 55% 0); }
+  92% { opacity: 0.85; transform: translate(4px,2px);  clip-path: inset(60% 0 12% 0); }
+  95% { opacity: 0.7;  transform: translate(-3px,1px); clip-path: inset(35% 0 40% 0); }
+}
+@keyframes wg-b {
+  0%, 88%, 100% { opacity: 0; transform: translate(0,0); clip-path: inset(0 0 100% 0); }
+  90% { opacity: 0.8;  transform: translate(5px,-1px); clip-path: inset(45% 0 20% 0); }
+  93% { opacity: 0.8;  transform: translate(-5px,2px); clip-path: inset(15% 0 60% 0); }
+  96% { opacity: 0.65; transform: translate(2px,-2px); clip-path: inset(70% 0 8% 0); }
+}
+
+/* the "desktop inside the computer" — a fixed backdrop (giant title + rising
+   particles) that the project windows float UP over as you scroll */
+/* pull the desk up over the pin-spacer so the sticky title locks to CENTER the instant
+   the pin releases (i.e. the moment the camera stops) — no extra scroll to "find" it */
+.work-desk { position: relative; margin-top: -100vh; }
+.work-backdrop {
+  position: sticky; top: 0; z-index: 0;
+  height: 100vh; overflow: hidden;
+}
+.work-particles { position: absolute; inset: 0; width: 100%; height: 100%; }
+.work-backdrop .work-ghost { position: absolute; inset: 0; }
+
+/* project windows: a staggered vertical column that overlaps the sticky backdrop
+   (margin pulls it up) and floats up over the fixed title as you scroll */
+.work-grid {
+  --cw: min(400px, 26vw);          /* narrower cards so they scatter inside the middle 3/4 */
+  position: relative; z-index: 2;
+  margin-top: -100vh;              /* overlap the sticky backdrop */
+  padding: 160vh 0 175vh;          /* top: title types/holds before tiles rise · bottom: last tile fully clears the top (+ a beat of empty desktop) before contact scrolls in */
+  max-width: 75vw;                 /* keep the windows within the MIDDLE 3/4 of the screen */
+  margin-left: auto; margin-right: auto;
+  display: flex; flex-direction: column;
+  gap: clamp(120px, 22vh, 300px);  /* big gaps so they arrive one at a time */
+}
+/* scatter the six windows across the middle-3/4 band — margin-left is a fraction of the
+   free space (content minus card), fracs spanning 0→1 so they fill the band without ever
+   overflowing it at any width */
+.work-grid .wcard { align-self: flex-start; margin-left: 0; margin-right: 0; }
+.work-grid .wcard:nth-child(1) { margin-left: calc((100% - var(--cw)) * 0.00); }
+.work-grid .wcard:nth-child(2) { margin-left: calc((100% - var(--cw)) * 0.74); }
+.work-grid .wcard:nth-child(3) { margin-left: calc((100% - var(--cw)) * 0.30); }
+.work-grid .wcard:nth-child(4) { margin-left: calc((100% - var(--cw)) * 1.00); }
+.work-grid .wcard:nth-child(5) { margin-left: calc((100% - var(--cw)) * 0.16); }
+.work-grid .wcard:nth-child(6) { margin-left: calc((100% - var(--cw)) * 0.56); }
+
+/* faint themed watermark icon peeking from the window's corner */
+.wcard-bg {
+  position: absolute; right: -18px; bottom: -30px; z-index: 0;
+  font-size: 13rem; line-height: 1;
+  color: var(--theme, #4d8cff); opacity: 0.07;
+  pointer-events: none; transition: opacity 0.35s, transform 0.45s;
+}
+.wcard:hover .wcard-bg { opacity: 0.14; transform: scale(1.06) rotate(-4deg); }
+.wcard-bar, .wcard-body, .wcard-cta { position: relative; z-index: 1; } /* above the watermark */
+
+/* project cards as OS APP WINDOWS — we just dove inside the laptop, so each
+   project is an open application window on its desktop: traffic-light dots,
+   mono file path, status line, and a terminal prompt to launch it. */
+.wcard {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; justify-content: space-between;
+  width: var(--cw, min(470px, 40vw));
+  min-height: min(440px, 52vh);
+  padding: 0;
+  border: 1px solid rgba(120, 150, 220, 0.20);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(18, 23, 36, 0.96), rgba(11, 15, 24, 0.96));
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+}
+.wcard:hover {
+  border-color: var(--theme, #4d8cff);
+  transform: translateY(-10px);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.65), 0 0 44px -8px var(--theme, #4d8cff);
+}
+
+/* window title bar */
+.wcard-bar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 18px;
+  background: rgba(255, 255, 255, 0.035);
+  border-bottom: 1px solid rgba(120, 150, 220, 0.14);
+}
+.wpath {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #6d7a95; font-size: 0.66rem; letter-spacing: 0.06em;
+}
+.wcard-index { color: #4d5871; font-size: 0.64rem; letter-spacing: 0.18em; }
+/* Windows-style window controls (minimize / maximize / close) on the right */
+.wwin { display: inline-flex; gap: 2px; }
+.wwin b {
+  width: 28px; height: 20px; border-radius: 4px;
+  display: grid; place-items: center;
+  color: #5a6685; transition: background 0.2s, color 0.2s;
+}
+.wwin b::before { font-size: 0.72rem; line-height: 1; }
+.w-min::before   { content: "\2013"; }                   /* – */
+.w-max::before   { content: "\25A1"; font-size: 0.6rem; } /* □ */
+.w-close::before { content: "\2715"; }                   /* ✕ */
+.wcard:hover .wwin b { color: #9aa6c2; }
+.wwin b:hover { background: rgba(255,255,255,0.09); color: #eaf2ff; }
+.w-close:hover { background: #e23b4e; color: #fff; }
+
+/* window body */
+.wcard-body { padding: 30px 36px 8px; }
+.wcard-kind {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--theme, #4d8cff); font-size: 0.64rem; letter-spacing: 0.24em;
+  margin-bottom: 16px;
+}
+.wstat {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--theme, #4d8cff);
+  box-shadow: 0 0 8px var(--theme, #4d8cff);
+  animation: wstat-pulse 2.2s ease-in-out infinite;
+}
+@keyframes wstat-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.wcard h3 {
+  font-family: var(--font-display); font-weight: 700; color: #eaf2ff;
+  font-size: clamp(1.7rem, 3.2vw, 2.6rem); line-height: 1.05; margin-bottom: 16px;
+}
+.wcard p { color: #8fa2c4; font-size: 0.98rem; max-width: 44ch; margin-bottom: 20px; }
+.wcard-tags { display: block; color: #5a6884; font-size: 0.66rem; letter-spacing: 0.08em; }
+
+/* terminal prompt footer */
+.wcard-cta {
+  display: flex; align-items: center; gap: 3px;
+  margin: 26px 0 0;
+  padding: 15px 36px 17px;
+  border-top: 1px solid rgba(120, 150, 220, 0.12);
+  color: var(--theme, #4d8cff); font-size: 0.72rem; letter-spacing: 0.14em;
+  transition: background 0.25s, letter-spacing 0.25s;
+}
+.wcard:hover .wcard-cta { background: rgba(120, 150, 220, 0.06); letter-spacing: 0.2em; }
+.wcur {
+  display: inline-block; width: 8px; height: 1.05em;
+  margin-left: 7px; background: var(--theme, #4d8cff);
+  animation: wcur-blink 1.05s steps(1) infinite;
+}
+@keyframes wcur-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+
+.theme-scholar  { --theme: #7c5cff; }
+.theme-liquid   { --theme: #2f7fe0; }
+.theme-resume   { --theme: #8b6cff; }
+.theme-game     { --theme: #ef6a44; }
+.theme-process  { --theme: #1fa88f; }
+.theme-ballroom { --theme: #c065d8; }
+
+/* ============================================================
+   SKILLS marquees
+   ============================================================ */
+.skills { padding-bottom: 8vh; }
+.marquee { overflow: hidden; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.marquee + .marquee { border-top: 0; }
+.marquee-track {
+  display: inline-flex; white-space: nowrap; will-change: transform;
+  padding: 26px 0;
+}
+.marquee-track span {
+  font-size: clamp(1.1rem, 2.4vw, 1.9rem); letter-spacing: 0.14em; color: var(--dim);
+  padding: 0 34px; position: relative;
+}
+.marquee-track span::after {
+  content: "✦"; position: absolute; right: -10px; color: var(--accent); opacity: 0.6; font-size: 0.7em;
+}
+.m-left  .marquee-track { animation: m-left 30s linear infinite; }
+.m-right .marquee-track { animation: m-right 34s linear infinite; }
+@keyframes m-left  { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes m-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+/* keep the marquees scrolling even on hover (no pause) */
+
+/* ============================================================
+   CONTACT
+   ============================================================ */
+.contact { text-align: center; padding-bottom: 6vh; }
+.contact .section-head { justify-content: center; }
+.contact-title {
+  font-family: var(--font-display); font-weight: 700; text-transform: uppercase;
+  font-size: clamp(3rem, 10vw, 9.5rem); line-height: 0.95; letter-spacing: -0.02em;
+  margin-bottom: 5vh;
+}
+.contact-sub { color: var(--muted); max-width: 46ch; margin: 0 auto 4.5vh; font-size: 1.05rem; }
+.contact-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 5vh; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 26px; border-radius: 999px;
+  font-family: var(--font-display); font-weight: 600; font-size: 0.95rem;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+}
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #04131f;
+}
+.btn.primary:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(67, 231, 208, 0.25); }
+.btn.ghost { border: 1px solid var(--line); color: var(--muted); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--ink); transform: translateY(-3px); }
+.contact-email a { color: var(--dim); font-size: 0.72rem; letter-spacing: 0.22em; }
+.contact-email a:hover { color: var(--accent-2); }
+
+.site-footer {
+  display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+  padding: 30px 7vw 40px; border-top: 1px solid var(--line);
+  color: var(--dim); font-size: 0.62rem; letter-spacing: 0.16em;
+  text-align: center;
+}
+
+/* ============================================================
+   LIGHT SECTIONS (christoph-gey style)
+   Everything below the banner is light with black text, EXCEPT
+   the dark techy WORK island (which stays transparent so the
+   plexus shows through).
+   ============================================================ */
+.about, .skills-band {
+  position: relative; z-index: 1;
+  background: #eef1f6;
+  color: #0c1526;
+}
+.work { position: relative; z-index: 1; } /* dark island — kept out of the light set */
+/* contact + footer stay dark like WORK — "still inside the laptop" */
+.contact, .site-footer {
+  position: relative; z-index: 1;
+  background: #0a0d15;
+  color: var(--muted);
+}
+
+.about .section-title { color: #0c1526; }
+
+/* lead paragraph (folded into the text column beside the film reel) */
+.about-lead-p {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.3vw, 2rem);
+  line-height: 1.18; letter-spacing: -0.01em;
+  color: #0c1526; margin-bottom: 1.3em;
+}
+.about-lead-p em { font-style: normal; color: #2f6fd6; }
+.about-cols { color: #4a586f; }
+.about-cols strong { color: #0c1526; }
+
+.stat-strip { border-top-color: rgba(12, 21, 38, 0.14); }
+.about .grad-text {
+  background: linear-gradient(92deg, #2f6fd6, #6a5cff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.stat-label { color: #7b869c; }
+
+/* skills band right below the banner — darker white band, two sliding
+   marquees, no title, no rule lines */
+.skills-band {
+  padding: 10px 0;
+  background: #dfe6f3; /* the darker band that separates banner from about */
+}
+.skills-band .marquee { border: 0; }
+.skills-band .marquee-track { padding: 16px 0; }
+.skills-band .marquee-track span { color: #55617a; font-size: clamp(1rem, 2.1vw, 1.6rem); }
+.skills-band .marquee-track span::after { color: #2f6fd6; }
+
+.contact-title, .contact .ht-line { color: var(--ink); }
+.contact .ht-grad {
+  background: linear-gradient(92deg, #4d8cff, #8a7bff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.contact-sub { color: var(--muted); }
+/* ghost buttons, email, and footer inherit the default dark-theme colors */
+.site-footer { border-top-color: var(--line); color: var(--dim); }
+
+/* top bar adapts to the section beneath it (toggled in JS) — no background, text only */
+.bar--light .brand-name { color: #0c1526; }
+.bar--light .bar-links a { color: #4a586f; }
+.bar--light .bar-links a:hover { color: #0c1526; }
+.bar--light .bar-socials a { color: #4a586f; }
+.bar--light .bar-socials a:hover { color: #2f6fd6; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .bar { padding: 14px 18px; }
+  .bar-links { display: none; }
+  .brand-name { display: none; }
+  section { padding: 12vh 6vw; }
+  .about-cols { grid-template-columns: 1fr; }
+  .stat-strip { grid-template-columns: repeat(2, 1fr); gap: 34px 4vw; }
+  .hero { max-height: 64vh; }
+  .hero-type { max-width: 80%; }
+  .hero-mission { display: none; }
+  .hero-foot { padding: 0 18px 14px; }
+  .cred-list { gap: 12px 24px; }
+  .cred-list li { font-size: 0.62rem; }
+  .scroll-cue { flex-direction: row; align-items: center; }
+  .scroll-line { width: 54px; height: 1px; background: linear-gradient(90deg, var(--accent-2), transparent); transform-origin: left; animation-name: scroll-drip-h; }
+  @keyframes scroll-drip-h { 0% { transform: scaleX(0); } 45% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0; } }
+  .work-grid { padding: 120vh 5vw 120vh; gap: clamp(80px, 18vh, 160px); max-width: 100%; }
+  .work-grid .wcard, .work-grid .wcard:nth-child(odd), .work-grid .wcard:nth-child(even) { align-self: center; margin-left: 0; margin-right: 0; }
+  .wcard { width: min(440px, 84vw); min-height: 420px; }
+  .wcard-body { padding: 24px 24px 6px; }
+  .wcard-cta { padding: 13px 24px 15px; }
+  .wpath { font-size: 0.6rem; }
+  .wcard-bg { font-size: 9rem; }
+  .work-head { padding-top: 92px; }
+  .work-hint { display: none; }
+  .about-body-grid { grid-template-columns: 1fr; gap: 40px; }
+  .about-gallery { height: 46vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ping, .scroll-line, .ag-track { animation: none !important; }
+  .marquee-track { animation-duration: 120s !important; }
+}
