@@ -16,3 +16,6 @@ _preview*
 assets-3d/*.mp4
 !assets-3d/hero-walk-4k.mp4
 assets-3d/*.png
+
+# local backups of the pre-compression photos — never deploy
+Images/originals/

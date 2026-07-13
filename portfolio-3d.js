@@ -243,9 +243,15 @@
   const workCanvas = document.getElementById("work-canvas");
   const workSection = document.getElementById("work");
   if (workGrid) {
-    const VIDEO_PX = 1500;  // pinned scroll: most of the open-up + the dive (in full view)
+    // phones get a lighter ride: shorter pinned scroll, every-2nd frame, and
+    // frames decoded at ~canvas resolution instead of 1440p (a phone can't hold
+    // 148 full-res ImageBitmaps in RAM the way a desktop can)
+    const seqLite = Math.min(window.screen.width, window.screen.height) < 700;
+    const VIDEO_PX = seqLite ? 1050 : 1500;  // pinned scroll: most of the open-up + the dive (in full view)
     const HOLD_PX = 0;      // release into the desk the instant the dive ends → title centers exactly when the camera stops
     const OPEN_FRAC = 0.2;  // small slice of the open-up plays during entry; most is seen pinned/centered
+    const SEQ_STEP = seqLite ? 2 : 1;
+    const SEQ_RESIZE = seqLite ? { resizeWidth: 820, resizeQuality: "high" } : null;
 
     /* Image-sequence player on a canvas — replaces video scrubbing (seeking a
        <video> per scroll frame is inherently janky). Frames are AI-interpolated
@@ -273,9 +279,11 @@
       const dw = bm.width * s, dh = bm.height * s;
       ctx.drawImage(bm, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
     }
+    const SEQ_LAST = Math.floor((SEQ_COUNT - 1) / SEQ_STEP) * SEQ_STEP; // last index actually loaded
     function drawFrame(fidx) {
       if (!seqReady || !ctx) return;
-      const idx = Math.max(0, Math.min(SEQ_COUNT - 1, Math.round(fidx)));
+      let idx = Math.max(0, Math.min(SEQ_COUNT - 1, Math.round(fidx)));
+      if (SEQ_STEP > 1) idx = Math.min(Math.round(idx / SEQ_STEP) * SEQ_STEP, SEQ_LAST); // snap to a loaded frame
       curIdx = idx;
       const bm = bitmaps.get(idx);
       if (bm) { drawBitmap(bm); shownIdx = idx; }                          // always ready once loaded
@@ -283,11 +291,16 @@
     }
 
     if (workCanvas && ctx) {
-      for (let i = 0; i < SEQ_COUNT; i++) {
+      for (let i = 0; i < SEQ_COUNT; i += SEQ_STEP) {
         const img = new Image();
         img.onload = () => {
-          createImageBitmap(img).then((bm) => {
-            bitmaps.set(i, bm); // keep every frame decoded — never released
+          // downscale at decode time on phones (falls back if the browser
+          // doesn't support resize options)
+          const decode = SEQ_RESIZE
+            ? createImageBitmap(img, SEQ_RESIZE).catch(() => createImageBitmap(img))
+            : createImageBitmap(img);
+          decode.then((bm) => {
+            bitmaps.set(i, bm); // keep every loaded frame decoded — never released
             if (!seqReady) { seqReady = true; workSection.classList.add("work--video"); sizeCanvas(); }
             if (i === curIdx || shownIdx < 0) drawFrame(curIdx);
           });
@@ -385,7 +398,7 @@
       ScrollTrigger.create({
         trigger: "#work-desk",
         start: "top top",          // the sticky backdrop locks to CENTER exactly here → title types centered, never at the bottom
-        end: "top top-=55%",       // types over the next ~half screen while it stays centered
+        end: seqLite ? "top top-=40%" : "top top-=55%", // types over the next ~half screen while it stays centered (quicker on phones)
         scrub: reduced ? false : 0.55,
         onUpdate: (self) => {
           const n = Math.round(self.progress * fullTitle.length);

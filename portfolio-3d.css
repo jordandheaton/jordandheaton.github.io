@@ -696,7 +696,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   .scroll-cue { flex-direction: row; align-items: center; }
   .scroll-line { width: 54px; height: 1px; background: linear-gradient(90deg, var(--accent-2), transparent); transform-origin: left; animation-name: scroll-drip-h; }
   @keyframes scroll-drip-h { 0% { transform: scaleX(0); } 45% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0; } }
-  .work-grid { padding: 120vh 5vw 120vh; gap: clamp(80px, 18vh, 160px); max-width: 100%; }
+  .work-grid { padding: 150vh 5vw 120vh; gap: clamp(80px, 18vh, 160px); max-width: 100%; }
   .work-grid .wcard, .work-grid .wcard:nth-child(odd), .work-grid .wcard:nth-child(even) { align-self: center; margin-left: 0; margin-right: 0; }
   .wcard { width: min(440px, 84vw); min-height: 420px; }
   .wcard-body { padding: 24px 24px 6px; }
@@ -707,6 +707,60 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   .work-hint { display: none; }
   .about-body-grid { grid-template-columns: 1fr; gap: 40px; }
   .about-gallery { height: 46vh; }
+}
+
+/* ============ PHONES — compress everything, minimum wasted space ============ */
+@media (max-width: 600px) {
+  .bar { padding: 12px 14px; }
+  section { padding: 8vh 5vw; }
+  .section-head { margin-bottom: 3.5vh; gap: 14px; }
+
+  /* hero: shallower banner, type takes the full width */
+  .hero { min-height: 340px; max-height: 52vh; }
+  .hero-type { left: 5vw; max-width: 90%; }
+  .hero-kicker { font-size: 0.6rem; margin-bottom: 10px; }
+  .hero-roles { margin-top: 10px; font-size: 0.72rem; letter-spacing: 0.12em; }
+  .hero-foot { padding: 0 12px 10px; }
+
+  /* credential strip + marquees: slim bands */
+  .cred-strip { padding: 12px 4vw; }
+  .cred-list { gap: 8px 18px; }
+  .cred-list li { font-size: 0.54rem; letter-spacing: 0.12em; gap: 8px; }
+  .marquee-track { padding: 12px 0; }
+  .marquee-track span { padding: 0 20px; font-size: 1rem; }
+  .skills-band .marquee-track { padding: 9px 0; }
+  .skills-band .marquee-track span { font-size: 0.92rem; }
+
+  /* about: tighter lead, shorter film reel, compact stats */
+  .about-lead-p { font-size: 1.15rem; margin-bottom: 1.1em; }
+  .about-cols { font-size: 0.92rem; }
+  .about-body-grid { gap: 28px; }
+  .about-gallery { height: 36vh; padding: 0 18px; }
+  .about-gallery::before, .about-gallery::after { width: 18px; background-size: 18px 18px; }
+  .stat-strip { margin-top: 5vh; padding-top: 3vh; gap: 22px 4vw; }
+  .stat-num { font-size: 2.1rem; }
+  .stat-label { margin-top: 6px; font-size: 0.54rem; }
+
+  /* work: shorter title hold + tail, snug cards */
+  .work-head { padding-top: 72px; }
+  .work-grid { padding: 135vh 4vw 125vh; gap: clamp(60px, 12vh, 110px); }
+  .wcard { width: 100%; min-height: 0; }
+  .wcard-body { padding: 18px 18px 4px; }
+  .wcard h3 { font-size: 1.3rem; }
+  .wcard p { font-size: 0.88rem; margin-bottom: 14px; }
+  .wcard-cta { margin-top: 16px; padding: 11px 18px 13px; }
+  .wcard-bar { padding: 10px 12px; gap: 8px; }
+  .wcard-bg { font-size: 7rem; }
+  .wwin b { width: 22px; height: 17px; }
+
+  /* contact + footer: compact close */
+  .contact { padding-bottom: 3vh; }
+  .contact-title { margin-bottom: 3vh; }
+  .contact-sub { font-size: 0.92rem; margin-bottom: 3vh; }
+  .contact-btns { gap: 10px; margin-bottom: 3.5vh; }
+  .btn { padding: 11px 18px; font-size: 0.82rem; gap: 8px; }
+  .contact-email a { font-size: 0.62rem; letter-spacing: 0.16em; }
+  .site-footer { padding: 18px 5vw 24px; gap: 8px 14px; font-size: 0.54rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
