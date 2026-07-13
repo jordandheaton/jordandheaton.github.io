@@ -10,3 +10,9 @@ desktop.ini
 _preview_files/
 _rpreview*
 _preview*
+
+# 3D portfolio: commit only the assets the live site uses; keep the ~83MB of
+# draft/source renders (thinkpad/scrub/concept/4K sources) locally, not pushed
+assets-3d/*.mp4
+!assets-3d/hero-walk-4k.mp4
+assets-3d/*.png
