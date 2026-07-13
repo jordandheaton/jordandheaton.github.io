@@ -16,3 +16,6 @@ _preview*
 assets-3d/*.mp4
 !assets-3d/hero-walk-4k.mp4
 assets-3d/*.png
+
+# Hub gallery: web-sized images are tracked; keep the full-res originals local only
+Images/originals/
