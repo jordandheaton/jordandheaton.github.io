@@ -4,28 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Art of Ballroom | Jordan Heaton</title>
-    <meta name="description" content="A look inside competitive ballroom dance: the styles, the discipline, and why Jordan Heaton has been chasing it since fifth grade.">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <meta name="description" content="A cinematic look inside competitive ballroom dance: ten dances, one obsession. By Jordan Heaton.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="Styles/about_style.css">
 </head>
-<body>
+<body class="is-loading">
 
-    <header id="top">
-        <p class="kicker">A passion project by Jordan Heaton</p>
-        <h1>The Art of Ballroom</h1>
-        <p class="subtitle">Where athleticism meets artistry, ten dances at a time.</p>
-        <nav>
-            <a href="#story">The Story</a>
-            <a href="#video-section">Watch a Formation</a>
-            <a href="#styles-section">The Ten Dances</a>
-        </nav>
+    <!-- Preloader -->
+    <div id="preloader" aria-hidden="true">
+        <div class="preloader-inner">
+            <span class="preloader-word">The Art of Ballroom</span>
+            <span class="preloader-count" id="preloaderCount">00</span>
+        </div>
+    </div>
+
+    <!-- Ambient gold dust (pseudo-3D canvas) -->
+    <canvas id="dust" aria-hidden="true"></canvas>
+    <div class="grain" aria-hidden="true"></div>
+
+    <!-- Minimal fixed nav -->
+    <nav class="site-nav">
+        <a class="nav-home" href="../index.html" aria-label="Back to Jordan Heaton's portfolio">JH&nbsp;&mdash;&nbsp;Portfolio</a>
+        <div class="nav-links">
+            <a href="#story">Story</a>
+            <a href="#dances">The Ten</a>
+            <a href="#formation">Formation</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <header id="hero">
+        <div class="hero-bg" id="heroBg" aria-hidden="true">
+            <video id="heroVideo" class="hero-video" muted loop playsinline autoplay preload="auto"
+                   poster="Videos/hero_poster.jpg"
+                   aria-label="Jordan Heaton and his partner performing Viennese Waltz fleckerls under a spotlight">
+                <source src="Videos/hero_loop.mp4" type="video/mp4">
+            </video>
+            <div class="hero-vignette"></div>
+        </div>
+        <p class="hero-kicker reveal-line">A passion project by Jordan Heaton</p>
+        <h1 class="hero-title" aria-label="The Art of Ballroom">
+            <span class="line"><span class="word">The</span> <span class="word">Art</span> <span class="word">of</span></span>
+            <span class="line line-em"><em>Ballroom</em></span>
+        </h1>
+        <p class="hero-sub reveal-line">Where athleticism meets artistry, ten dances at a time.</p>
+
+        <div class="hero-scroll-cue" aria-hidden="true">
+            <span>Scroll</span>
+            <span class="cue-line"></span>
+        </div>
     </header>
 
     <main>
-        <section id="story" class="content-container">
-            <div class="split">
-                <div class="split-text">
-                    <h2>A passion for movement</h2>
+        <!-- STORY -->
+        <section id="story">
+            <span class="ghost-word" aria-hidden="true">PASSION</span>
+            <div class="story-grid">
+                <div class="story-text">
+                    <p class="section-kicker">The story</p>
+                    <h2 class="section-title">A passion<br>for <em>movement</em></h2>
                     <p>I started ballroom in fifth grade for two reasons: my older brother did it, and I
                        wanted to be better than him at everything. What began as sibling rivalry turned
                        into the discipline that has shaped my life more than any other. Years later I've
@@ -36,67 +75,197 @@
                        saying a word. Ten minutes of back-to-back dances will leave anyone ready to
                        crumble. That's the part I love.</p>
                 </div>
-                <figure class="split-photo">
-                    <img src="Images/Nationals.jpg" alt="Jordan Heaton competing in International Standard at nationals in the Marriott Center">
-                    <figcaption>Competing at nationals in the Marriott Center at BYU.</figcaption>
+                <figure class="story-photo">
+                    <div class="photo-mask">
+                        <img src="Images/Nationals.jpg" alt="Jordan Heaton competing in International Standard at nationals in the Marriott Center">
+                    </div>
+                    <figcaption>Nationals &mdash; Marriott Center, BYU</figcaption>
                 </figure>
             </div>
         </section>
 
-        <section id="video-section" class="content-container">
-            <h2>Formation: ballroom as a team sport</h2>
-            <p>Formation teams take Standard and Latin technique and expand them into synchronized routines
-               for sixteen dancers. When it works, every movement lands at the same instant, and it's the
-               closest thing to human perfection I've seen on a dance floor. Here's a performance by the
-               BYU Youth Dancesport "A" Team:</p>
+        <!-- THE TEN DANCES -->
+        <section id="dances">
+            <div class="dances-heading">
+                <p class="section-kicker">The repertoire</p>
+                <h2 class="section-title">Ten dances.<br><em>Two worlds.</em></h2>
+                <p class="dances-sub">International competition splits into Standard and Latin &mdash; five dances
+                   each. Most competitors specialize. Formation teams train both.</p>
+            </div>
 
-            <div class="video-frame">
-                <iframe src="https://www.youtube.com/embed/W3EGDDER7HY"
-                    title="BYU Youth Dancesport A Team formation performance"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen></iframe>
+            <div class="track-wrap" id="trackWrap">
+                <div class="track" id="track">
+
+                    <!-- Chapter: Standard -->
+                    <article class="panel chapter" data-chapter="standard">
+                        <span class="chapter-index">I</span>
+                        <h3 class="chapter-name">International<br><em>Standard</em></h3>
+                        <p class="chapter-desc">Smooth, sweeping, always in closed hold. Judged on frame,
+                           footwork, and how effortlessly two people can move as one.</p>
+                    </article>
+
+                    <article class="panel dance" data-accent="#c9a35c">
+                        <div class="dance-media">
+                            <img src="Images/dance-waltz.jpg" alt="Ballroom couple dancing a Waltz throwaway oversway under a spotlight" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">01</span>
+                            <h3 class="dance-name">Waltz</h3>
+                            <p class="dance-meta">28&ndash;30 bars/min &mdash; The romantic</p>
+                            <p class="dance-desc">Rise and fall. The first dance anyone learns and the last one anyone masters.</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#b0413e">
+                        <div class="dance-media">
+                            <img src="Images/dance-tango.jpg" alt="Ballroom couple dancing Tango in a dramatic close hold" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">02</span>
+                            <h3 class="dance-name">Tango</h3>
+                            <p class="dance-meta">31&ndash;33 bars/min &mdash; The drama</p>
+                            <p class="dance-desc">Staccato. No rise, no fall &mdash; just intent, attack, and dead-stop stillness.</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#d4af37">
+                        <div class="dance-media">
+                            <img src="Images/dance-viennese.jpg" alt="Ballroom couple dancing a Viennese Waltz natural turn" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">03</span>
+                            <h3 class="dance-name">Viennese<br>Waltz</h3>
+                            <p class="dance-meta">58&ndash;60 bars/min &mdash; The whirlwind</p>
+                            <p class="dance-desc">Twice the speed of Waltz, all rotation. Natural turns sweep down the floor
+                               at full tempo before the fleckerl spins in place &mdash; pure whirlwind.</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#7d8ca3">
+                        <div class="dance-media">
+                            <img src="Images/dance-foxtrot.jpg" alt="Ballroom couple dancing a Foxtrot feather step in a grand ballroom" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">04</span>
+                            <h3 class="dance-name">Foxtrot</h3>
+                            <p class="dance-meta">28&ndash;30 bars/min &mdash; The glide</p>
+                            <p class="dance-desc">Deceptively hard. Continuous, level movement that should look like walking on silk.</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#5c8a72">
+                        <div class="dance-media">
+                            <img src="Images/dance-quickstep.jpg" alt="Ballroom couple airborne mid-jump during a Quickstep" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">05</span>
+                            <h3 class="dance-name">Quickstep</h3>
+                            <p class="dance-meta">50&ndash;52 bars/min &mdash; The sprint</p>
+                            <p class="dance-desc">Runs, hops, and flight across the floor. Ten minutes of this ends careers.</p>
+                        </div>
+                    </article>
+
+                    <!-- Chapter: Latin -->
+                    <article class="panel chapter" data-chapter="latin">
+                        <span class="chapter-index">II</span>
+                        <h3 class="chapter-name">International<br><em>Latin</em></h3>
+                        <p class="chapter-desc">Sharp, rhythmic, expressive. Latin trades the closed hold for
+                           speed, hip action, and personality that reaches the back row.</p>
+                    </article>
+
+                    <article class="panel dance" data-accent="#e0762f">
+                        <div class="dance-media">
+                            <img src="Images/dance-chacha.jpg" alt="Ballroom couple dancing Cha-Cha" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">06</span>
+                            <h3 class="dance-name">Cha-Cha</h3>
+                            <p class="dance-meta">30&ndash;32 bars/min &mdash; The flirt</p>
+                            <p class="dance-desc">Cheeky, syncopated, precise. All personality, delivered on the &ldquo;and.&rdquo;</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#3f9e6e">
+                        <div class="dance-media">
+                            <img src="Images/dance-samba.jpg" alt="Ballroom couple dancing Samba" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">07</span>
+                            <h3 class="dance-name">Samba</h3>
+                            <p class="dance-meta">50&ndash;52 bars/min &mdash; The carnival</p>
+                            <p class="dance-desc">Bounce action from the knees and ankles. Rio, compressed into ninety seconds.</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#a35c8f">
+                        <div class="dance-media">
+                            <img src="Images/dance-rumba.jpg" alt="Ballroom couple dancing Rumba" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">08</span>
+                            <h3 class="dance-name">Rumba</h3>
+                            <p class="dance-meta">25&ndash;27 bars/min &mdash; The slow burn</p>
+                            <p class="dance-desc">The slowest Latin dance and the hardest to fake. Every beat is exposed.</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#8f2d2d">
+                        <div class="dance-media">
+                            <img src="Images/dance-paso.jpg" alt="Ballroom couple dancing Paso Doble" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">09</span>
+                            <h3 class="dance-name">Paso<br>Doble</h3>
+                            <p class="dance-meta">60&ndash;62 bars/min &mdash; The bullfight</p>
+                            <p class="dance-desc">The man is the matador; the woman, the cape. Shape, posture, and Spanish drama.</p>
+                        </div>
+                    </article>
+
+                    <article class="panel dance" data-accent="#d9c257">
+                        <div class="dance-media">
+                            <img src="Images/dance-jive.jpg" alt="Ballroom couple dancing Jive" class="dance-photo">
+                        </div>
+                        <div class="dance-info">
+                            <span class="dance-num">10</span>
+                            <h3 class="dance-name">Jive</h3>
+                            <p class="dance-meta">42&ndash;44 bars/min &mdash; The finale</p>
+                            <p class="dance-desc">Kicks and flicks at a dead sprint. Always danced last, when there's nothing left.</p>
+                        </div>
+                    </article>
+
+                </div>
             </div>
         </section>
 
-        <section id="styles-section" class="content-container">
-            <h2>The ten competitive dances</h2>
-            <p>International-style competition splits into two categories of five dances each. Most
-               competitors specialize; formation teams train both.</p>
-
-            <div class="style-grid">
-                <div class="style-card standard">
-                    <h3>International Standard</h3>
-                    <p class="style-desc">Smooth, sweeping, and always in closed hold. Judged on frame,
-                       footwork, and how effortlessly two people can move as one.</p>
-                    <ul>
-                        <li>Waltz</li>
-                        <li>Tango</li>
-                        <li>Viennese Waltz</li>
-                        <li>Foxtrot</li>
-                        <li>Quickstep</li>
-                    </ul>
-                </div>
-                <div class="style-card latin">
-                    <h3>International Latin</h3>
-                    <p class="style-desc">Sharp, rhythmic, and expressive. Latin trades the closed hold for
-                       speed, hip action, and personality that reaches the back row.</p>
-                    <ul>
-                        <li>Cha-Cha-Cha</li>
-                        <li>Samba</li>
-                        <li>Rumba</li>
-                        <li>Paso Doble</li>
-                        <li>Jive</li>
-                    </ul>
+        <!-- FORMATION -->
+        <section id="formation">
+            <span class="ghost-word" aria-hidden="true">SIXTEEN</span>
+            <div class="formation-inner">
+                <p class="section-kicker">Formation</p>
+                <h2 class="section-title">Ballroom as a<br><em>team sport</em></h2>
+                <p class="formation-copy">Formation teams take Standard and Latin technique and expand them into
+                   synchronized routines for sixteen dancers. When it works, every movement lands at the same
+                   instant, and it's the closest thing to human perfection I've seen on a dance floor.
+                   Here's a performance by the BYU Youth Dancesport &ldquo;A&rdquo; Team:</p>
+                <div class="video-frame">
+                    <iframe src="https://www.youtube.com/embed/W3EGDDER7HY"
+                        title="BYU Youth Dancesport A Team formation performance"
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
                 </div>
             </div>
-
-            <a href="#top" class="back-to-top">Back to top</a>
         </section>
     </main>
 
     <footer class="page-footer">
-        <p>Part of the portfolio of <a href="../index.html">Jordan Heaton</a> · Brigham Young University</p>
+        <p class="footer-big" aria-hidden="true">Keep dancing.</p>
+        <p>Part of the portfolio of <a href="../index.html">Jordan Heaton</a> &middot; Brigham Young University</p>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
+    <script src="Scripts/ballroom.js"></script>
 </body>
 </html>
