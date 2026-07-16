@@ -19,3 +19,8 @@ assets-3d/*.png
 
 # Hub gallery: web-sized images are tracked; keep the full-res originals local only
 Images/originals/
+
+# Universe scroller: heavy source media stays local (frames/ ARE tracked — they deploy)
+Universe scroller/draft-test/
+Universe scroller/media/
+Universe scroller/demo/frames/
