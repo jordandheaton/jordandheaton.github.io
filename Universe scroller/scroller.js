@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const PX_PER_FRAME = 18;   // scroll distance mapped to one frame
-  const AHEAD  = 220;        // frames decoded ahead of the playhead
-  const BEHIND = 120;        // frames decoded behind the playhead
-  const BOOT_FRAMES = 60;    // frames to load before dismissing the loader
+  const PX_PER_DECADE = 1500; // scroll distance per order of magnitude of scale
+  const AHEAD  = 220;         // frames decoded ahead of the playhead
+  const BEHIND = 120;         // frames decoded behind the playhead
+  const BOOT_FRAMES = 60;     // frames to load before dismissing the loader
 
   const $ = id => document.getElementById(id);
   const canvas = $('view'), ctx = canvas.getContext('2d');
@@ -22,12 +22,15 @@
   function fmtExp(logMeters) {
     return '10' + toSup(logMeters.toFixed(1)) + ' m';
   }
+  const AU = 1.496e11, LY = 9.461e15;
   function fmtAltitude(logMeters) {
     const m = Math.pow(10, logMeters);
-    if (m < 1)    return Math.round(m * 100) + ' cm';
-    if (m < 1e3)  return (m < 10 ? m.toFixed(1) : Math.round(m)) + ' m';
-    if (m < 1e6)  return (m / 1e3).toFixed(m < 1e4 ? 1 : 0) + ' km';
-    return Math.round(m / 1e3).toLocaleString() + ' km';
+    if (m < 1)       return Math.round(m * 100) + ' cm';
+    if (m < 1e3)     return (m < 10 ? m.toFixed(1) : Math.round(m)) + ' m';
+    if (m < 1e6)     return (m / 1e3).toFixed(m < 1e4 ? 1 : 0) + ' km';
+    if (m < 1e10)    return Math.round(m / 1e3).toLocaleString() + ' km';
+    if (m < 0.1 * LY) { const au = m / AU; return (au < 10 ? au.toFixed(1) : Math.round(au)) + ' au'; }
+    const ly = m / LY; return (ly < 10 ? ly.toFixed(1) : Math.round(ly).toLocaleString()) + ' ly';
   }
 
   function boot(manifest) {
@@ -38,11 +41,26 @@
 
     if (reduced) return renderStatic(FRAME_COUNT, src, CH);
 
+    // ---- log-scale scroll mapping ---------------------------------------
+    // Scroll distance is proportional to orders of magnitude traveled, NOT
+    // frame count — so the on-screen zoom pace stays even no matter how the
+    // source clips vary their zoom speed internally.
+    const LOG_MIN = CH[0].a0;
+    const TOTAL_DECADES = CH.reduce((s, c) => s + (c.a1 - c.a0), 0);
+    const SCROLL_LEN = TOTAL_DECADES * PX_PER_DECADE;
+
+    function frameFromScroll(y) {
+      const logPos = LOG_MIN + Math.max(0, Math.min(1, y / SCROLL_LEN)) * TOTAL_DECADES;
+      const c = CH.find(c => logPos >= c.a0 && logPos <= c.a1) || CH[CH.length - 1];
+      const t = (logPos - c.a0) / (c.a1 - c.a0);
+      return c.start + t * (c.end - c.start);
+    }
+
     const spacer = document.getElementById('spacer');
-    // total travel = one full frame span past the last frame, plus a viewport
-    // so the final frame is fully reachable at max scroll (recomputed on resize).
+    // total travel = SCROLL_LEN plus a viewport so the last frame is fully
+    // reachable at max scroll (recomputed on resize).
     function sizeSpacer() {
-      spacer.style.height = ((FRAME_COUNT - 1) * PX_PER_FRAME + innerHeight) + 'px';
+      spacer.style.height = (SCROLL_LEN + innerHeight) + 'px';
     }
     sizeSpacer();
 
@@ -122,10 +140,13 @@
     // ---- scroll → target -------------------------------------------------
     let playhead = 0, target = 0, shownIdx = -1, dirty = true, lastWin = -999;
 
+    // scroll position is polled in the rAF tick (more robust than scroll
+    // events, which some browsers throttle or suspend); the listener only
+    // handles the one-shot hint dismissal.
     addEventListener('scroll', () => {
-      target = Math.max(0, Math.min(FRAME_COUNT - 1, scrollY / PX_PER_FRAME));
       if (scrollY > 40) hintEl.classList.add('gone');
     }, { passive: true });
+    let lastScrollY = -1;
 
     function updateHud(playhead, idx) {
       const c = CH.find(c => idx >= c.start && idx <= c.end) || CH[CH.length - 1];
@@ -134,11 +155,16 @@
       altEl.textContent = fmtAltitude(logM);
       expEl.innerHTML = fmtExp(logM);
       labelEl.textContent = c.label;
-      fillEl.style.width = (playhead / (FRAME_COUNT - 1) * 100) + '%';
+      fillEl.style.width = ((logM - LOG_MIN) / TOTAL_DECADES * 100) + '%';
     }
 
     function tick() {
       requestAnimationFrame(tick);
+      if (scrollY !== lastScrollY) {
+        lastScrollY = scrollY;
+        target = Math.max(0, Math.min(FRAME_COUNT - 1, frameFromScroll(scrollY)));
+        if (scrollY > 40) hintEl.classList.add('gone');
+      }
       playhead += (target - playhead) * 0.22;
       if (Math.abs(target - playhead) < 0.01) playhead = target;
       const idx = Math.round(playhead);

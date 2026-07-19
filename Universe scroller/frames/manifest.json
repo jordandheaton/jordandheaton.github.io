@@ -1,16 +1,19 @@
 {
-  "frameCount": 734,
+  "frameCount": 861,
   "pad": 4,
   "pattern": "frames/frame-{i}.jpg",
   "fps": 24,
   "chapters": [
-    { "start": 0,   "end": 92,  "label": "Leaf",          "a0": -1.0, "a1": 0.0 },
-    { "start": 92,  "end": 184, "label": "Branch",        "a0": 0.0,  "a1": 1.0 },
-    { "start": 184, "end": 275, "label": "Whole tree",    "a0": 1.0,  "a1": 2.0 },
-    { "start": 275, "end": 367, "label": "Clearing",      "a0": 2.0,  "a1": 3.0 },
-    { "start": 367, "end": 459, "label": "Neighborhood",  "a0": 3.0,  "a1": 3.7 },
-    { "start": 459, "end": 550, "label": "Coastal town",  "a0": 3.7,  "a1": 4.5 },
-    { "start": 550, "end": 642, "label": "Coastal region","a0": 4.5,  "a1": 5.5 },
-    { "start": 642, "end": 733, "label": "Planet Earth",  "a0": 5.5,  "a1": 7.6 }
+    { "start": 0,   "end": 94,  "label": "Leaf",              "a0": -1.0, "a1": 0.0 },
+    { "start": 94,  "end": 185, "label": "Branch",            "a0": 0.0,  "a1": 1.0 },
+    { "start": 185, "end": 274, "label": "Whole tree",        "a0": 1.0,  "a1": 2.0 },
+    { "start": 274, "end": 354, "label": "Clearing",          "a0": 2.0,  "a1": 3.0 },
+    { "start": 354, "end": 425, "label": "Neighborhood",      "a0": 3.0,  "a1": 3.7 },
+    { "start": 425, "end": 512, "label": "Coastal town",      "a0": 3.7,  "a1": 4.5 },
+    { "start": 512, "end": 547, "label": "Coastal region",    "a0": 4.5,  "a1": 6.3 },
+    { "start": 547, "end": 637, "label": "Planet Earth",      "a0": 6.3,  "a1": 7.6 },
+    { "start": 637, "end": 688, "label": "Earth–Moon system", "a0": 7.6, "a1": 9.0 },
+    { "start": 688, "end": 772, "label": "Inner solar system","a0": 9.0,  "a1": 11.5 },
+    { "start": 772, "end": 860, "label": "Outer solar system","a0": 11.5, "a1": 13.0 }
   ]
 }
