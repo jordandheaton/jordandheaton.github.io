@@ -28,6 +28,27 @@
 
 <div id="loader"><div>Loading journey</div><div class="lbar"><i id="lfill"></i></div></div>
 
+<!-- Manifest inlined so the page works from file:// (double-click) as well as any
+     static server. frames/manifest.json is kept on disk as the source of truth. -->
+<script type="application/json" id="manifest-data">
+{
+  "frameCount": 734,
+  "pad": 4,
+  "pattern": "frames/frame-{i}.jpg",
+  "fps": 24,
+  "chapters": [
+    { "start": 0,   "end": 92,  "label": "Leaf",          "a0": -1.0, "a1": 0.0 },
+    { "start": 92,  "end": 184, "label": "Branch",        "a0": 0.0,  "a1": 1.0 },
+    { "start": 184, "end": 275, "label": "Whole tree",    "a0": 1.0,  "a1": 2.0 },
+    { "start": 275, "end": 367, "label": "Clearing",      "a0": 2.0,  "a1": 3.0 },
+    { "start": 367, "end": 459, "label": "Neighborhood",  "a0": 3.0,  "a1": 3.7 },
+    { "start": 459, "end": 550, "label": "Coastal town",  "a0": 3.7,  "a1": 4.5 },
+    { "start": 550, "end": 642, "label": "Coastal region","a0": 4.5,  "a1": 5.5 },
+    { "start": 642, "end": 733, "label": "Planet Earth",  "a0": 5.5,  "a1": 7.6 }
+  ]
+}
+</script>
+
 <script src="scroller.js?v=1"></script>
 </body>
 </html>

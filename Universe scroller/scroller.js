@@ -186,11 +186,21 @@
   }
 
   // ---- load manifest, then boot -----------------------------------------
-  fetch('frames/manifest.json?v=1')
-    .then(r => r.json())
-    .then(boot)
-    .catch(err => {
-      loaderEl.innerHTML = '<div>Failed to load journey</div>';
-      console.error('[universe-scroller]', err);
-    });
+  // Prefer the inline <script id="manifest-data"> so the page works from
+  // file:// (where fetch is blocked). Fall back to the JSON file if absent.
+  function fail(err) {
+    loaderEl.innerHTML = '<div>Failed to load journey</div>';
+    console.error('[universe-scroller] could not load manifest:', err);
+  }
+
+  const inline = document.getElementById('manifest-data');
+  if (inline && inline.textContent.trim()) {
+    try { boot(JSON.parse(inline.textContent)); }
+    catch (err) { fail(err); }
+  } else {
+    fetch('frames/manifest.json?v=1')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(boot)
+      .catch(fail);
+  }
 })();
