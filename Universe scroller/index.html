@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Universe Scroller — Leaf to Earth</title>
-<meta name="description" content="A Powers-of-Ten style scroll journey: from a single leaf out to the whole Earth.">
-<link rel="stylesheet" href="scroller.css?v=1">
+<title>Universe Scroller — Chromosome to Galaxy</title>
+<meta name="description" content="A Powers-of-Ten style scroll journey: from a chromosome inside a leaf cell all the way out to the Milky Way.">
+<link rel="stylesheet" href="scroller.css?v=7">
 </head>
 <body>
 <div id="spacer"></div>
 <canvas id="view"></canvas>
+<canvas id="fx-stars"></canvas>
+<canvas id="fx-micro"></canvas>
+<div id="grain" aria-hidden="true"></div>
 <div id="vignette"></div>
 
 <div class="topbar">
@@ -18,9 +21,9 @@
 </div>
 
 <div class="hud">
-  <div class="alt" id="alt">10 cm</div>
-  <div class="exp" id="exp">10&#8315;&#185; m</div>
-  <div class="label" id="label">Leaf</div>
+  <div class="alt" id="alt">1 &#181;m</div>
+  <div class="exp" id="exp">10&#8315;&#8310; m</div>
+  <div class="label" id="label">Chromosome</div>
   <div class="bar"><i id="fill"></i></div>
 </div>
 
@@ -32,26 +35,34 @@
      static server. frames/manifest.json is kept on disk as the source of truth. -->
 <script type="application/json" id="manifest-data">
 {
-  "frameCount": 861,
+  "frameCount": 1445,
   "pad": 4,
-  "pattern": "frames/frame-{i}.jpg",
+  "pattern": "frames/frame-{i}.jpg?v=9",
   "fps": 24,
   "chapters": [
-    { "start": 0,   "end": 94,  "label": "Leaf",              "a0": -1.0, "a1": 0.0 },
-    { "start": 94,  "end": 185, "label": "Branch",            "a0": 0.0,  "a1": 1.0 },
-    { "start": 185, "end": 274, "label": "Whole tree",        "a0": 1.0,  "a1": 2.0 },
-    { "start": 274, "end": 354, "label": "Clearing",          "a0": 2.0,  "a1": 3.0 },
-    { "start": 354, "end": 425, "label": "Neighborhood",      "a0": 3.0,  "a1": 3.7 },
-    { "start": 425, "end": 512, "label": "Coastal town",      "a0": 3.7,  "a1": 4.5 },
-    { "start": 512, "end": 547, "label": "Coastal region",    "a0": 4.5,  "a1": 6.3 },
-    { "start": 547, "end": 637, "label": "Planet Earth",      "a0": 6.3,  "a1": 7.6 },
-    { "start": 637, "end": 688, "label": "Earth–Moon system", "a0": 7.6, "a1": 9.0 },
-    { "start": 688, "end": 772, "label": "Inner solar system","a0": 9.0,  "a1": 11.5 },
-    { "start": 772, "end": 860, "label": "Outer solar system","a0": 11.5, "a1": 13.0 }
+    { "start": 0,    "end": 84,   "label": "Chromosome",           "a0": -6.0, "a1": -5.0 },
+    { "start": 84,   "end": 169,  "label": "Cell nucleus",         "a0": -5.0, "a1": -4.0 },
+    { "start": 169,  "end": 338,  "label": "Plant cell",           "a0": -4.0, "a1": -3.0 },
+    { "start": 338,  "end": 422,  "label": "Leaf cells",           "a0": -3.0, "a1": -2.0 },
+    { "start": 422,  "end": 507,  "label": "Leaf surface",         "a0": -2.0, "a1": -1.0 },
+    { "start": 507,  "end": 555,  "label": "Leaf",                 "a0": -1.0, "a1": 1.0 },
+    { "start": 555,  "end": 579,  "label": "Tree canopy",          "a0": 1.0,  "a1": 3.0 },
+    { "start": 579,  "end": 651,  "label": "Forest",               "a0": 3.0,  "a1": 5.3 },
+    { "start": 651,  "end": 675,  "label": "Continent",            "a0": 5.3,  "a1": 7.0 },
+    { "start": 675,  "end": 699,  "label": "Planet Earth",         "a0": 7.0,  "a1": 8.6 },
+    { "start": 699,  "end": 807,  "label": "Earth & Moon",         "a0": 8.6,  "a1": 11.2 },
+    { "start": 807,  "end": 915,  "label": "Solar system",         "a0": 11.2, "a1": 12.7 },
+    { "start": 915,  "end": 1071, "label": "Outer planets",        "a0": 12.7, "a1": 16.0 },
+    { "start": 1071, "end": 1155, "label": "Oort cloud",           "a0": 16.0, "a1": 16.6 },
+    { "start": 1155, "end": 1251, "label": "Nearest stars",        "a0": 16.6, "a1": 18.0 },
+    { "start": 1251, "end": 1347, "label": "Stellar neighborhood", "a0": 18.0, "a1": 19.5 },
+    { "start": 1347, "end": 1444, "label": "Milky Way",            "a0": 19.5, "a1": 21.0 }
   ]
 }
 </script>
 
-<script src="scroller.js?v=1"></script>
+<script src="motion.js?v=4"></script>
+<script src="starmask.js?v=1"></script>
+<script src="scroller.js?v=14"></script>
 </body>
 </html>

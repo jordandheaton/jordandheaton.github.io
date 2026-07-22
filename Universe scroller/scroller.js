@@ -20,11 +20,17 @@
   const toSup = s => String(s).split('').map(c => SUP[c] || c).join('');
 
   function fmtExp(logMeters) {
-    return '10' + toSup(logMeters.toFixed(1)) + ' m';
+    const r = Math.round(logMeters * 10) / 10;
+    let s = (Math.abs(r % 1) < 0.05) ? String(Math.round(r)) : r.toFixed(1);
+    s = s.replace('-', '−'); // typographic minus
+    return '10<sup>' + s + '</sup> m';
   }
   const AU = 1.496e11, LY = 9.461e15;
   function fmtAltitude(logMeters) {
     const m = Math.pow(10, logMeters);
+    if (m < 1e-6)    return (m * 1e9).toFixed(0) + ' nm';
+    if (m < 1e-3)    return (m * 1e6 < 10 ? (m * 1e6).toFixed(1) : Math.round(m * 1e6)) + ' µm';
+    if (m < 1e-2)    return (m * 1e3 < 10 ? (m * 1e3).toFixed(1) : Math.round(m * 1e3)) + ' mm';
     if (m < 1)       return Math.round(m * 100) + ' cm';
     if (m < 1e3)     return (m < 10 ? m.toFixed(1) : Math.round(m)) + ' m';
     if (m < 1e6)     return (m / 1e3).toFixed(m < 1e4 ? 1 : 0) + ' km';
@@ -64,11 +70,141 @@
     }
     sizeSpacer();
 
+    // ---- ambience FX layers ---------------------------------------------
+    const fxStars = document.getElementById('fx-stars');
+    const fxMicro = document.getElementById('fx-micro');
+    const sctx = fxStars.getContext('2d');
+    const mctx = fxMicro.getContext('2d');
+    let DPR = 1, stars = [], motes = [];
+
+    // Precomputed per-frame mask of bright bodies (Earth, Moon, Sun, planets), so
+    // stars never render on top of a lit object. Baked offline into starmask.js
+    // (32x18 luma threshold + 1-cell dilation, bit-packed). We DELIBERATELY do not
+    // sample the #view canvas at runtime: reading canvas pixels taints the canvas
+    // under file:// (double-clicked page) and silently disables all masking, which
+    // is exactly why stars were bleeding over Earth. The precomputed table needs no
+    // pixel read, so it works identically from file:// and from a web server.
+    const SMASK = window.__STAR_MASK || null;
+    let SMbytes = null;
+    if (SMASK && SMASK.b64) {
+      try {
+        const bin = atob(SMASK.b64);
+        SMbytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) SMbytes[i] = bin.charCodeAt(i);
+      } catch (e) { SMbytes = null; }
+    }
+    // Returns 0 if a star at low-res cell (gx,gy) sits on a lit body this frame
+    // (star hidden), else 1. Frames outside the baked range have no bodies to dodge.
+    function bodyMask(frameIdx, gx, gy) {
+      if (!SMbytes || frameIdx < SMASK.f0 || frameIdx > SMASK.f1) return 1;
+      const cell = gy * SMASK.w + gx;
+      const byte = SMbytes[(frameIdx - SMASK.f0) * SMASK.bpf + (cell >> 3)];
+      return ((byte >> (cell & 7)) & 1) ? 0 : 1;
+    }
+
+    const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+    // Cumulative "visual travel" from measured per-frame motion (frame-diff), so
+    // the starfield advances in proportion to how much the footage actually moves
+    // — a nearly-still frame barely nudges the stars, a fast zoom streaks them.
+    const RAWM = window.__FRAME_MOTION || [];
+    const MO_CAP = 9;                  // clamp scene-cut spikes so stars don't leap at cuts
+    // Stars are STAGNANT (static field) through the near/mid space chapters and
+    // only start streaming once past the Oort cloud (Nearest-stars onward), so
+    // motion only accumulates from that frame on.
+    const FRAME_MOVE_START = 1155;     // Oort cloud -> Nearest stars (logM 16.6)
+    const travelLUT = new Float32Array(FRAME_COUNT);
+    for (let i = 0, acc = 0; i < FRAME_COUNT; i++) {
+      if (i >= FRAME_MOVE_START) acc += Math.min(MO_CAP, RAWM[i] || 0);
+      travelLUT[i] = acc;
+    }
+    function travelAt(ph) {
+      const i = Math.max(0, Math.min(FRAME_COUNT - 1, Math.floor(ph)));
+      const j = Math.min(FRAME_COUNT - 1, i + 1);
+      return travelLUT[i] + (travelLUT[j] - travelLUT[i]) * (ph - i);
+    }
+
+    function seedFx() {
+      const w = fxStars.width, h = fxStars.height;
+      // deterministic PRNG so the field is stable across resizes
+      let s = 2468013579;
+      const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+      const N = Math.max(120, Math.round((w * h) / 9000));
+      stars = [];
+      for (let i = 0; i < N; i++) stars.push({
+        a: rnd() * 6.283, p0: rnd(), d: 0.35 + rnd() * 0.9, r: 0.5 + rnd() * 1.9,
+        tw: rnd() * 6.283, tws: 0.5 + rnd() * 1.9,
+        col: rnd() < 0.16 ? '#bcd4ff' : (rnd() < 0.5 ? '#fff1d4' : '#ffffff')
+      });
+      const M = Math.max(24, Math.round((w * h) / 26000));
+      motes = [];
+      for (let i = 0; i < M; i++) motes.push({
+        x: rnd(), y: rnd(), r: 7 + rnd() * 30, vx: (rnd() - 0.5) * 0.010, vy: (rnd() - 0.5) * 0.010,
+        ph: rnd() * 6.283, col: rnd() < 0.5 ? '120,224,168' : '150,208,232'
+      });
+    }
+
+    // Stars stream radially, driven by the PLAYHEAD (the frame actually on
+    // screen) — so they speed up and slow down exactly with the footage's zoom
+    // rather than at an even log-rate that drifts out of sync with the video.
+    // Scroll down (zoom out) pulls them toward the vanishing point and shrinks
+    // them; scroll up sends them flying outward past the camera. Stars are also
+    // masked out wherever the underlying frame is bright, so they never sit on
+    // top of a planet or the Sun.
+    function drawStars(playhead, t, op) {
+      fxStars.style.opacity = op.toFixed(3);
+      const w = fxStars.width, h = fxStars.height;
+      sctx.clearRect(0, 0, w, h);
+      if (op <= 0.01) return;
+      const cx = w / 2, cy = h / 2, maxR = Math.hypot(w, h) * 0.62;
+      const MW = SMASK ? SMASK.w : 32, MH = SMASK ? SMASK.h : 18;
+      const fidx = Math.round(playhead);             // frame whose baked body-mask to use
+      const STATIC_BASE = 5.0;                                 // fixes the static field's positions
+      // static field drifts a *very little* with scroll, then streams past the Oort cloud
+      const travel = STATIC_BASE + playhead * 0.0006 + travelAt(playhead) * 0.011;
+      for (const st of stars) {
+        let ph = (st.p0 + travel * st.d) % 1; if (ph < 0) ph += 1;
+        const rad = (1 - ph) * maxR;                 // edge (ph→0) inward to center (ph→1)
+        const x = cx + Math.cos(st.a) * rad, y = cy + Math.sin(st.a) * rad;
+        const size = st.r * DPR * (0.35 + (1 - ph) * 1.05);
+        const twk = 0.5 + 0.5 * Math.sin(t * st.tws + st.tw);
+        const fade = Math.min(1, (1 - ph) * 5) * Math.min(1, ph * 8); // fade in at edge, out at core
+        const gx = Math.min(MW - 1, Math.max(0, (x / w * MW) | 0));
+        const gy = Math.min(MH - 1, Math.max(0, (y / h * MH) | 0));
+        const mask = bodyMask(fidx, gx, gy);         // 0 over a lit body, 1 in open space
+        sctx.globalAlpha = twk * op * fade * mask;
+        sctx.fillStyle = st.col;
+        sctx.beginPath(); sctx.arc(x, y, size, 0, 6.2832); sctx.fill();
+      }
+      sctx.globalAlpha = 1;
+    }
+
+    function drawMotes(t, op) {
+      fxMicro.style.opacity = op.toFixed(3);
+      const w = fxMicro.width, h = fxMicro.height;
+      mctx.clearRect(0, 0, w, h);
+      if (op <= 0.01) return;
+      for (const m of motes) {
+        const x = ((((m.x + m.vx * t) % 1) + 1) % 1) * w;
+        const y = ((((m.y + m.vy * t) % 1) + 1) % 1) * h;
+        const puls = 0.6 + 0.4 * Math.sin(t * 0.8 + m.ph);
+        const r = m.r * DPR * (0.8 + 0.4 * puls);
+        const g = mctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(' + m.col + ',' + (0.17 * puls * op).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(' + m.col + ',0)');
+        mctx.fillStyle = g;
+        mctx.beginPath(); mctx.arc(x, y, r, 0, 6.2832); mctx.fill();
+      }
+    }
+
     // ---- canvas sizing ---------------------------------------------------
     function sizeCanvas() {
-      const dpr = Math.min(devicePixelRatio || 1, 2);
-      canvas.width  = Math.round(canvas.clientWidth  * dpr);
-      canvas.height = Math.round(canvas.clientHeight * dpr);
+      DPR = Math.min(devicePixelRatio || 1, 2);
+      for (const c of [canvas, fxStars, fxMicro]) {
+        c.width  = Math.round(c.clientWidth  * DPR);
+        c.height = Math.round(c.clientHeight * DPR);
+      }
+      seedFx();
     }
     sizeCanvas();
     addEventListener('resize', () => { sizeCanvas(); sizeSpacer(); dirty = true; });
@@ -148,18 +284,31 @@
     }, { passive: true });
     let lastScrollY = -1;
 
-    function updateHud(playhead, idx) {
-      const c = CH.find(c => idx >= c.start && idx <= c.end) || CH[CH.length - 1];
-      const t = Math.max(0, Math.min(1, (playhead - c.start) / (c.end - c.start)));
-      const logM = c.a0 + (c.a1 - c.a0) * t;
+    const chapterAt = idx => CH.find(c => idx >= c.start && idx <= c.end) || CH[CH.length - 1];
+    function logMAt(ph) {
+      const c = chapterAt(Math.round(ph));
+      const t = Math.max(0, Math.min(1, (ph - c.start) / (c.end - c.start)));
+      return c.a0 + (c.a1 - c.a0) * t;
+    }
+
+    let lastLabel = CH[0].label, seamPulse = 0;
+    function updateHud(playhead, idx, logM) {
+      const c = chapterAt(idx);
       altEl.textContent = fmtAltitude(logM);
       expEl.innerHTML = fmtExp(logM);
-      labelEl.textContent = c.label;
+      if (c.label !== lastLabel) {                 // chapter cut: swap label + soft blur pulse
+        lastLabel = c.label;
+        labelEl.textContent = c.label;             // immediate — never shows a stale label
+        if (labelEl.animate) labelEl.animate([{ opacity: 0 }, { opacity: .85 }], { duration: 320, easing: 'ease-out' });
+        seamPulse = 1;
+      }
       fillEl.style.width = ((logM - LOG_MIN) / TOTAL_DECADES * 100) + '%';
     }
 
+    let lastFilter = '';
     function tick() {
       requestAnimationFrame(tick);
+      const now = performance.now() / 1000;
       if (scrollY !== lastScrollY) {
         lastScrollY = scrollY;
         target = Math.max(0, Math.min(FRAME_COUNT - 1, frameFromScroll(scrollY)));
@@ -168,17 +317,36 @@
       playhead += (target - playhead) * 0.22;
       if (Math.abs(target - playhead) < 0.01) playhead = target;
       const idx = Math.round(playhead);
+      const logM = logMAt(playhead);
 
       if (idx - lastWin > 24 || lastWin - idx > 24) { ensureWindow(idx); lastWin = idx; }
 
       if (idx !== shownIdx || dirty) {
         const im = nearest(idx);
         if (im) { coverDraw(im); shownIdx = idx; dirty = false; }
-        updateHud(playhead, idx);
+        updateHud(playhead, idx, logM);
       }
+
+      // ---- motion blur: scrub speed + a soft blur at each hard cut ---------
+      seamPulse *= 0.88;
+      const velo = Math.abs(target - playhead);
+      const velBlur = Math.min(2.4, Math.max(0, (velo - 0.8) * 0.40));
+      const blur = Math.max(velBlur, seamPulse * 3.0);
+      const bstr = blur < 0.05 ? 'none' : 'blur(' + blur.toFixed(2) + 'px)';
+      if (bstr !== lastFilter) { canvas.style.filter = bstr; lastFilter = bstr; }
+
+      // ---- ambience keyed to scale ----------------------------------------
+      const microOp = 1 - smooth(-1.6, -0.4, logM);   // cellular motes, gone by the leaf
+      // stars appear the moment we leave the ground into space (Earth as a globe),
+      // static out through the Oort cloud, then streaming through the stellar
+      // neighborhood, and gone by the galaxy.
+      const starOp  = smooth(7.0, 7.8, logM) * (1 - smooth(18.8, 19.5, logM));
+      drawStars(playhead, now, starOp);
+      drawMotes(now, microOp);
+
       // expose debug hook
       window.__uni = { idx, target: +target.toFixed(2), playhead: +playhead.toFixed(2),
-                       loadedCount: decodedCount(), storeSize: store.size,
+                       logM: +logM.toFixed(2), loadedCount: decodedCount(), storeSize: store.size,
                        windowRange: [Math.max(0, idx - BEHIND), Math.min(FRAME_COUNT - 1, idx + AHEAD)] };
     }
     tick();

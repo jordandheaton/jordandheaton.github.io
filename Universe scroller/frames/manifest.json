@@ -1,19 +1,25 @@
 {
-  "frameCount": 861,
+  "frameCount": 1445,
   "pad": 4,
-  "pattern": "frames/frame-{i}.jpg",
+  "pattern": "frames/frame-{i}.jpg?v=9",
   "fps": 24,
   "chapters": [
-    { "start": 0,   "end": 94,  "label": "Leaf",              "a0": -1.0, "a1": 0.0 },
-    { "start": 94,  "end": 185, "label": "Branch",            "a0": 0.0,  "a1": 1.0 },
-    { "start": 185, "end": 274, "label": "Whole tree",        "a0": 1.0,  "a1": 2.0 },
-    { "start": 274, "end": 354, "label": "Clearing",          "a0": 2.0,  "a1": 3.0 },
-    { "start": 354, "end": 425, "label": "Neighborhood",      "a0": 3.0,  "a1": 3.7 },
-    { "start": 425, "end": 512, "label": "Coastal town",      "a0": 3.7,  "a1": 4.5 },
-    { "start": 512, "end": 547, "label": "Coastal region",    "a0": 4.5,  "a1": 6.3 },
-    { "start": 547, "end": 637, "label": "Planet Earth",      "a0": 6.3,  "a1": 7.6 },
-    { "start": 637, "end": 688, "label": "Earth–Moon system", "a0": 7.6, "a1": 9.0 },
-    { "start": 688, "end": 772, "label": "Inner solar system","a0": 9.0,  "a1": 11.5 },
-    { "start": 772, "end": 860, "label": "Outer solar system","a0": 11.5, "a1": 13.0 }
+    { "start": 0,    "end": 84,   "label": "Chromosome",           "a0": -6.0, "a1": -5.0 },
+    { "start": 84,   "end": 169,  "label": "Cell nucleus",         "a0": -5.0, "a1": -4.0 },
+    { "start": 169,  "end": 338,  "label": "Plant cell",           "a0": -4.0, "a1": -3.0 },
+    { "start": 338,  "end": 422,  "label": "Leaf cells",           "a0": -3.0, "a1": -2.0 },
+    { "start": 422,  "end": 507,  "label": "Leaf surface",         "a0": -2.0, "a1": -1.0 },
+    { "start": 507,  "end": 555,  "label": "Leaf",                 "a0": -1.0, "a1": 1.0 },
+    { "start": 555,  "end": 579,  "label": "Tree canopy",          "a0": 1.0,  "a1": 3.0 },
+    { "start": 579,  "end": 651,  "label": "Forest",               "a0": 3.0,  "a1": 5.3 },
+    { "start": 651,  "end": 675,  "label": "Continent",            "a0": 5.3,  "a1": 7.0 },
+    { "start": 675,  "end": 699,  "label": "Planet Earth",         "a0": 7.0,  "a1": 8.6 },
+    { "start": 699,  "end": 807,  "label": "Earth & Moon",         "a0": 8.6,  "a1": 11.2 },
+    { "start": 807,  "end": 915,  "label": "Solar system",         "a0": 11.2, "a1": 12.7 },
+    { "start": 915,  "end": 1071, "label": "Outer planets",        "a0": 12.7, "a1": 16.0 },
+    { "start": 1071, "end": 1155, "label": "Oort cloud",           "a0": 16.0, "a1": 16.6 },
+    { "start": 1155, "end": 1251, "label": "Nearest stars",        "a0": 16.6, "a1": 18.0 },
+    { "start": 1251, "end": 1347, "label": "Stellar neighborhood", "a0": 18.0, "a1": 19.5 },
+    { "start": 1347, "end": 1444, "label": "Milky Way",            "a0": 19.5, "a1": 21.0 }
   ]
 }

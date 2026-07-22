@@ -447,6 +447,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .work-grid .wcard:nth-child(4) { margin-left: calc((100% - var(--cw)) * 1.00); }
 .work-grid .wcard:nth-child(5) { margin-left: calc((100% - var(--cw)) * 0.16); }
 .work-grid .wcard:nth-child(6) { margin-left: calc((100% - var(--cw)) * 0.56); }
+.work-grid .wcard:nth-child(7) { margin-left: calc((100% - var(--cw)) * 0.86); }
 
 /* faint themed watermark icon peeking from the window's corner */
 .wcard-bg {
@@ -554,6 +555,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .theme-game     { --theme: #ef6a44; }
 .theme-process  { --theme: #1fa88f; }
 .theme-ballroom { --theme: #c065d8; }
+.theme-universe { --theme: #6a5cf5; }
 
 /* ============================================================
    SKILLS marquees
