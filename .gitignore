@@ -24,3 +24,6 @@ Images/originals/
 Universe scroller/draft-test/
 Universe scroller/media/
 Universe scroller/demo/frames/
+
+# myplanBYU: scraper dev artifacts (test PDFs, health reports) stay local
+myplanBYU/scraper/data/_*

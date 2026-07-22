@@ -548,6 +548,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 @keyframes wcur-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
 
 .theme-scholar  { --theme: #7c5cff; }
+.theme-myplan   { --theme: #0a4bd4; }
 .theme-liquid   { --theme: #2f7fe0; }
 .theme-resume   { --theme: #8b6cff; }
 .theme-game     { --theme: #ef6a44; }
