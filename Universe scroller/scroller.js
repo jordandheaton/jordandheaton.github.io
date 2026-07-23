@@ -94,12 +94,21 @@
       } catch (e) { SMbytes = null; }
     }
     // Returns 0 if a star at low-res cell (gx,gy) sits on a lit body this frame
-    // (star hidden), else 1. Frames outside the baked range have no bodies to dodge.
+    // (star hidden), else 1. A soft one-cell ring around the body returns a partial
+    // value so stars ease out near a body's edge instead of popping on/off as the
+    // body drifts across cell boundaries frame-to-frame (which read as glitchy
+    // flicker). Frames outside the baked range have no bodies to dodge.
     function bodyMask(frameIdx, gx, gy) {
       if (!SMbytes || frameIdx < SMASK.f0 || frameIdx > SMASK.f1) return 1;
-      const cell = gy * SMASK.w + gx;
-      const byte = SMbytes[(frameIdx - SMASK.f0) * SMASK.bpf + (cell >> 3)];
-      return ((byte >> (cell & 7)) & 1) ? 0 : 1;
+      const W = SMASK.w, H = SMASK.h, base = (frameIdx - SMASK.f0) * SMASK.bpf;
+      const bit = (cx, cy) => {
+        if (cx < 0 || cy < 0 || cx >= W || cy >= H) return 0;
+        const c = cy * W + cx;
+        return (SMbytes[base + (c >> 3)] >> (c & 7)) & 1;
+      };
+      if (bit(gx, gy)) return 0;                                    // on the body → hidden
+      if (bit(gx - 1, gy) || bit(gx + 1, gy) || bit(gx, gy - 1) || bit(gx, gy + 1)) return 0.3;
+      return 1;                                                     // open space → full star
     }
 
     const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -340,7 +349,12 @@
       // stars appear the moment we leave the ground into space (Earth as a globe),
       // static out through the Oort cloud, then streaming through the stellar
       // neighborhood, and gone by the galaxy.
-      const starOp  = smooth(7.0, 7.8, logM) * (1 - smooth(18.8, 19.5, logM));
+      // Fade the FX starfield out BEFORE the nearest-stars / cosmic-web footage
+      // (logM ~16.6, frame 1155): from there on the video is itself a dense field
+      // of stars, so an overlaid streaming starfield just reads as a glitchy
+      // "stars zooming past the cosmic web". FX stars stay through the dark
+      // outer-planet / Oort space and are gone by the time the star field arrives.
+      const starOp  = smooth(7.0, 7.8, logM) * (1 - smooth(15.9, 16.6, logM));
       drawStars(playhead, now, starOp);
       drawMotes(now, microOp);
 

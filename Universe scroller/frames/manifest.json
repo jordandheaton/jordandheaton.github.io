@@ -1,7 +1,7 @@
 {
   "frameCount": 1445,
   "pad": 4,
-  "pattern": "frames/frame-{i}.jpg?v=9",
+  "pattern": "frames/frame-{i}.jpg?v=10",
   "fps": 24,
   "chapters": [
     { "start": 0,    "end": 84,   "label": "Chromosome",           "a0": -6.0, "a1": -5.0 },
