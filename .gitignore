@@ -27,3 +27,8 @@ Universe scroller/demo/frames/
 
 # myplanBYU: scraper dev artifacts (test PDFs, health reports) stay local
 myplanBYU/scraper/data/_*
+
+# myplanBYU: the raw catalog scrape (~69MB) is a LOCAL build input only — the
+# deployed site loads the baked js/catalog_data.js, never this. Kept local so
+# generate_data.py can rebuild; not tracked (over GitHub's 50MB soft limit).
+myplanBYU/scraper/data/catalog.json
