@@ -33,8 +33,6 @@ myplanBYU/scraper/data/_*
 # generate_data.py can rebuild; not tracked (over GitHub's 50MB soft limit).
 myplanBYU/scraper/data/catalog.json
 
-# myplanBYU: scheduled-refresh run logs are per-machine runtime noise. The
-# committed record of a refresh is its commit message; the local record is
-# these logs plus data/_last_run.json (already covered by data/_* above).
-myplanBYU/scraper/refresh_core.log
-myplanBYU/scraper/refresh_full.log
+# NOTE: the scheduled refresh writes its logs to %LOCALAPPDATA%\myplanBYU\logs,
+# outside the repo and outside OneDrive -- a synced log gets locked mid-run and
+# the run loses its whole log. Nothing to ignore here; see scraper/REFRESH.md.
