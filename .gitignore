@@ -32,3 +32,9 @@ myplanBYU/scraper/data/_*
 # deployed site loads the baked js/catalog_data.js, never this. Kept local so
 # generate_data.py can rebuild; not tracked (over GitHub's 50MB soft limit).
 myplanBYU/scraper/data/catalog.json
+
+# myplanBYU: scheduled-refresh run logs are per-machine runtime noise. The
+# committed record of a refresh is its commit message; the local record is
+# these logs plus data/_last_run.json (already covered by data/_* above).
+myplanBYU/scraper/refresh_core.log
+myplanBYU/scraper/refresh_full.log
