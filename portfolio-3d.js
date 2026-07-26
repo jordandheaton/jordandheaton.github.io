@@ -72,6 +72,8 @@
 
   /* ---------------- smooth scroll ---------------- */
   gsap.registerPlugin(ScrollTrigger);
+  // phones: don't re-layout every pinned trigger when the URL bar slides away mid-scroll
+  ScrollTrigger.config({ ignoreMobileResize: true });
 
   const lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
   lenis.on("scroll", ScrollTrigger.update);
@@ -246,8 +248,10 @@
     // phones get a lighter ride: shorter pinned scroll, every-2nd frame, and
     // frames decoded at ~canvas resolution instead of 1440p (a phone can't hold
     // 148 full-res ImageBitmaps in RAM the way a desktop can)
-    const seqLite = Math.min(window.screen.width, window.screen.height) < 700;
-    const VIDEO_PX = seqLite ? 1400 : 2000;  // pinned scroll: most of the open-up + the dive (in full view). Longer so we linger ~½s more on the opening
+    // viewport-based (not window.screen) so a phone-sized frame — devtools emulation
+    // or mobile-preview.html — exercises the same path a real phone does
+    const seqLite = Math.min(window.innerWidth, window.innerHeight) < 700;
+    const VIDEO_PX = seqLite ? 1800 : 2000;  // pinned scroll: most of the open-up + the dive (in full view). Phones get nearly the desktop distance so the push-in isn't rushed
     const HOLD_PX = 0;      // release into the desk the instant the dive ends → title centers exactly when the camera stops
     const OPEN_FRAC = 0.12; // only a sliver of the open-up whips by during entry; the REST of the lid opening plays in the big centered view
     const SEQ_STEP = seqLite ? 2 : 1;
@@ -277,15 +281,137 @@
 
     function sizeCanvas() {
       if (!workCanvas) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // phones cap at 1.5x: the frames are upscaled at this point anyway, so a full
+      // 2x buffer is ~1.8x the pixels to fill every frame for no visible gain
+      const dpr = Math.min(window.devicePixelRatio || 1, seqLite ? 1.5 : 2);
       workCanvas.width = Math.round(workCanvas.clientWidth * dpr);
       workCanvas.height = Math.round(workCanvas.clientHeight * dpr);
+      shownIdx = -1; // buffer is cleared by the resize — force a redraw
     }
-    function drawBitmap(bm) {
+    /* Portrait phones: cover-fitting the 16:9 frame would show only a center sliver
+       (the laptop unrecognizable), so frame the LAPTOP instead — scale so the machine
+       (the center ~SEQ_SPAN of the frame) spans the canvas width, letterboxed with
+       bands stretched from the frame's own edge rows (they track the studio bg: light
+       while it opens, black once dived). Past SEQ_BLEND0 of the sequence the scale
+       eases up to full cover, so the bands are gone before the zoom pushes the laptop
+       past the source frame's edges (whose stretched rows would smear). */
+    /* The image stays CENTRED the whole way. That makes the source's bottom edge
+       rows the binding constraint: they are clean floor only through frame ~82
+       (the laptop base enters them at 84), so the push-in has to reach full-bleed
+       — retiring both bands — by then. Hence the window below. */
+    const SEQ_SPAN = 0.58;
+    const SEQ_ZOOM0 = 0.16, SEQ_ZOOM1 = 0.556;     // frames ~24 → 82
+    const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+    /* Letterbox bands take their colour from the frame's own edge row so they
+       track the studio background. Stretching that row directly turns its
+       per-column variation into vertical streaks, so instead we average it into
+       a few slabs and fill with a smooth gradient.
+       The sampling is deliberately 1:1 with smoothing OFF: asking canvas to
+       downscale the row in one step makes Chrome mipmap the WHOLE bitmap, which
+       fills the band with a blur of the entire frame (dark in the middle, where
+       the laptop is) instead of the edge row. */
+    const edgeCv = document.createElement("canvas");
+    const edgeCtx = edgeCv.getContext("2d", { willReadFrequently: true });
+    const BAND_STOPS = 8;
+    const bandCache = new Map(); // "idx|srcY" -> array of "r,g,b" slab averages
+
+    function bandStops(bm, srcY, key) {
+      const hit = bandCache.get(key);
+      if (hit) return hit;
+      const w = bm.width;
+      if (edgeCv.width !== w) { edgeCv.width = w; edgeCv.height = 2; }
+      edgeCtx.imageSmoothingEnabled = false;
+      edgeCtx.drawImage(bm, 0, srcY, w, 2, 0, 0, w, 2); // 1:1 — no filtering
+      const d = edgeCtx.getImageData(0, 0, w, 1).data;
+      const stops = [];
+      for (let i = 0; i < BAND_STOPS; i++) {
+        const x0 = Math.floor((i / BAND_STOPS) * w);
+        const x1 = Math.max(x0 + 1, Math.floor(((i + 1) / BAND_STOPS) * w));
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let px = x0; px < x1; px += 3) { const o = px * 4; r += d[o]; g += d[o + 1]; b += d[o + 2]; n++; }
+        stops.push(((r / n) | 0) + "," + ((g / n) | 0) + "," + ((b / n) | 0));
+      }
+      bandCache.set(key, stops);
+      return stops;
+    }
+
+    /* Each sample is a getImageData — a GPU→CPU readback of the bitmap. Doing one
+       per frame stalled the scroll: lazily it hitched the scrub, and eagerly it
+       hitched page load (74 decodes × 2 readbacks, landing right as you scroll
+       toward the section). But the bands barely change — measured across the whole
+       banded phase the top edge holds 238.0±0.1 luma and the bottom 217.4±1.2 — so
+       a few anchor frames cover all of them. */
+    const BAND_ANCHORS = [0, 40, 80];
+    function anchorFor(idx) {
+      let best = BAND_ANCHORS[0];
+      for (const a of BAND_ANCHORS) { if (Math.abs(a - idx) < Math.abs(best - idx)) best = a; }
+      return best;
+    }
+    function primeBands(i, bm) {
+      if (window.innerWidth >= window.innerHeight) return; // landscape draws no bands
+      if (BAND_ANCHORS.indexOf(i) < 0) return;
+      try {
+        bandStops(bm, 0, i + "|t");
+        bandStops(bm, bm.height - 2, i + "|b");
+      } catch (e) { /* an optimisation only — drawBand still computes on demand */ }
+    }
+
+    function drawBand(bm, srcY, dy, dh, key) {
+      if (dh <= 0) return;
+      const stops = bandStops(bm, srcY, key);
+      const grad = ctx.createLinearGradient(0, 0, workCanvas.width, 0);
+      for (let i = 0; i < stops.length; i++) {
+        grad.addColorStop(i / (stops.length - 1), "rgb(" + stops[i] + ")");
+      }
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, dy, workCanvas.width, dh);
+    }
+    function drawBitmap(bm, fidx) {
       const cw = workCanvas.width, ch = workCanvas.height;
-      const s = Math.max(cw / bm.width, ch / bm.height); // cover fit
+      const cover = Math.max(cw / bm.width, ch / bm.height); // cover fit
+      let s = cover;
+      if (cw < ch) {
+        const fit = Math.min(cover, cw / (bm.width * SEQ_SPAN));
+        const t = fidx / (SEQ_COUNT - 1);
+        /* hold the whole laptop in view while it opens, then ease IN, interpolating
+           in log space (where zoom reads as constant speed) so the push-in starts
+           imperceptibly and accelerates to hand off to the footage's own dive at
+           matching speed — instead of lurching in and then stopping dead */
+        const z = clamp01((t - SEQ_ZOOM0) / (SEQ_ZOOM1 - SEQ_ZOOM0));
+        s = fit * Math.pow(cover / fit, z * z);
+      }
       const dw = bm.width * s, dh = bm.height * s;
-      ctx.drawImage(bm, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+      const dy = (ch - dh) / 2;
+      if (dh < ch - 1) {
+        const topH = Math.ceil(dy) + 1, botY = Math.floor(dy + dh) - 1;
+        const a = anchorFor(fidx);
+        if (topH > 0) drawBand(bm, 0, 0, topH, a + "|t");
+        if (botY < ch - 1) drawBand(bm, bm.height - 2, botY, ch - botY, a + "|b");
+      }
+      ctx.drawImage(bm, (cw - dw) / 2, dy, dw, dh);
+      fitGlowToImage(dy, dh);
+    }
+
+    /* keep the power-on bloom on the SCREEN: on portrait the image is a band that
+       moves and grows, so the CSS glow box (tuned for cover fit) would spill onto
+       the letterbox — track the live image rect instead */
+    let glowKey = "";
+    function fitGlowToImage(dy, dh) {
+      if (!workGlow) return;
+      const cssW = workCanvas.clientWidth, cssH = workCanvas.clientHeight;
+      if (cssW >= cssH) { // landscape keeps the CSS box
+        if (glowKey !== "wide") { glowKey = "wide"; workGlow.style.inset = ""; }
+        return;
+      }
+      const k = cssH / workCanvas.height; // device px → css px
+      const top = dy * k, h = dh * k;
+      const key = Math.round(top) + ":" + Math.round(h);
+      if (key === glowKey) return;
+      glowKey = key;
+      workGlow.style.inset =
+        Math.round(top + h * 0.10) + "px 7% " +
+        Math.round(cssH - top - h + h * 0.14) + "px 7%";
     }
     const SEQ_LAST = Math.floor((SEQ_COUNT - 1) / SEQ_STEP) * SEQ_STEP; // last index actually loaded
     function drawFrame(fidx) {
@@ -293,10 +419,13 @@
       let idx = Math.max(0, Math.min(SEQ_COUNT - 1, Math.round(fidx)));
       if (SEQ_STEP > 1) idx = Math.min(Math.round(idx / SEQ_STEP) * SEQ_STEP, SEQ_LAST); // snap to a loaded frame
       curIdx = idx;
+      if (idx === shownIdx) return; // scrub lands on the same frame for many ticks — don't repaint it
       const bm = bitmaps.get(idx);
-      if (bm) { drawBitmap(bm); shownIdx = idx; }                          // always ready once loaded
-      else if (bitmaps.has(shownIdx)) { drawBitmap(bitmaps.get(shownIdx)); } // only during the brief initial load
+      if (bm) { drawBitmap(bm, idx); shownIdx = idx; }                     // always ready once loaded
+      else if (bitmaps.has(shownIdx)) { drawBitmap(bitmaps.get(shownIdx), shownIdx); } // only during the brief initial load
     }
+    // ?seqdebug lets tooling drive the sequence without scrolling (headless checks)
+    if (new URLSearchParams(location.search).has("seqdebug")) window.__pfDraw = drawFrame;
 
     if (workCanvas && ctx) {
       for (let i = 0; i < SEQ_COUNT; i += SEQ_STEP) {
@@ -309,6 +438,7 @@
             : createImageBitmap(img);
           decode.then((bm) => {
             bitmaps.set(i, bm); // keep every loaded frame decoded — never released
+            primeBands(i, bm);  // sample edge rows NOW, never mid-scroll
             if (!seqReady) { seqReady = true; workSection.classList.add("work--video"); sizeCanvas(); }
             if (i === curIdx || shownIdx < 0) drawFrame(curIdx);
           });
@@ -568,8 +698,81 @@
 
   if (!video || reduced) { fallbackNoVideo(); return; }
 
-  video.addEventListener("error", fallbackNoVideo);
-  const loadTimeout = setTimeout(() => { if (video.readyState < 2) fallbackNoVideo(); }, 5000);
+  /* boot overlay: if the walk-in footage isn't instantly playable (slow network),
+     hold the page on black with a small progress bar so the walk-in is never
+     missed — cached repeat visits skip it entirely. Gives up after 8s. */
+  const boot = document.getElementById("boot");
+  const bootFill = document.getElementById("boot-fill");
+  // ?bootdemo forces the overlay for DEMO_MS even on a warm cache — the only way to
+  // review it locally, where the footage loads instantly
+  const demoBoot = new URLSearchParams(location.search).has("bootdemo");
+  const DEMO_MS = 2600;
+  let bootShown = false, bootDone = false, bootTick = 0, bootT0 = 0, bootPending = false;
+
+  function bootShow() {
+    if (bootDone || bootShown || !boot) return;
+    bootShown = true;
+    bootT0 = performance.now();
+    boot.classList.add("on");
+    document.documentElement.style.overflow = "hidden"; // hold the scroll while black
+    let floor = 0;
+    bootTick = setInterval(() => {
+      floor = Math.min(demoBoot ? 1 : 0.9, floor + (demoBoot ? 0.08 : 0.03)); // moves between progress events
+      let buf = 0;
+      try {
+        if (video.buffered.length && video.duration) {
+          buf = video.buffered.end(video.buffered.length - 1) / video.duration;
+        }
+      } catch (e) { /* buffered ranges can throw mid-load */ }
+      const p = demoBoot ? floor : Math.max(floor * 0.55, buf);
+      if (bootFill) bootFill.style.width = Math.round(Math.min(1, p) * 100) + "%";
+    }, 180);
+  }
+
+  function bootHide() {
+    if (bootDone) return;
+    if (demoBoot && bootShown) { // hold the full demo before releasing
+      const left = DEMO_MS - (performance.now() - bootT0);
+      if (left > 0) {
+        if (!bootPending) {
+          bootPending = true;
+          setTimeout(() => { bootPending = false; bootHide(); }, left);
+        }
+        return;
+      }
+    }
+    bootDone = true;
+    clearInterval(bootTick);
+    if (bootShown && boot) {
+      if (bootFill) bootFill.style.width = "100%";
+      document.documentElement.style.overflow = "";
+      boot.classList.add("done");
+      setTimeout(() => boot.classList.remove("on"), 500);
+    }
+  }
+
+  if (demoBoot) bootShow();
+  const bootDelay = setTimeout(() => {
+    if (video.readyState < 3) bootShow(); // still buffering → cover the wait
+  }, 200);
+
+  video.addEventListener("error", () => { bootHide(); fallbackNoVideo(); });
+  const loadTimeout = setTimeout(() => {
+    if (video.readyState < 2) { bootHide(); fallbackNoVideo(); }
+  }, 8000);
+
+  /* The camera never moves — the crop stays centred, exactly where he ends up.
+     A phone-shaped band crops the 2.33:1 footage to under half its width, so he
+     is simply off-frame for the first stretch of the walk; rather than show dead
+     black (or pan the crop, which reads as a camera move) we start the clip at
+     the moment he enters the centred window. Desktop shows the full frame and
+     plays from the top. */
+  const HERO_TRIM = 1.25; // he reaches the edge of the centred crop about here
+  function heroCropped() {
+    const box = video.getBoundingClientRect();
+    if (!box.height || !video.videoWidth) return false;
+    return box.width / box.height <= video.videoWidth / video.videoHeight - 0.05;
+  }
 
   let started = false;
   function tick() {
@@ -586,12 +789,28 @@
     }
   }
 
+  let trimmed = false;
   function startHero() {
     if (started || fellBack) return;
-    started = true;
     clearTimeout(loadTimeout);
+    clearTimeout(bootDelay);
+    /* Skip the stretch where a phone's centred crop has him off-frame. Do it
+       BEFORE releasing the boot overlay so the seek is never visible, and never
+       block on it — if it doesn't report back, just play from wherever we are. */
+    if (!trimmed && heroCropped() && video.currentTime < HERO_TRIM) {
+      trimmed = true;
+      let resumed = false;
+      const resume = () => { if (resumed) return; resumed = true; startHero(); };
+      video.addEventListener("seeked", resume, { once: true });
+      setTimeout(resume, 500);
+      try { video.currentTime = HERO_TRIM; } catch (e) { resume(); }
+      return;
+    }
+    bootHide();
+    if (!bootDone) { setTimeout(startHero, 100); return; } // wait out the demo hold
+    started = true;
     const p = video.play();
-    if (p && p.catch) p.catch(fallbackNoVideo);
+    if (p && p.catch) p.catch(() => { bootHide(); fallbackNoVideo(); });
     requestAnimationFrame(tick);
   }
 

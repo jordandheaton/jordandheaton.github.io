@@ -3,15 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#05070f" />
   <title>Jordan Heaton — Portfolio</title>
   <meta name="description" content="Portfolio of Jordan Heaton, Brigham Young University. Projects in AI, web development, simulation, and business analysis." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <link rel="stylesheet" href="portfolio-3d.css?v=62" />
+  <link rel="stylesheet" href="portfolio-3d.css?v=67" />
 </head>
 <body>
+
+  <!-- boot overlay: shown by JS only while the hero footage buffers -->
+  <div id="boot" aria-hidden="true">
+    <span class="boot-mark">JH</span>
+    <span class="boot-bar"><i id="boot-fill"></i></span>
+  </div>
 
   <!-- Scroll progress -->
   <div class="progress-rail" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
@@ -277,7 +284,7 @@
           </a>
 
           <a class="wcard theme-universe" href="Universe%20scroller/index.html" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-atom" aria-hidden="true"></i>
+            <i class="wcard-bg fas fa-leaf" aria-hidden="true"></i>
             <span class="wcard-bar">
               <span class="wpath mono">~/projects/universe-scroller.app</span>
               <span class="wcard-index mono">07/07</span>
@@ -286,7 +293,7 @@
             <div class="wcard-body">
               <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>SCROLL EXPERIENCE — RUNNING</span>
               <h3>Universe Scroller</h3>
-              <p>A powers-of-ten scroll journey from a chromosome inside a leaf cell all the way out to the Milky Way — 1,400+ frames scrubbed to your scroll, with a live readout of scale.</p>
+              <p>A powers-of-ten scroll journey from a single leaf all the way out to the Milky Way — 22 orders of magnitude scrubbed frame by frame to your scroll, with a live readout of scale.</p>
               <span class="wcard-tags mono">[canvas] [scroll-scrub] [powers-of-ten]</span>
             </div>
             <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
@@ -327,6 +334,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
-  <script src="portfolio-3d.js?v=61"></script>
+  <script src="portfolio-3d.js?v=70"></script>
 </body>
 </html>

@@ -59,6 +59,34 @@ a { color: inherit; text-decoration: none; }
   pointer-events: none;
 }
 
+/* ---------- boot overlay (hero video buffering) ---------- */
+#boot {
+  position: fixed; inset: 0; z-index: 80;
+  background: #000;
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  transition: opacity 0.45s ease;
+}
+#boot.on { display: flex; }
+#boot.done { opacity: 0; pointer-events: none; }
+.boot-mark {
+  display: grid; place-items: center;
+  width: 46px; height: 46px; border-radius: 14px;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
+  letter-spacing: 0.05em; color: #04131f;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+.boot-bar {
+  width: min(240px, 60vw); height: 2px; border-radius: 999px;
+  background: rgba(141, 165, 205, 0.18);
+  overflow: hidden;
+}
+#boot-fill {
+  display: block; height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.25s ease;
+}
+
 /* ---------- scroll progress ---------- */
 .progress-rail {
   position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60;
@@ -636,6 +664,10 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   background: #0a0d15;
   color: var(--muted);
 }
+/* overlap the WORK→CONTACT seam by 1px. Both sections are #0a0d15 so it is
+   invisible, but it stops a hairline of the light page background showing
+   through when the two boxes land on a sub-pixel boundary. */
+.contact { margin-top: -1px; }
 
 .about .section-title { color: #0c1526; }
 
@@ -689,7 +721,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
    ============================================================ */
 @media (max-width: 900px) {
   .bar { padding: 14px 18px; }
-  .bar-links { display: none; }
+  .bar-links { gap: 18px; font-size: 0.68rem; }
   .brand-name { display: none; }
   section { padding: 12vh 6vw; }
   .about-cols { grid-template-columns: 1fr; }
@@ -719,15 +751,29 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 /* ============ PHONES — compress everything, minimum wasted space ============ */
 @media (max-width: 600px) {
   .bar { padding: 12px 14px; }
+  .brand-dot { width: 34px; height: 34px; border-radius: 10px; }
+  .bar-links { gap: 12px; font-size: 0.6rem; letter-spacing: 0.1em; }
+  .bar-socials { gap: 12px; font-size: 0.95rem; }
   section { padding: 8vh 5vw; }
   .section-head { margin-bottom: 3.5vh; gap: 14px; }
 
-  /* hero: shallower banner, type takes the full width */
-  .hero { min-height: 340px; max-height: 52vh; }
-  .hero-type { left: 5vw; max-width: 90%; }
-  .hero-kicker { font-size: 0.6rem; margin-bottom: 10px; }
-  .hero-roles { margin-top: 10px; font-size: 0.72rem; letter-spacing: 0.12em; }
-  .hero-foot { padding: 0 12px 10px; }
+  /* hero: the walk-in fills the whole black band (JS pans the crop with him so a
+     phone-shaped frame doesn't cut off his entrance), and the type sits as one
+     centred row along the bottom, over a scrim. His face stays clear up top. */
+  .hero { min-height: 360px; max-height: 54vh; }
+  #hero-video { top: 0; height: 100%; -webkit-mask-image: none; mask-image: none; }
+  .hero-type {
+    left: 0; right: 0; top: auto; bottom: 0;
+    transform: none; max-width: none;
+    padding: 52px 5vw 18px;
+    text-align: center;
+    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.62) 46%, rgba(0, 0, 0, 0.9));
+  }
+  .hero-title { font-size: 2rem; line-height: 1; min-height: 1em; }
+  .ht-line { display: inline; min-height: 0; }  /* "HI, I'M JORDAN." on one line */
+  .hero-kicker { justify-content: center; font-size: 0.54rem; letter-spacing: 0.14em; margin-bottom: 8px; }
+  .hero-roles { margin-top: 7px; font-size: 0.66rem; letter-spacing: 0.1em; min-height: 1.3em; }
+  .hero-foot { display: none; }  /* the scroll cue would collide with the type */
 
   /* credential strip + marquees: slim bands */
   .cred-strip { padding: 12px 4vw; }
@@ -750,6 +796,9 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 
   /* work: shorter title hold + tail, snug cards */
   .work-head { padding-top: 72px; }
+  /* giant title wraps to two stacked lines ("SELECTED" / "WORK") instead of
+     shrinking to fit one — keeps it monumental on a narrow screen */
+  .work-ghost .wg { white-space: normal; text-align: center; font-size: 16.5vw; line-height: 0.95; }
   .work-grid { padding: 135vh 4vw 125vh; gap: clamp(60px, 12vh, 110px); }
   .wcard { width: 100%; min-height: 0; }
   .wcard-body { padding: 18px 18px 4px; }
