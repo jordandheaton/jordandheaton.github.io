@@ -1,113 +1,213 @@
+/* Universe Scroller — mobile-first.
+   Most visitors arrive on a phone, so the small-screen layout is the base and
+   desktop is the enhancement. */
+
+:root {
+  --bg:    #04060c;
+  --ink:   #eaf2ff;
+  --accent:#9fc0ff;
+  --dim:   rgba(159,192,255,.55);
+  --pad:   18px;
+  --safe-l: max(var(--pad), env(safe-area-inset-left));
+  --safe-r: max(var(--pad), env(safe-area-inset-right));
+  --safe-b: max(14px, env(safe-area-inset-bottom));
+  --safe-t: max(12px, env(safe-area-inset-top));
+  --mono: ui-monospace, 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html { scrollbar-width: thin; scrollbar-color: #2a3a55 #04060c; }
-body { background: #04060c; font-family: 'Consolas', 'SF Mono', monospace; color: #eaf2ff; }
+html {
+  scrollbar-width: thin; scrollbar-color: #2a3a55 #04060c;
+  /* kill pull-to-refresh + rubber-band chaining: on a scroll-driven page a
+     stray overscroll at the top would otherwise reload the whole journey */
+  overscroll-behavior-y: none;
+  overflow-x: hidden;          /* nothing here ever scrolls sideways */
+}
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--mono);
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
 #spacer { width: 100%; }
-#view {
-  position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
-  /* filter (motion/seam blur) is driven from JS; keep transitions cheap */
-  will-change: filter;
-}
 
-/* additive FX canvases: starfield + micro particles */
+/* Fixed full-bleed layers. 100lvh (largest viewport) rather than 100vh/dvh so
+   the canvas never resizes when a mobile browser collapses its URL bar — that
+   resize used to reseed the starfield mid-scroll. */
+#view, #fx-stars, #fx-micro {
+  position: fixed; inset: 0; width: 100vw; display: block;
+  height: 100vh; height: 100lvh;
+}
+#view { will-change: filter; }
+
 #fx-stars, #fx-micro {
-  position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
-  z-index: 1; pointer-events: none; opacity: 0;
-  mix-blend-mode: screen;
+  z-index: 1; pointer-events: none; opacity: 0; mix-blend-mode: screen;
 }
+/* dropped out of the compositor entirely when invisible (mobile paint cost) */
+#fx-stars.off, #fx-micro.off { display: none; }
 
-/* film grain to unify the AI-video look and hide compression edges */
+/* film grain: unifies the AI-video look and hides compression edges */
 #grain {
-  position: fixed; inset: -50%; z-index: 2; pointer-events: none;
+  position: fixed; inset: -30%; z-index: 2; pointer-events: none;
   opacity: .05; mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation: grainshift 1.1s steps(3) infinite;
 }
 @keyframes grainshift {
-  0% { transform: translate(0,0); }
-  33% { transform: translate(-3%, 2%); }
-  66% { transform: translate(2%, -3%); }
+  0%   { transform: translate(0,0); }
+  33%  { transform: translate(-2%, 1.5%); }
+  66%  { transform: translate(1.5%, -2%); }
   100% { transform: translate(0,0); }
 }
 
-/* vignette + soft edge melt so the rectangular frame edge never reads as a hard line */
+/* vignette + scrims that keep the UI legible over any frame */
 #vignette {
   position: fixed; inset: 0; z-index: 2; pointer-events: none;
   background:
-    linear-gradient(to top, rgba(4,6,12,.55) 0%, rgba(4,6,12,0) 32%),
-    radial-gradient(140% 100% at 50% 44%, rgba(4,6,12,0) 48%, rgba(4,6,12,.34) 82%, rgba(4,6,12,.72) 100%);
+    linear-gradient(to bottom, rgba(4,6,12,.60) 0%, rgba(4,6,12,0) 18%),
+    linear-gradient(to top,    rgba(4,6,12,.78) 0%, rgba(4,6,12,.28) 18%, rgba(4,6,12,0) 38%),
+    radial-gradient(140% 100% at 50% 44%, rgba(4,6,12,0) 46%, rgba(4,6,12,.30) 80%, rgba(4,6,12,.66) 100%);
 }
 
-/* top bar */
+/* ---------------------------------------------------------------- topbar */
 .topbar {
-  position: fixed; top: 20px; left: 24px; right: 24px; z-index: 3;
-  display: flex; align-items: center; justify-content: space-between;
+  position: fixed; z-index: 4;
+  top: var(--safe-t); left: var(--safe-l); right: var(--safe-r);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
   pointer-events: none;
 }
-.topbar .title {
-  font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: #9fc0ff;
-  text-shadow: 0 1px 6px rgba(0,0,0,.8);
-}
 .topbar .back {
-  font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #9fc0ff;
-  text-decoration: none; opacity: .7; pointer-events: auto;
-  text-shadow: 0 1px 6px rgba(0,0,0,.8); transition: opacity .3s;
+  display: inline-flex; align-items: center; gap: 6px;
+  /* 44px tall touch target without visually bulking the chrome */
+  margin: -12px 0 -12px -10px; padding: 12px 10px;
+  color: var(--accent); text-decoration: none; pointer-events: auto;
+  font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+  opacity: .78; transition: opacity .25s;
+  text-shadow: 0 1px 6px rgba(0,0,0,.9);
 }
-.topbar .back:hover { opacity: 1; }
+.topbar .back svg {
+  width: 15px; height: 15px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.topbar .back:active { opacity: 1; }
+.topbar .title {
+  font-size: 10px; letter-spacing: .34em; text-transform: uppercase;
+  color: var(--accent); opacity: .5; text-shadow: 0 1px 6px rgba(0,0,0,.9);
+  white-space: nowrap;
+}
 
-/* scientific HUD */
-.hud {
-  position: fixed; left: 24px; bottom: 26px; z-index: 3;
-  color: #9fc0ff; text-shadow: 0 1px 8px rgba(0,0,0,.9);
-  user-select: none; pointer-events: none;
+/* ------------------------------------------------------------ chapter rail */
+.rail {
+  position: fixed; z-index: 4; right: 0; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: flex-end;
+  padding-right: max(6px, env(safe-area-inset-right));
 }
-.hud .exp { font-size: 13px; letter-spacing: 2px; color: #9fc0ff; opacity: .8; }
-.hud .exp sup { font-size: .72em; }
-.hud .alt {
-  font-size: 34px; font-weight: 700; letter-spacing: .5px; color: #eaf2ff; line-height: 1.1;
-  text-shadow: 0 1px 8px rgba(0,0,0,.9), 0 0 22px rgba(159,192,255,.28);
-  font-variant-numeric: tabular-nums;
+.rail .tick {
+  -webkit-appearance: none; appearance: none; background: none; border: 0;
+  display: flex; align-items: center; justify-content: flex-end;
+  /* small marks, generous invisible hit area */
+  width: 40px; height: 26px; padding: 0 6px 0 0; cursor: pointer;
+  pointer-events: auto;
+}
+.rail .tick i {
+  display: block; width: 9px; height: 2px; border-radius: 2px;
+  background: var(--accent); opacity: .3;
+  transition: width .3s cubic-bezier(.2,.7,.3,1), opacity .3s;
+}
+.rail .tick.done i { opacity: .5; }
+.rail .tick.on i {
+  width: 22px; opacity: 1;
+  box-shadow: 0 0 10px rgba(159,192,255,.75);
+}
+
+/* -------------------------------------------------------------------- HUD */
+.hud {
+  position: fixed; z-index: 4;
+  left: var(--safe-l); right: 64px; bottom: calc(var(--safe-b) + 20px);
+  color: var(--accent); user-select: none; pointer-events: none;
+  text-shadow: 0 1px 10px rgba(0,0,0,.95);
 }
 .hud .label {
-  font-size: 12px; letter-spacing: 3px; text-transform: uppercase; margin-top: 8px; opacity: .85;
-  transition: opacity .35s;
+  font-size: 10px; letter-spacing: .3em; text-transform: uppercase;
+  opacity: .8; margin-bottom: 7px;
 }
-.hud .label.swap { opacity: 0; }
-.hud .bar { margin-top: 14px; width: 240px; height: 2px; background: rgba(159,192,255,.18); overflow: hidden; }
-.hud .bar i {
-  display: block; height: 100%; width: 0; transition: width .08s linear;
-  background: linear-gradient(90deg, #6f97e6, #9fc0ff 60%, #d8e6ff);
-  box-shadow: 0 0 8px rgba(159,192,255,.6);
+.hud .alt {
+  font-size: 30px; line-height: 1.05; font-weight: 700; letter-spacing: -.01em;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 10px rgba(0,0,0,.95), 0 0 24px rgba(159,192,255,.24);
+}
+.hud .exp {
+  font-size: 11px; letter-spacing: .12em; opacity: .62; margin-top: 5px;
+}
+.hud .exp sup { font-size: .74em; }
+
+/* progress hairline, pinned to the very bottom edge */
+.progress {
+  position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
+  height: 2px; background: rgba(159,192,255,.14); pointer-events: none;
+}
+.progress i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #6f97e6, #9fc0ff 55%, #d8e6ff);
+  box-shadow: 0 0 10px rgba(159,192,255,.6);
 }
 
-/* scroll hint */
+/* ------------------------------------------------------------------- hint */
 .hint {
-  position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 3;
-  color: #eaf2ff; font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
-  opacity: .7; transition: opacity .6s; pointer-events: none;
-  text-shadow: 0 1px 6px rgba(0,0,0,.8); text-align: center;
+  position: fixed; z-index: 4; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--safe-b) + 20px);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--ink); font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+  opacity: .75; transition: opacity .5s; pointer-events: none;
+  text-shadow: 0 1px 8px rgba(0,0,0,.9); white-space: nowrap;
 }
 .hint.gone { opacity: 0; }
-.hint b { display: block; font-size: 18px; margin-top: 6px; animation: bob 1.6s ease-in-out infinite; }
-@keyframes bob { 50% { transform: translateY(6px); } }
+.hint b {
+  width: 16px; height: 16px; border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor; transform: rotate(45deg);
+  animation: bob 1.8s ease-in-out infinite; opacity: .8;
+}
+@keyframes bob {
+  0%,100% { transform: rotate(45deg) translate(0,0); }
+  50%     { transform: rotate(45deg) translate(3px,3px); }
+}
+/* on phones the hint sits above the readout instead of beside it */
+.hint { bottom: calc(var(--safe-b) + 118px); }
 
-/* loader */
+/* ----------------------------------------------------------------- loader */
 #loader {
-  position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 16px;
-  background: #04060c; color: #9fc0ff; font-size: 11px; letter-spacing: 4px;
-  transition: opacity .6s; text-transform: uppercase;
+  position: fixed; inset: 0; z-index: 6; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px;
+  background: var(--bg); color: var(--accent);
+  transition: opacity .7s; text-transform: uppercase;
 }
 #loader.gone { opacity: 0; pointer-events: none; }
-#loader .lbar { width: 240px; height: 2px; background: rgba(159,192,255,.18); }
-#loader .lbar i { display: block; height: 100%; width: 0; background: #9fc0ff; transition: width .15s; }
+#loader .lmark { font-size: 12px; letter-spacing: .42em; }
+#loader .lsub  { font-size: 9px; letter-spacing: .3em; opacity: .45; }
+#loader .lbar  { width: min(220px, 56vw); height: 2px; background: rgba(159,192,255,.16); }
+#loader .lbar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
 
-/* reduced-motion static stepper */
-.rm-wrap { max-width: 760px; margin: 0 auto; padding: 80px 20px 120px; }
-.rm-wrap h1 { font-size: 14px; letter-spacing: 5px; text-transform: uppercase; color: #9fc0ff; margin-bottom: 8px; }
-.rm-wrap p.sub { font-size: 12px; opacity: .6; margin-bottom: 40px; letter-spacing: 1px; }
-.rm-step { margin-bottom: 40px; }
-.rm-step img { width: 100%; border-radius: 6px; display: block; box-shadow: 0 8px 40px rgba(0,0,0,.5); }
-.rm-step .cap { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; }
-.rm-step .cap .l { letter-spacing: 3px; text-transform: uppercase; color: #eaf2ff; }
-.rm-step .cap .a { color: #9fc0ff; opacity: .8; }
+/* --------------------------------------------------------------- desktop */
+@media (min-width: 760px) {
+  :root { --pad: 26px; --safe-b: 24px; --safe-t: 20px; }
+  .topbar { flex-direction: row-reverse; }
+  .topbar .title { font-size: 11px; letter-spacing: .4em; opacity: .62; }
+  .topbar .back { font-size: 11px; }
+  .hud { right: auto; bottom: calc(var(--safe-b) + 22px); }
+  .hud .alt { font-size: 40px; }
+  .hud .label { font-size: 11px; }
+  .hud .exp { font-size: 12px; }
+  .hint { left: 50%; bottom: calc(var(--safe-b) + 22px); }
+  .rail .tick { height: 30px; width: 46px; }
+  .rail .tick:hover i { opacity: .85; width: 16px; }
+}
+
+/* ------------------------------------------- reduced-motion static stepper */
+.rm-wrap { max-width: 720px; margin: 0 auto; padding: 72px 20px 100px; }
+.rm-wrap h1 { font-size: 13px; letter-spacing: .4em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.rm-wrap p.sub { font-size: 11px; opacity: .55; margin-bottom: 36px; letter-spacing: .1em; }
+.rm-step { margin-bottom: 34px; }
+.rm-step img { width: 100%; border-radius: 8px; display: block; box-shadow: 0 8px 40px rgba(0,0,0,.5); }
+.rm-step .cap { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; font-size: 11px; gap: 12px; }
+.rm-step .cap .l { letter-spacing: .24em; text-transform: uppercase; color: var(--ink); }
+.rm-step .cap .a { color: var(--accent); opacity: .75; font-variant-numeric: tabular-nums; }

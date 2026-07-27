@@ -1,23 +1,22 @@
 (() => {
   'use strict';
 
-  const PX_PER_DECADE = 1500; // scroll distance per order of magnitude of scale
-  const AHEAD  = 220;         // frames decoded ahead of the playhead
-  const BEHIND = 120;         // frames decoded behind the playhead
-  const BOOT_FRAMES = 60;     // frames to load before dismissing the loader
-
   const $ = id => document.getElementById(id);
   const canvas = $('view'), ctx = canvas.getContext('2d');
   const altEl = $('alt'), expEl = $('exp'), labelEl = $('label'), fillEl = $('fill');
   const hintEl = $('hint'), loaderEl = $('loader'), lfillEl = $('lfill');
+  const railEl = $('rail');
 
-  // ---- reduced motion: static stepper, no scrub engine -------------------
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  const isSmall = () => innerWidth < 760;
+
+  // start every visit at the leaf, never at a restored scroll offset
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
   // ---- helpers -----------------------------------------------------------
   const SUP = { '-': '⁻', '0':'⁰','1':'¹','2':'²','3':'³',
                 '4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','.':'˙' };
-  const toSup = s => String(s).split('').map(c => SUP[c] || c).join('');
 
   function fmtExp(logMeters) {
     const r = Math.round(logMeters * 10) / 10;
@@ -34,8 +33,11 @@
     if (m < 1)       return Math.round(m * 100) + ' cm';
     if (m < 1e3)     return (m < 10 ? m.toFixed(1) : Math.round(m)) + ' m';
     if (m < 1e6)     return (m / 1e3).toFixed(m < 1e4 ? 1 : 0) + ' km';
-    if (m < 1e10)    return Math.round(m / 1e3).toLocaleString() + ' km';
-    if (m < 0.1 * LY) { const au = m / AU; return (au < 10 ? au.toFixed(1) : Math.round(au)) + ' au'; }
+    // past a million km the plain km figure turns into a seven-digit number that
+    // both overflows a phone's HUD and churns every digit while scrolling
+    if (m < 1e9)     return Math.round(m / 1e3).toLocaleString() + ' km';
+    if (m < 0.1 * AU) return (m / 1e9).toFixed(2) + 'M km';
+    if (m < 0.1 * LY) { const au = m / AU; return (au < 10 ? au.toFixed(1) : Math.round(au).toLocaleString()) + ' au'; }
     const ly = m / LY; return (ly < 10 ? ly.toFixed(1) : Math.round(ly).toLocaleString()) + ' ly';
   }
 
@@ -44,8 +46,17 @@
     const PAD = manifest.pad || 4;
     const src = i => manifest.pattern.replace('{i}', String(i + 1).padStart(PAD, '0'));
     const CH = manifest.chapters;
+    const FIRST = CH[0].start;          // journey opens here (the leaf)
+    const LAST  = CH[CH.length - 1].end;
 
-    if (reduced) return renderStatic(FRAME_COUNT, src, CH);
+    if (reduced) return renderStatic(src, CH);
+
+    // Fewer frames held in flight on a phone: each decoded 1280x720 frame is
+    // several MB of bitmap, and mobile Safari will evict the whole page if the
+    // window gets greedy.
+    const AHEAD  = isSmall() ? 90 : 220;
+    const BEHIND = isSmall() ? 45 : 120;
+    const BOOT_FRAMES = isSmall() ? 36 : 60;
 
     // ---- log-scale scroll mapping ---------------------------------------
     // Scroll distance is proportional to orders of magnitude traveled, NOT
@@ -53,7 +64,19 @@
     // source clips vary their zoom speed internally.
     const LOG_MIN = CH[0].a0;
     const TOTAL_DECADES = CH.reduce((s, c) => s + (c.a1 - c.a0), 0);
-    const SCROLL_LEN = TOTAL_DECADES * PX_PER_DECADE;
+    let PX_PER_DECADE = 1500, SCROLL_LEN = TOTAL_DECADES * PX_PER_DECADE;
+
+    const spacer = $('spacer');
+    function sizeSpacer() {
+      // a phone flick covers far less distance than a mouse wheel spin, so the
+      // journey is shortened on small screens to stay a scroll, not a chore
+      PX_PER_DECADE = isSmall() ? 1040 : 1500;
+      SCROLL_LEN = TOTAL_DECADES * PX_PER_DECADE;
+      spacer.style.height = (SCROLL_LEN + innerHeight) + 'px';
+    }
+    sizeSpacer();
+
+    const scrollForLog = l => (l - LOG_MIN) / TOTAL_DECADES * SCROLL_LEN;
 
     function frameFromScroll(y) {
       const logPos = LOG_MIN + Math.max(0, Math.min(1, y / SCROLL_LEN)) * TOTAL_DECADES;
@@ -62,19 +85,9 @@
       return c.start + t * (c.end - c.start);
     }
 
-    const spacer = document.getElementById('spacer');
-    // total travel = SCROLL_LEN plus a viewport so the last frame is fully
-    // reachable at max scroll (recomputed on resize).
-    function sizeSpacer() {
-      spacer.style.height = (SCROLL_LEN + innerHeight) + 'px';
-    }
-    sizeSpacer();
-
     // ---- ambience FX layers ---------------------------------------------
-    const fxStars = document.getElementById('fx-stars');
-    const fxMicro = document.getElementById('fx-micro');
-    const sctx = fxStars.getContext('2d');
-    const mctx = fxMicro.getContext('2d');
+    const fxStars = $('fx-stars'), fxMicro = $('fx-micro');
+    const sctx = fxStars.getContext('2d'), mctx = fxMicro.getContext('2d');
     let DPR = 1, stars = [], motes = [];
 
     // Precomputed per-frame mask of bright bodies (Earth, Moon, Sun, planets), so
@@ -96,8 +109,7 @@
     // Returns 0 if a star at low-res cell (gx,gy) sits on a lit body this frame
     // (star hidden), else 1. A soft one-cell ring around the body returns a partial
     // value so stars ease out near a body's edge instead of popping on/off as the
-    // body drifts across cell boundaries frame-to-frame (which read as glitchy
-    // flicker). Frames outside the baked range have no bodies to dodge.
+    // body drifts across cell boundaries frame-to-frame.
     function bodyMask(frameIdx, gx, gy) {
       if (!SMbytes || frameIdx < SMASK.f0 || frameIdx > SMASK.f1) return 1;
       const W = SMASK.w, H = SMASK.h, base = (frameIdx - SMASK.f0) * SMASK.bpf;
@@ -114,13 +126,9 @@
     const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
     // Cumulative "visual travel" from measured per-frame motion (frame-diff), so
-    // the starfield advances in proportion to how much the footage actually moves
-    // — a nearly-still frame barely nudges the stars, a fast zoom streaks them.
+    // the starfield advances in proportion to how much the footage actually moves.
     const RAWM = window.__FRAME_MOTION || [];
     const MO_CAP = 9;                  // clamp scene-cut spikes so stars don't leap at cuts
-    // Stars are STAGNANT (static field) through the near/mid space chapters and
-    // only start streaming once past the Oort cloud (Nearest-stars onward), so
-    // motion only accumulates from that frame on.
     const FRAME_MOVE_START = 1155;     // Oort cloud -> Nearest stars (logM 16.6)
     const travelLUT = new Float32Array(FRAME_COUNT);
     for (let i = 0, acc = 0; i < FRAME_COUNT; i++) {
@@ -135,17 +143,16 @@
 
     function seedFx() {
       const w = fxStars.width, h = fxStars.height;
-      // deterministic PRNG so the field is stable across resizes
-      let s = 2468013579;
+      let s = 2468013579;                       // deterministic: field is stable across resizes
       const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-      const N = Math.max(120, Math.round((w * h) / 9000));
+      const N = Math.max(120, Math.round((w * h) / (isSmall() ? 12000 : 9000)));
       stars = [];
       for (let i = 0; i < N; i++) stars.push({
         a: rnd() * 6.283, p0: rnd(), d: 0.35 + rnd() * 0.9, r: 0.5 + rnd() * 1.9,
         tw: rnd() * 6.283, tws: 0.5 + rnd() * 1.9,
         col: rnd() < 0.16 ? '#bcd4ff' : (rnd() < 0.5 ? '#fff1d4' : '#ffffff')
       });
-      const M = Math.max(24, Math.round((w * h) / 26000));
+      const M = Math.max(20, Math.round((w * h) / 26000));
       motes = [];
       for (let i = 0; i < M; i++) motes.push({
         x: rnd(), y: rnd(), r: 7 + rnd() * 30, vx: (rnd() - 0.5) * 0.010, vy: (rnd() - 0.5) * 0.010,
@@ -154,33 +161,35 @@
     }
 
     // Stars stream radially, driven by the PLAYHEAD (the frame actually on
-    // screen) — so they speed up and slow down exactly with the footage's zoom
-    // rather than at an even log-rate that drifts out of sync with the video.
-    // Scroll down (zoom out) pulls them toward the vanishing point and shrinks
-    // them; scroll up sends them flying outward past the camera. Stars are also
-    // masked out wherever the underlying frame is bright, so they never sit on
-    // top of a planet or the Sun.
-    function drawStars(playhead, t, op) {
+    // screen). Star positions are masked against the DRAWN FRAME RECT, not the
+    // whole canvas: once the frame is letterboxed on a portrait phone the bars
+    // are open space, so stars are free to fill them — which is what makes the
+    // letterbox read as sky rather than as a black bar.
+    function drawStars(playhead, t, op, rect) {
+      const on = op > 0.01;
+      fxStars.classList.toggle('off', !on);
       fxStars.style.opacity = op.toFixed(3);
+      if (!on) return;
       const w = fxStars.width, h = fxStars.height;
       sctx.clearRect(0, 0, w, h);
-      if (op <= 0.01) return;
       const cx = w / 2, cy = h / 2, maxR = Math.hypot(w, h) * 0.62;
       const MW = SMASK ? SMASK.w : 32, MH = SMASK ? SMASK.h : 18;
-      const fidx = Math.round(playhead);             // frame whose baked body-mask to use
-      const STATIC_BASE = 5.0;                                 // fixes the static field's positions
-      // static field drifts a *very little* with scroll, then streams past the Oort cloud
+      const fidx = Math.round(playhead);
+      const STATIC_BASE = 5.0;
       const travel = STATIC_BASE + playhead * 0.0006 + travelAt(playhead) * 0.011;
       for (const st of stars) {
         let ph = (st.p0 + travel * st.d) % 1; if (ph < 0) ph += 1;
-        const rad = (1 - ph) * maxR;                 // edge (ph→0) inward to center (ph→1)
+        const rad = (1 - ph) * maxR;
         const x = cx + Math.cos(st.a) * rad, y = cy + Math.sin(st.a) * rad;
         const size = st.r * DPR * (0.35 + (1 - ph) * 1.05);
         const twk = 0.5 + 0.5 * Math.sin(t * st.tws + st.tw);
-        const fade = Math.min(1, (1 - ph) * 5) * Math.min(1, ph * 8); // fade in at edge, out at core
-        const gx = Math.min(MW - 1, Math.max(0, (x / w * MW) | 0));
-        const gy = Math.min(MH - 1, Math.max(0, (y / h * MH) | 0));
-        const mask = bodyMask(fidx, gx, gy);         // 0 over a lit body, 1 in open space
+        const fade = Math.min(1, (1 - ph) * 5) * Math.min(1, ph * 8);
+        let mask = 1;
+        if (rect.w > 0) {
+          const gx = Math.floor((x - rect.x) / rect.w * MW);
+          const gy = Math.floor((y - rect.y) / rect.h * MH);
+          mask = (gx < 0 || gy < 0 || gx >= MW || gy >= MH) ? 1 : bodyMask(fidx, gx, gy);
+        }
         sctx.globalAlpha = twk * op * fade * mask;
         sctx.fillStyle = st.col;
         sctx.beginPath(); sctx.arc(x, y, size, 0, 6.2832); sctx.fill();
@@ -189,10 +198,12 @@
     }
 
     function drawMotes(t, op) {
+      const on = op > 0.01;
+      fxMicro.classList.toggle('off', !on);
       fxMicro.style.opacity = op.toFixed(3);
+      if (!on) return;
       const w = fxMicro.width, h = fxMicro.height;
       mctx.clearRect(0, 0, w, h);
-      if (op <= 0.01) return;
       for (const m of motes) {
         const x = ((((m.x + m.vx * t) % 1) + 1) % 1) * w;
         const y = ((((m.y + m.vy * t) % 1) + 1) % 1) * h;
@@ -216,53 +227,154 @@
       seedFx();
     }
     sizeCanvas();
-    addEventListener('resize', () => { sizeCanvas(); sizeSpacer(); dirty = true; });
+
+    // Mobile browsers fire resize every time the URL bar collapses or expands.
+    // Re-seeding the starfield on those made the sky visibly reshuffle mid-scroll,
+    // so only a real layout change (rotation, window resize) counts.
+    let lastW = innerWidth, lastH = innerHeight, rTimer = 0;
+    addEventListener('resize', () => {
+      if (innerWidth === lastW && Math.abs(innerHeight - lastH) < 140) return;
+      clearTimeout(rTimer);
+      rTimer = setTimeout(() => {
+        lastW = innerWidth; lastH = innerHeight;
+        sizeCanvas(); sizeSpacer(); dirty = true;
+      }, 140);
+    });
 
     // ---- windowed image store -------------------------------------------
     const store = new Map();   // idx -> Image
-    let loadedCount = 0;
-
     function req(i) {
-      if (i < 0 || i >= FRAME_COUNT || store.has(i)) return;
+      if (i < FIRST || i > LAST || store.has(i)) return;
       const im = new Image();
       im.decoding = 'async';
       im.src = src(i);
       store.set(i, im);
     }
     function ensureWindow(center) {
-      const lo = Math.max(0, center - BEHIND);
-      const hi = Math.min(FRAME_COUNT - 1, center + AHEAD);
+      const lo = Math.max(FIRST, center - BEHIND);
+      const hi = Math.min(LAST, center + AHEAD);
       for (let i = lo; i <= hi; i++) req(i);
-      // evict beyond a 2x margin so re-scrolls stay cheap but memory is bounded
       const elo = center - 2 * BEHIND, ehi = center + 2 * AHEAD;
       for (const i of store.keys()) {
         if (i < elo || i > ehi) { const im = store.get(i); if (im) im.src = ''; store.delete(i); }
       }
     }
+    const ready = im => !!(im && im.complete && im.naturalWidth);
+    function exact(i) { const im = store.get(i); return ready(im) ? im : null; }
     function nearest(idx) {
-      // find best already-decoded frame at or near idx (hold last-good, never blank)
+      // best already-decoded frame at or near idx (hold last-good, never blank)
       const im = store.get(idx);
-      if (im && im.complete && im.naturalWidth) return im;
+      if (ready(im)) return im;
       for (let d = 1; d <= 12; d++) {
         const a = store.get(idx - d), b = store.get(idx + d);
-        if (a && a.complete && a.naturalWidth) return a;
-        if (b && b.complete && b.naturalWidth) return b;
+        if (ready(a)) return a;
+        if (ready(b)) return b;
       }
       return null;
     }
 
-    function coverDraw(im) {
+    // ---- framing ---------------------------------------------------------
+    // fit 0 = cover (frame fills the screen, periphery cropped)
+    // fit 1 = contain (whole 16:9 composition visible)
+    //
+    // The ground footage is texture — cropping its edges on a portrait phone
+    // costs nothing and full-bleed is far more immersive. The space footage is
+    // the opposite: the Sun sits left of centre with the planets strung out
+    // across the full width, so a centre-crop would throw Jupiter and Neptune
+    // clean off the screen. Once Earth is a globe on black we ease to contain.
+    // The bars this opens up are invisible — space is already black, the blurred
+    // backdrop fills them, and the starfield draws straight through them.
+    const FIT_A = 6.6, FIT_B = 8.0;   // logM: Earth's limb → Earth as a full sphere
+
+    // cheap blur: downsample to a thumbnail, then upscale it smoothed
+    const bcan = document.createElement('canvas');
+    bcan.width = 48; bcan.height = 27;
+    const bctx = bcan.getContext('2d');
+    const rect = { x: 0, y: 0, w: 0, h: 0 };
+
+    function drawFrame(imA, imB, blend, fit) {
       const cw = canvas.width, ch = canvas.height;
-      const iw = im.naturalWidth, ih = im.naturalHeight;
+      const iw = imA.naturalWidth, ih = imA.naturalHeight;
       if (!iw) return;
-      const s = Math.max(cw / iw, ch / ih);
-      const w = iw * s, h = ih * s;
-      ctx.drawImage(im, (cw - w) / 2, (ch - h) / 2, w, h);
+      const sCover = Math.max(cw / iw, ch / ih);
+      const sFit   = Math.min(cw / iw, ch / ih);
+      const s = sCover + (sFit - sCover) * fit;
+      const w = iw * s, h = ih * s, x = (cw - w) / 2, y = (ch - h) / 2;
+
+      const barsY = h < ch - 1, barsX = w < cw - 1;
+
+      if (barsX || barsY) {
+        // ambient backdrop so the frame edge melts into the page instead of
+        // reading as a hard letterbox line
+        bctx.drawImage(imA, 0, 0, bcan.width, bcan.height);
+        const bs = Math.max(cw / bcan.width, ch / bcan.height);
+        const bw = bcan.width * bs, bh = bcan.height * bs;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(bcan, (cw - bw) / 2, (ch - bh) / 2, bw, bh);
+        ctx.fillStyle = 'rgba(4,6,12,.78)';
+        ctx.fillRect(0, 0, cw, ch);
+      }
+
+      ctx.drawImage(imA, x, y, w, h);
+      // Cross-dissolve into the next frame. Some chapters cover two orders of
+      // magnitude in only ~24 frames, so without this the image visibly steps
+      // rather than glides through them.
+      if (imB && imB !== imA && blend > 0.02) {
+        ctx.globalAlpha = Math.min(1, blend);
+        ctx.drawImage(imB, x, y, w, h);
+        ctx.globalAlpha = 1;
+      }
+
+      // Feather the band edges into the backdrop. Without this the frame reads
+      // as a rectangle pasted on the page — the giveaway that would make the
+      // letterbox look like a bug rather than like sky.
+      if (barsY) {
+        const F = Math.min(h * 0.10, 44 * DPR);
+        let g = ctx.createLinearGradient(0, y, 0, y + F);
+        g.addColorStop(0, 'rgba(4,6,12,1)'); g.addColorStop(1, 'rgba(4,6,12,0)');
+        ctx.fillStyle = g; ctx.fillRect(x, y, w, F);
+        g = ctx.createLinearGradient(0, y + h, 0, y + h - F);
+        g.addColorStop(0, 'rgba(4,6,12,1)'); g.addColorStop(1, 'rgba(4,6,12,0)');
+        ctx.fillStyle = g; ctx.fillRect(x, y + h - F, w, F);
+      }
+      if (barsX) {
+        const F = Math.min(w * 0.10, 44 * DPR);
+        let g = ctx.createLinearGradient(x, 0, x + F, 0);
+        g.addColorStop(0, 'rgba(4,6,12,1)'); g.addColorStop(1, 'rgba(4,6,12,0)');
+        ctx.fillStyle = g; ctx.fillRect(x, y, F, h);
+        g = ctx.createLinearGradient(x + w, 0, x + w - F, 0);
+        g.addColorStop(0, 'rgba(4,6,12,1)'); g.addColorStop(1, 'rgba(4,6,12,0)');
+        ctx.fillStyle = g; ctx.fillRect(x + w - F, y, F, h);
+      }
+      rect.x = x; rect.y = y; rect.w = w; rect.h = h;
     }
+
+    // ---- chapter rail ----------------------------------------------------
+    const ticks = CH.map((c, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tick';
+      b.setAttribute('aria-label', c.label);
+      b.title = c.label;
+      b.innerHTML = '<i></i>';
+      b.addEventListener('click', () => {
+        // jump straight there rather than animating across tens of thousands of
+        // pixels through frames that aren't loaded yet
+        scrollTo({ top: Math.round(scrollForLog(c.a0)) + 1, behavior: 'auto' });
+        target = playhead = c.start;
+        ensureWindow(c.start); lastWin = c.start; dirty = true;
+        hintEl.classList.add('gone');
+      });
+      railEl.appendChild(b);
+      return b;
+    });
+    let activeCh = -1;
 
     // ---- boot preload ----------------------------------------------------
     let booted = 0;
-    for (let i = 0; i < Math.min(BOOT_FRAMES, FRAME_COUNT); i++) {
+    const bootTotal = Math.min(BOOT_FRAMES, LAST - FIRST + 1);
+    for (let i = FIRST; i < FIRST + bootTotal; i++) {
       req(i);
       const im = store.get(i);
       im.addEventListener('load',  onBoot);
@@ -270,46 +382,49 @@
     }
     function onBoot() {
       booted++;
-      lfillEl.style.width = (booted / Math.min(BOOT_FRAMES, FRAME_COUNT) * 100) + '%';
-      if (booted >= Math.min(BOOT_FRAMES, FRAME_COUNT)) {
+      lfillEl.style.width = (booted / bootTotal * 100) + '%';
+      if (booted >= bootTotal) {
         loaderEl.classList.add('gone');
-        ensureWindow(0);
+        ensureWindow(FIRST);
       }
     }
-    // count total decoded frames for the debug hook (cheap, approximate)
     function decodedCount() {
-      let n = 0; for (const im of store.values()) if (im.complete && im.naturalWidth) n++;
+      let n = 0; for (const im of store.values()) if (ready(im)) n++;
       return n;
     }
 
     // ---- scroll → target -------------------------------------------------
-    let playhead = 0, target = 0, shownIdx = -1, dirty = true, lastWin = -999;
+    let playhead = FIRST, target = FIRST, dirty = true, lastWin = -999, lastDrawn = -999;
+    scrollTo(0, 0);
 
-    // scroll position is polled in the rAF tick (more robust than scroll
-    // events, which some browsers throttle or suspend); the listener only
-    // handles the one-shot hint dismissal.
-    addEventListener('scroll', () => {
-      if (scrollY > 40) hintEl.classList.add('gone');
-    }, { passive: true });
+    $('hint-text').textContent = isTouch ? 'Swipe up to travel' : 'Scroll to travel';
+    addEventListener('scroll', () => { if (scrollY > 40) hintEl.classList.add('gone'); }, { passive: true });
     let lastScrollY = -1;
 
-    const chapterAt = idx => CH.find(c => idx >= c.start && idx <= c.end) || CH[CH.length - 1];
+    const chapterIdxAt = idx => {
+      for (let i = 0; i < CH.length; i++) if (idx >= CH[i].start && idx <= CH[i].end) return i;
+      return CH.length - 1;
+    };
     function logMAt(ph) {
-      const c = chapterAt(Math.round(ph));
+      const c = CH[chapterIdxAt(Math.round(ph))];
       const t = Math.max(0, Math.min(1, (ph - c.start) / (c.end - c.start)));
       return c.a0 + (c.a1 - c.a0) * t;
     }
 
-    let lastLabel = CH[0].label, seamPulse = 0;
-    function updateHud(playhead, idx, logM) {
-      const c = chapterAt(idx);
+    let seamPulse = 0;
+    function updateHud(idx, logM) {
+      const ci = chapterIdxAt(idx);
       altEl.textContent = fmtAltitude(logM);
       expEl.innerHTML = fmtExp(logM);
-      if (c.label !== lastLabel) {                 // chapter cut: swap label + soft blur pulse
-        lastLabel = c.label;
-        labelEl.textContent = c.label;             // immediate — never shows a stale label
-        if (labelEl.animate) labelEl.animate([{ opacity: 0 }, { opacity: .85 }], { duration: 320, easing: 'ease-out' });
-        seamPulse = 1;
+      if (ci !== activeCh) {                       // chapter cut: swap label + soft blur pulse
+        if (activeCh >= 0) seamPulse = 1;
+        activeCh = ci;
+        labelEl.textContent = CH[ci].label;
+        if (labelEl.animate) labelEl.animate([{ opacity: 0 }, { opacity: .8 }], { duration: 320, easing: 'ease-out' });
+        ticks.forEach((t, i) => {
+          t.classList.toggle('on', i === ci);
+          t.classList.toggle('done', i < ci);
+        });
       }
       fillEl.style.width = ((logM - LOG_MIN) / TOTAL_DECADES * 100) + '%';
     }
@@ -320,20 +435,25 @@
       const now = performance.now() / 1000;
       if (scrollY !== lastScrollY) {
         lastScrollY = scrollY;
-        target = Math.max(0, Math.min(FRAME_COUNT - 1, frameFromScroll(scrollY)));
+        target = Math.max(FIRST, Math.min(LAST, frameFromScroll(scrollY)));
         if (scrollY > 40) hintEl.classList.add('gone');
       }
       playhead += (target - playhead) * 0.22;
-      if (Math.abs(target - playhead) < 0.01) playhead = target;
+      if (Math.abs(target - playhead) < 0.005) playhead = target;
       const idx = Math.round(playhead);
       const logM = logMAt(playhead);
 
-      if (idx - lastWin > 24 || lastWin - idx > 24) { ensureWindow(idx); lastWin = idx; }
+      if (Math.abs(idx - lastWin) > 24) { ensureWindow(idx); lastWin = idx; }
 
-      if (idx !== shownIdx || dirty) {
-        const im = nearest(idx);
-        if (im) { coverDraw(im); shownIdx = idx; dirty = false; }
-        updateHud(playhead, idx, logM);
+      if (Math.abs(playhead - lastDrawn) > 0.008 || dirty) {
+        const i0 = Math.floor(playhead);
+        const a = nearest(i0);
+        if (a) {
+          const b = exact(i0 + 1);
+          drawFrame(a, b, playhead - i0, smooth(FIT_A, FIT_B, logM));
+          lastDrawn = playhead; dirty = false;
+        }
+        updateHud(idx, logM);
       }
 
       // ---- motion blur: scrub speed + a soft blur at each hard cut ---------
@@ -346,47 +466,43 @@
 
       // ---- ambience keyed to scale ----------------------------------------
       const microOp = 1 - smooth(-1.6, -0.4, logM);   // cellular motes, gone by the leaf
-      // stars appear the moment we leave the ground into space (Earth as a globe),
-      // static out through the Oort cloud, then streaming through the stellar
-      // neighborhood, and gone by the galaxy.
-      // Fade the FX starfield out BEFORE the nearest-stars / cosmic-web footage
-      // (logM ~16.6, frame 1155): from there on the video is itself a dense field
-      // of stars, so an overlaid streaming starfield just reads as a glitchy
-      // "stars zooming past the cosmic web". FX stars stay through the dark
-      // outer-planet / Oort space and are gone by the time the star field arrives.
+      // Stars appear as we leave the ground, hold as a static field out through
+      // the Oort cloud, then fade before the nearest-stars footage — which is
+      // itself a dense star field, so an overlaid one just reads as glitch.
       const starOp  = smooth(7.0, 7.8, logM) * (1 - smooth(15.9, 16.6, logM));
-      drawStars(playhead, now, starOp);
+      drawStars(playhead, now, starOp, rect);
       drawMotes(now, microOp);
 
-      // expose debug hook
       window.__uni = { idx, target: +target.toFixed(2), playhead: +playhead.toFixed(2),
-                       logM: +logM.toFixed(2), loadedCount: decodedCount(), storeSize: store.size,
-                       windowRange: [Math.max(0, idx - BEHIND), Math.min(FRAME_COUNT - 1, idx + AHEAD)] };
+                       logM: +logM.toFixed(2), fit: +smooth(FIT_A, FIT_B, logM).toFixed(2),
+                       chapter: CH[chapterIdxAt(idx)].label,
+                       rect: { w: Math.round(rect.w), h: Math.round(rect.h) },
+                       loadedCount: decodedCount(), storeSize: store.size, pxPerDecade: PX_PER_DECADE,
+                       scrollLen: SCROLL_LEN };
     }
     tick();
   }
 
   // ---- reduced-motion static stepper ------------------------------------
-  function renderStatic(FRAME_COUNT, src, CH) {
+  function renderStatic(src, CH) {
     loaderEl.classList.add('gone');
-    document.querySelector('.hint').style.display = 'none';
-    document.getElementById('spacer').style.display = 'none';
+    hintEl.style.display = 'none';
+    $('spacer').style.display = 'none';
     canvas.style.display = 'none';
     document.querySelector('.hud').style.display = 'none';
+    railEl.style.display = 'none';
+    document.querySelector('.progress').style.display = 'none';
 
     const wrap = document.createElement('div');
     wrap.className = 'rm-wrap';
-    wrap.innerHTML = '<h1>Universe Scroller</h1><p class="sub">Leaf to Earth &middot; static view (reduced motion)</p>';
+    wrap.innerHTML = '<h1>Universe Scroller</h1><p class="sub">Leaf to the Milky Way &middot; static view (reduced motion)</p>';
     CH.forEach((c, k) => {
       const step = document.createElement('div');
       step.className = 'rm-step';
-      const logM = c.a0;
-      const m = Math.pow(10, logM);
-      const alt = m < 1 ? Math.round(m * 100) + ' cm' : m < 1e3 ? Math.round(m) + ' m'
-                : m < 1e6 ? (m / 1e3).toFixed(1) + ' km' : Math.round(m / 1e3).toLocaleString() + ' km';
       step.innerHTML =
         '<img loading="lazy" src="' + src(c.start) + '" alt="' + c.label + '">' +
-        '<div class="cap"><span class="l">' + (k + 1) + ' &middot; ' + c.label + '</span><span class="a">' + alt + '</span></div>';
+        '<div class="cap"><span class="l">' + (k + 1) + ' &middot; ' + c.label + '</span>' +
+        '<span class="a">' + fmtAltitude(c.a0) + '</span></div>';
       wrap.appendChild(step);
     });
     document.body.appendChild(wrap);
@@ -397,16 +513,16 @@
   // Prefer the inline <script id="manifest-data"> so the page works from
   // file:// (where fetch is blocked). Fall back to the JSON file if absent.
   function fail(err) {
-    loaderEl.innerHTML = '<div>Failed to load journey</div>';
+    loaderEl.innerHTML = '<div class="lmark">Failed to load journey</div>';
     console.error('[universe-scroller] could not load manifest:', err);
   }
 
-  const inline = document.getElementById('manifest-data');
+  const inline = $('manifest-data');
   if (inline && inline.textContent.trim()) {
     try { boot(JSON.parse(inline.textContent)); }
     catch (err) { fail(err); }
   } else {
-    fetch('frames/manifest.json?v=1')
+    fetch('frames/manifest.json?v=2')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(boot)
       .catch(fail);

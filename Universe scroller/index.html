@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Universe Scroller — Chromosome to Galaxy</title>
-<meta name="description" content="A Powers-of-Ten style scroll journey: from a chromosome inside a leaf cell all the way out to the Milky Way.">
-<link rel="stylesheet" href="scroller.css?v=7">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#04060c">
+<title>Universe Scroller — Leaf to the Milky Way</title>
+<meta name="description" content="A Powers-of-Ten style scroll journey: from a single leaf all the way out to the Milky Way.">
+<link rel="stylesheet" href="scroller.css?v=12">
 </head>
 <body>
 <div id="spacer"></div>
@@ -13,26 +14,40 @@
 <canvas id="fx-stars"></canvas>
 <canvas id="fx-micro"></canvas>
 <div id="grain" aria-hidden="true"></div>
-<div id="vignette"></div>
+<div id="vignette" aria-hidden="true"></div>
 
-<div class="topbar">
+<header class="topbar">
+  <a class="back" href="../index.html" aria-label="Back to portfolio">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    <span>portfolio</span>
+  </a>
   <span class="title">Universe Scroller</span>
-  <a class="back" href="../index.html">&larr; back to portfolio</a>
-</div>
+</header>
+
+<!-- chapter rail: where you are in the journey, tap a tick to jump -->
+<nav id="rail" class="rail" aria-label="Journey chapters"></nav>
 
 <div class="hud">
-  <div class="alt" id="alt">1 &#181;m</div>
-  <div class="exp" id="exp">10&#8315;&#8310; m</div>
-  <div class="label" id="label">Chromosome</div>
-  <div class="bar"><i id="fill"></i></div>
+  <div class="label" id="label">Leaf</div>
+  <div class="alt" id="alt">10 cm</div>
+  <div class="exp" id="exp">10<sup>−1</sup> m</div>
 </div>
 
-<div class="hint" id="hint">Scroll to travel<b>&#8595;</b></div>
+<div class="progress" aria-hidden="true"><i id="fill"></i></div>
 
-<div id="loader"><div>Loading journey</div><div class="lbar"><i id="lfill"></i></div></div>
+<div class="hint" id="hint"><span id="hint-text">Scroll to travel</span><b aria-hidden="true"></b></div>
+
+<div id="loader">
+  <div class="lmark">Universe Scroller</div>
+  <div class="lbar"><i id="lfill"></i></div>
+  <div class="lsub">Leaf to the Milky Way</div>
+</div>
 
 <!-- Manifest inlined so the page works from file:// (double-click) as well as any
-     static server. frames/manifest.json is kept on disk as the source of truth. -->
+     static server. frames/manifest.json is kept on disk as the source of truth.
+     Frame indices stay ABSOLUTE (the journey now opens on the leaf at frame 507,
+     but motion.js and starmask.js are baked against absolute indices, so the
+     numbering must not be rebased). -->
 <script type="application/json" id="manifest-data">
 {
   "frameCount": 1445,
@@ -40,11 +55,6 @@
   "pattern": "frames/frame-{i}.jpg?v=10",
   "fps": 24,
   "chapters": [
-    { "start": 0,    "end": 84,   "label": "Chromosome",           "a0": -6.0, "a1": -5.0 },
-    { "start": 84,   "end": 169,  "label": "Cell nucleus",         "a0": -5.0, "a1": -4.0 },
-    { "start": 169,  "end": 338,  "label": "Plant cell",           "a0": -4.0, "a1": -3.0 },
-    { "start": 338,  "end": 422,  "label": "Leaf cells",           "a0": -3.0, "a1": -2.0 },
-    { "start": 422,  "end": 507,  "label": "Leaf surface",         "a0": -2.0, "a1": -1.0 },
     { "start": 507,  "end": 555,  "label": "Leaf",                 "a0": -1.0, "a1": 1.0 },
     { "start": 555,  "end": 579,  "label": "Tree canopy",          "a0": 1.0,  "a1": 3.0 },
     { "start": 579,  "end": 651,  "label": "Forest",               "a0": 3.0,  "a1": 5.3 },
@@ -63,6 +73,6 @@
 
 <script src="motion.js?v=4"></script>
 <script src="starmask.js?v=1"></script>
-<script src="scroller.js?v=15"></script>
+<script src="scroller.js?v=20"></script>
 </body>
 </html>
