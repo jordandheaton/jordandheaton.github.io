@@ -300,8 +300,26 @@
        (the laptop base enters them at 84), so the push-in has to reach full-bleed
        — retiring both bands — by then. Hence the window below. */
     const SEQ_SPAN = 0.58;
-    const SEQ_ZOOM0 = 0.16, SEQ_ZOOM1 = 0.556;     // frames ~24 → 82
-    const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+    /* The push-in is defined in LOG space, where a constant rate is what reads as
+       constant speed. Velocity ramps up from zero across Z_F0→Z_F1 while the lid
+       opens, then holds CONSTANT — it never brakes. Timing is pinned so it passes
+       full-bleed exactly at Z_FCOVER (both bands must be retired before frame 84,
+       where the source's bottom rows stop being clean floor), and it deliberately
+       keeps going past that, flying on into the screen instead of stalling the
+       moment the frame is filled and leaving the power-on to happen in dead air. */
+    const Z_F0 = 24, Z_F1 = 62, Z_FCOVER = 82, Z_OVER = 2.2;
+    function zoomScale(fit, cover, f) {
+      const R = cover / fit;
+      if (!(R > 1.001)) return cover;
+      const ramp = Z_F1 - Z_F0;
+      // derived from R so full-bleed lands on Z_FCOVER at any screen aspect
+      const cruise = Math.log(R) / (ramp / 2 + (Z_FCOVER - Z_F1));
+      let u;
+      if (f <= Z_F0) u = 0;
+      else if (f <= Z_F1) { const d = f - Z_F0; u = cruise * d * d / (2 * ramp); }
+      else u = cruise * (ramp / 2 + (f - Z_F1));
+      return Math.min(fit * Math.exp(u), cover * Z_OVER);
+    }
 
     /* Letterbox bands take their colour from the frame's own edge row so they
        track the studio background. Stretching that row directly turns its
@@ -373,13 +391,7 @@
       let s = cover;
       if (cw < ch) {
         const fit = Math.min(cover, cw / (bm.width * SEQ_SPAN));
-        const t = fidx / (SEQ_COUNT - 1);
-        /* hold the whole laptop in view while it opens, then ease IN, interpolating
-           in log space (where zoom reads as constant speed) so the push-in starts
-           imperceptibly and accelerates to hand off to the footage's own dive at
-           matching speed — instead of lurching in and then stopping dead */
-        const z = clamp01((t - SEQ_ZOOM0) / (SEQ_ZOOM1 - SEQ_ZOOM0));
-        s = fit * Math.pow(cover / fit, z * z);
+        s = zoomScale(fit, cover, fidx);
       }
       const dw = bm.width * s, dh = bm.height * s;
       const dy = (ch - dh) / 2;
@@ -761,19 +773,12 @@
     if (video.readyState < 2) { bootHide(); fallbackNoVideo(); }
   }, 8000);
 
-  /* The camera never moves — the crop stays centred, exactly where he ends up.
-     A phone-shaped band crops the 2.33:1 footage to under half its width, so he
-     is simply off-frame for the first stretch of the walk; rather than show dead
-     black (or pan the crop, which reads as a camera move) we start the clip at
-     the moment he enters the centred window. Desktop shows the full frame and
-     plays from the top. */
-  const HERO_TRIM = 1.25; // he reaches the edge of the centred crop about here
-  function heroCropped() {
-    const box = video.getBoundingClientRect();
-    if (!box.height || !video.videoWidth) return false;
-    return box.width / box.height <= video.videoWidth / video.videoHeight - 0.05;
-  }
-
+  /* The camera never moves and the clip always plays from 0 — that is what makes
+     it read as walking in from off-screen rather than appearing mid-frame. A
+     phone's centred crop shows ~45% of the 2.33:1 footage and he only reaches
+     that window around 0.6s, so playing from the top costs a beat of black and
+     buys a real entrance. (It also avoids seeking: the clip has a single
+     keyframe, so every seek decodes from the start.) */
   let started = false;
   function tick() {
     if (video.ended) {
@@ -789,23 +794,10 @@
     }
   }
 
-  let trimmed = false;
   function startHero() {
     if (started || fellBack) return;
     clearTimeout(loadTimeout);
     clearTimeout(bootDelay);
-    /* Skip the stretch where a phone's centred crop has him off-frame. Do it
-       BEFORE releasing the boot overlay so the seek is never visible, and never
-       block on it — if it doesn't report back, just play from wherever we are. */
-    if (!trimmed && heroCropped() && video.currentTime < HERO_TRIM) {
-      trimmed = true;
-      let resumed = false;
-      const resume = () => { if (resumed) return; resumed = true; startHero(); };
-      video.addEventListener("seeked", resume, { once: true });
-      setTimeout(resume, 500);
-      try { video.currentTime = HERO_TRIM; } catch (e) { resume(); }
-      return;
-    }
     bootHide();
     if (!bootDone) { setTimeout(startHero, 100); return; } // wait out the demo hold
     started = true;
