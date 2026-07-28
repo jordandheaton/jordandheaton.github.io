@@ -26,7 +26,7 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 
 body {
-  background: #eef1f6; /* light everywhere except the black hero banner */
+  background: #e7f0f3; /* light everywhere except the black hero banner */
   color: var(--ink);   /* kept light so hero text stays white on black; light sections override */
   font-family: var(--font-body);
   font-size: 16px;
@@ -97,6 +97,13 @@ html.booting, html.booting body { overflow: hidden; }
   display: block; height: 100%; width: 0%;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   transition: width 0.25s ease;
+}
+/* tabular-nums so the digits don't jitter the centring as it counts up */
+.boot-pct {
+  margin-top: -6px;
+  font-size: 0.68rem; letter-spacing: 0.18em;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- scroll progress ---------- */
@@ -330,7 +337,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .about-gallery::before,
 .about-gallery::after {
   content: ""; position: absolute; top: 0; bottom: 0; width: 26px; z-index: 3;
-  background-image: radial-gradient(circle, #eef1f6 0 3.1px, transparent 3.8px);
+  background-image: radial-gradient(circle, #e7f0f3 0 3.1px, transparent 3.8px);
   background-size: 26px 24px; background-repeat: repeat-y; background-position: center;
 }
 .about-gallery::before { left: 0; }
@@ -666,7 +673,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
    ============================================================ */
 .about, .skills-band {
   position: relative; z-index: 1;
-  background: #eef1f6;
+  background: #e7f0f3;
   color: #0c1526;
 }
 .work { position: relative; z-index: 1; } /* dark island — kept out of the light set */

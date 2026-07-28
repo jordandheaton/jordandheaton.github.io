@@ -719,6 +719,16 @@
          visible by default. */
   const boot = document.getElementById("boot");
   const bootFill = document.getElementById("boot-fill");
+  const bootPct = document.getElementById("boot-pct");
+  // monotonic: the readout may never count DOWN, which is what it would do when
+  // the elapsed-time floor outruns the real buffered fraction and then reality
+  // catches up. A percentage that goes backwards reads as broken.
+  let bootSeen = 0;
+  const setBoot = p => {
+    bootSeen = Math.max(bootSeen, Math.min(1, p));
+    if (bootFill) bootFill.style.width = Math.round(bootSeen * 100) + "%";
+    if (bootPct) bootPct.textContent = Math.round(bootSeen * 100) + "%";
+  };
   // ?bootdemo holds the overlay longer, to review it on a warm cache
   const demoBoot = new URLSearchParams(location.search).has("bootdemo");
   const DEMO_MS = 2600;
@@ -737,8 +747,7 @@
     } catch (e) { /* buffered ranges can throw mid-load */ }
     // elapsed-time floor keeps the bar honest-looking when there is nothing to
     // measure (no video at all, or an instant cache hit)
-    const p = Math.max(floor, buf);
-    if (bootFill) bootFill.style.width = Math.round(Math.min(1, p) * 100) + "%";
+    setBoot(Math.max(floor, buf));
   }, 90);
 
   function bootHide() {
@@ -755,7 +764,7 @@
     clearInterval(bootTick);
     document.documentElement.classList.remove("booting");
     if (boot) {
-      if (bootFill) bootFill.style.width = "100%";
+      setBoot(1);                       // always land on 100% before fading
       boot.classList.add("done");
       setTimeout(() => boot.classList.add("gone"), 600);
     }
