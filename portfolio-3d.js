@@ -708,65 +708,62 @@
     if (heroMission) heroMission.classList.add("show");
   }
 
-  if (!video || reduced) { fallbackNoVideo(); return; }
-
-  /* boot overlay: if the walk-in footage isn't instantly playable (slow network),
-     hold the page on black with a small progress bar so the walk-in is never
-     missed — cached repeat visits skip it entirely. Gives up after 8s. */
+  /* ---- boot overlay -------------------------------------------------------
+     The overlay is already on screen (CSS shows it from the first paint), so
+     this code only fills the bar and decides WHEN to let go. Two rules:
+       - never release before MIN_MS, or a warm cache turns the loading screen
+         into a black flicker, which looks like a bug rather than an intro;
+       - always release, on every exit path. It used to sit after the
+         `!video || reduced` early return, so reduced-motion visitors would have
+         been left staring at a black screen forever once the overlay became
+         visible by default. */
   const boot = document.getElementById("boot");
   const bootFill = document.getElementById("boot-fill");
-  // ?bootdemo forces the overlay for DEMO_MS even on a warm cache — the only way to
-  // review it locally, where the footage loads instantly
+  // ?bootdemo holds the overlay longer, to review it on a warm cache
   const demoBoot = new URLSearchParams(location.search).has("bootdemo");
   const DEMO_MS = 2600;
-  let bootShown = false, bootDone = false, bootTick = 0, bootT0 = 0, bootPending = false;
+  const MIN_MS = demoBoot ? DEMO_MS : 900;
+  const bootT0 = performance.now();
+  let bootDone = false, bootTick = 0, bootPending = false;
 
-  function bootShow() {
-    if (bootDone || bootShown || !boot) return;
-    bootShown = true;
-    bootT0 = performance.now();
-    boot.classList.add("on");
-    document.documentElement.style.overflow = "hidden"; // hold the scroll while black
-    let floor = 0;
-    bootTick = setInterval(() => {
-      floor = Math.min(demoBoot ? 1 : 0.9, floor + (demoBoot ? 0.08 : 0.03)); // moves between progress events
-      let buf = 0;
-      try {
-        if (video.buffered.length && video.duration) {
-          buf = video.buffered.end(video.buffered.length - 1) / video.duration;
-        }
-      } catch (e) { /* buffered ranges can throw mid-load */ }
-      const p = demoBoot ? floor : Math.max(floor * 0.55, buf);
-      if (bootFill) bootFill.style.width = Math.round(Math.min(1, p) * 100) + "%";
-    }, 180);
-  }
+  let floor = 0;
+  bootTick = setInterval(() => {
+    floor = Math.min(0.92, floor + (demoBoot ? 0.05 : 0.09));
+    let buf = 0;
+    try {
+      if (video && video.buffered.length && video.duration) {
+        buf = video.buffered.end(video.buffered.length - 1) / video.duration;
+      }
+    } catch (e) { /* buffered ranges can throw mid-load */ }
+    // elapsed-time floor keeps the bar honest-looking when there is nothing to
+    // measure (no video at all, or an instant cache hit)
+    const p = Math.max(floor, buf);
+    if (bootFill) bootFill.style.width = Math.round(Math.min(1, p) * 100) + "%";
+  }, 90);
 
   function bootHide() {
     if (bootDone) return;
-    if (demoBoot && bootShown) { // hold the full demo before releasing
-      const left = DEMO_MS - (performance.now() - bootT0);
-      if (left > 0) {
-        if (!bootPending) {
-          bootPending = true;
-          setTimeout(() => { bootPending = false; bootHide(); }, left);
-        }
-        return;
+    const left = MIN_MS - (performance.now() - bootT0);
+    if (left > 0) {                       // too early — come back when it's earned
+      if (!bootPending) {
+        bootPending = true;
+        setTimeout(() => { bootPending = false; bootHide(); }, left);
       }
+      return;
     }
     bootDone = true;
     clearInterval(bootTick);
-    if (bootShown && boot) {
+    document.documentElement.classList.remove("booting");
+    if (boot) {
       if (bootFill) bootFill.style.width = "100%";
-      document.documentElement.style.overflow = "";
       boot.classList.add("done");
-      setTimeout(() => boot.classList.remove("on"), 500);
+      setTimeout(() => boot.classList.add("gone"), 600);
     }
   }
+  // last-resort release: whatever happens to the video, the page comes back
+  const bootFailsafe = setTimeout(bootHide, 8000);
 
-  if (demoBoot) bootShow();
-  const bootDelay = setTimeout(() => {
-    if (video.readyState < 3) bootShow(); // still buffering → cover the wait
-  }, 200);
+  if (!video || reduced) { fallbackNoVideo(); bootHide(); return; }
 
   video.addEventListener("error", () => { bootHide(); fallbackNoVideo(); });
   const loadTimeout = setTimeout(() => {
@@ -797,7 +794,7 @@
   function startHero() {
     if (started || fellBack) return;
     clearTimeout(loadTimeout);
-    clearTimeout(bootDelay);
+    clearTimeout(bootFailsafe);
     bootHide();
     if (!bootDone) { setTimeout(startHero, 100); return; } // wait out the demo hold
     started = true;

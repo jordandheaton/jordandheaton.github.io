@@ -60,15 +60,27 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---------- boot overlay (hero video buffering) ---------- */
+/* Shown from the FIRST PAINT, not switched on later by JS. It used to be
+   display:none until a 200ms timer decided the video was slow, which meant the
+   page rendered, then went black, then came back — the site flashing before its
+   own loading screen. This stylesheet is render-blocking in <head>, so opening
+   with the overlay already up is what makes the boot read as intentional. */
 #boot {
   position: fixed; inset: 0; z-index: 80;
   background: #000;
-  display: none;
+  display: flex;
   flex-direction: column; align-items: center; justify-content: center; gap: 20px;
   transition: opacity 0.45s ease;
+  /* Safety net: if the script never runs (blocked, cached-broken, an error
+     before bootHide) this fades the overlay out on its own rather than leaving
+     a permanently black page. JS normally finishes long before 9s. */
+  animation: boot-failsafe 0.45s ease 9s forwards;
 }
-#boot.on { display: flex; }
-#boot.done { opacity: 0; pointer-events: none; }
+@keyframes boot-failsafe { to { opacity: 0; visibility: hidden; } }
+#boot.done { opacity: 0; pointer-events: none; animation: none; }
+#boot.gone { display: none; }
+/* scroll stays locked while the overlay is up; released in bootHide() */
+html.booting, html.booting body { overflow: hidden; }
 .boot-mark {
   display: grid; place-items: center;
   width: 46px; height: 46px; border-radius: 14px;
