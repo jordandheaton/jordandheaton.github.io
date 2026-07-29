@@ -3,8 +3,12 @@
   "pad": 4,
   "pattern": "frames/frame-{i}.jpg?v=10",
   "fps": 24,
-  "_note": "Frame indices are ABSOLUTE. The journey opens on the leaf (frame 507); frames 0-506 are the older chromosome->leaf micro half, kept on disk but no longer part of the journey. motion.js and starmask.js are baked against absolute indices, so do not rebase this numbering.",
   "chapters": [
+    { "start": 0,    "end": 84,   "label": "Chromosome",           "a0": -6.0, "a1": -5.0 },
+    { "start": 84,   "end": 169,  "label": "Cell nucleus",         "a0": -5.0, "a1": -4.0 },
+    { "start": 169,  "end": 338,  "label": "Plant cell",           "a0": -4.0, "a1": -3.0 },
+    { "start": 338,  "end": 422,  "label": "Leaf cells",           "a0": -3.0, "a1": -2.0 },
+    { "start": 422,  "end": 507,  "label": "Leaf surface",         "a0": -2.0, "a1": -1.0 },
     { "start": 507,  "end": 555,  "label": "Leaf",                 "a0": -1.0, "a1": 1.0 },
     { "start": 555,  "end": 579,  "label": "Tree canopy",          "a0": 1.0,  "a1": 3.0 },
     { "start": 579,  "end": 651,  "label": "Forest",               "a0": 3.0,  "a1": 5.3 },
