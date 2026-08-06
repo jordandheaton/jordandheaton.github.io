@@ -36,3 +36,7 @@ myplanBYU/scraper/data/catalog.json
 # NOTE: the scheduled refresh writes its logs to %LOCALAPPDATA%\myplanBYU\logs,
 # outside the repo and outside OneDrive -- a synced log gets locked mid-run and
 # the run loses its whole log. Nothing to ignore here; see scraper/REFRESH.md.
+
+# Cloudflare Worker local state + secrets staging (myplanBYU/worker)
+myplanBYU/worker/.wrangler/
+myplanBYU/worker/.secrets.tmp.json
