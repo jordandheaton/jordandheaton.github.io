@@ -21,7 +21,11 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html { scroll-behavior: auto; }
+html {
+  scroll-behavior: auto;
+  /* story overlay locks scroll (overflow:hidden) — without a stable gutter the whole page jumps when the scrollbar vanishes */
+  scrollbar-gutter: stable;
+}
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 
@@ -472,8 +476,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .work-particles { position: absolute; inset: 0; width: 100%; height: 100%; }
 .work-backdrop .work-ghost { position: absolute; inset: 0; }
 
-/* project windows: a staggered vertical column that overlaps the sticky backdrop
-   (margin pulls it up) and floats up over the fixed title as you scroll */
+/* the work area: FEATURED trio + others pane, laid over the sticky desk backdrop */
 .work-grid {
   position: relative; z-index: 2;
   margin-top: -100vh;              /* overlap the sticky backdrop */
@@ -712,13 +715,12 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 
 /* write-up typography inside the window */
 .wx-media { display: none; }  /* reserved for the showcase video (later phase) */
-.wx-learned { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 6px; }
+.wx-learned { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
 .wx-learned span {
   border: 1px solid rgba(120, 150, 220, 0.22); border-radius: 999px;
   padding: 5px 12px; font-size: 0.64rem; letter-spacing: 0.08em; color: #8fa2c4;
 }
 .wx-learned-label { display: block; margin-top: 26px; color: var(--theme, #4d8cff); font-size: 0.62rem; letter-spacing: 0.26em; text-transform: uppercase; opacity: 0.8; }
-.wx-learned { margin-top: 10px; }
 .wx-sec { margin-top: 28px; padding: 0; }  /* .wx-sec is a <section> too — kill the generic section padding */
 .wx-step { display: block; color: var(--theme, #4d8cff); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 10px; opacity: 0.85; }
 .wx-sec p { color: #a8b8d8; font-size: 0.97rem; line-height: 1.75; max-width: 66ch; margin-bottom: 12px; }
@@ -743,6 +745,8 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
   .wmax-bar { border-radius: 0; }
   .wmax-scroll { padding: 4px 22px 24px; }
   .wmax-live { padding: 13px 22px 15px; }
+  .pane-arrow { right: -6px; padding: 12px 6px; }
+  .arrow-back { left: -6px; }
 }
 
 /* ============================================================
@@ -879,6 +883,10 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+@media (max-width: 1100px) {
+  #featured-grid { grid-template-columns: 1fr; gap: 26px; }  /* three-across gets cramped below ~1100 (spec: desktop is ≥1100) */
+}
+
 @media (max-width: 900px) {
   .bar { padding: 14px 18px; }
   .bar-links { gap: 18px; font-size: 0.68rem; }
@@ -896,8 +904,6 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
   .scroll-line { width: 54px; height: 1px; background: linear-gradient(90deg, var(--accent-2), transparent); transform-origin: left; animation-name: scroll-drip-h; }
   @keyframes scroll-drip-h { 0% { transform: scaleX(0); } 45% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0; } }
   .work-grid { padding: 16vh 4vw 26vh; }  /* match the desktop compact desk: the trio starts on the first screen after the dive */
-  #featured-grid { grid-template-columns: 1fr; gap: 26px; }
-  .work-grid .wcard, .work-grid .wcard:nth-child(odd), .work-grid .wcard:nth-child(even) { align-self: center; margin-left: 0; margin-right: 0; }
   .wcard-featured { min-height: 0; }
   .wcard-body { padding: 24px 24px 6px; }
   .wcard-cta { padding: 13px 24px 15px; }
