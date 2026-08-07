@@ -651,6 +651,64 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 @media (max-width: 1100px) { #other-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px)  { #other-grid { grid-template-columns: 1fr; } }
 
+/* ===================== MAXIMIZE WINDOW (story overlay) ===================== */
+.wmax-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(3, 5, 10, 0.72);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  opacity: 0; transition: opacity 0.3s;
+}
+.wmax-backdrop.show { opacity: 1; }
+.wmax-backdrop[hidden] { display: none; }
+
+.wmax {
+  position: fixed; inset: 0; margin: auto; z-index: 61;  /* inset+margin centers WITHOUT transform, so GSAP owns transform for the FLIP */
+  width: min(940px, 94vw); height: min(86vh, 900px);
+  display: flex; flex-direction: column;
+  border: 1px solid rgba(120, 150, 220, 0.28); border-radius: 12px;
+  background: linear-gradient(180deg, rgba(18, 23, 36, 0.985), rgba(11, 15, 24, 0.985));
+  box-shadow: 0 60px 140px rgba(0, 0, 0, 0.7), 0 0 60px -12px var(--theme, #4d8cff);
+  opacity: 0; transition: opacity 0.25s;
+}
+.wmax.show { opacity: 1; }
+.wmax[hidden] { display: none; }
+.wmax-bar { border-radius: 12px 12px 0 0; }
+.wwin button.w-close { width: 28px; height: 20px; border-radius: 4px; display: grid; place-items: center; color: #5a6685; transition: background 0.2s, color 0.2s; }
+.wwin button.w-close::before { content: "\2715"; font-size: 0.72rem; line-height: 1; }
+.wwin button.w-close:hover { background: #e23b4e; color: #fff; }
+
+.wmax-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 6px 42px 30px; }
+.wmax-foot { border-top: 1px solid rgba(120, 150, 220, 0.12); }
+.wmax-live { display: block; padding: 14px 42px 16px; color: var(--theme, #4d8cff); font-size: 0.72rem; letter-spacing: 0.14em; transition: background 0.25s, letter-spacing 0.25s; }
+.wmax-live:hover { background: rgba(120, 150, 220, 0.06); letter-spacing: 0.2em; }
+
+/* write-up typography inside the window */
+.wx-media { display: none; }  /* reserved for the showcase video (later phase) */
+.wx-learned { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 6px; }
+.wx-learned span {
+  border: 1px solid rgba(120, 150, 220, 0.22); border-radius: 999px;
+  padding: 5px 12px; font-size: 0.64rem; letter-spacing: 0.08em; color: #8fa2c4;
+}
+.wx-sec { margin-top: 28px; }
+.wx-step { display: block; color: var(--theme, #4d8cff); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 10px; opacity: 0.85; }
+.wx-sec p { color: #a8b8d8; font-size: 0.97rem; line-height: 1.75; max-width: 66ch; margin-bottom: 12px; }
+.wx-sec p:last-child { margin-bottom: 0; }
+.wx-sec em { color: #dbe6fa; font-style: normal; font-weight: 600; }
+
+/* scroll lock while the window is open */
+html.wmax-open, html.wmax-open body { overflow: hidden; }
+
+/* the grid card whose story is open hides so the window reads as it, maximized */
+.wcard-featured.is-open { visibility: hidden; }
+
+/* full-screen sheet on phones */
+@media (max-width: 720px) {
+  .wmax { width: 100vw; height: 100dvh; border-radius: 0; }
+  .wmax-bar { border-radius: 0; }
+  .wmax-scroll { padding: 4px 22px 24px; }
+  .wmax-live { padding: 13px 22px 15px; }
+}
+
 /* ============================================================
    SKILLS marquees
    ============================================================ */
