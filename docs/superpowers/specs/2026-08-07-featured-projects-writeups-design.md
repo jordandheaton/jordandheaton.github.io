@@ -25,6 +25,10 @@ Split the seven project cards into **three featured projects with personal write
 - myplanBYU users: "Classmates use it — I got a few texts from people saying they use it and asking for the link," feedback keeps evolving the product, and "I'm in the process of seeing if I can get BYU to buy or implement its ideas." (Write-up must phrase the BYU conversation as in-progress — no claims of adoption.)
 - Universe Scroller footage: **AI-generated clips Jordan directed**, assembled into one continuous journey. The write-up is honest about this; the engineering (memory budget, scroll mapping, star masking) is the human work.
 - Universe Scroller hook: the Blender kid — the age-ten Blender tutorial from the About section, the itch to build worlds.
+- **What he learned** (added at spec review; appears both as card chips and as a short write-up beat):
+  - **myplanBYU:** building a RAG AI solution; web scrapers; testing by both benchmark datasets and human evaluation — "that testing website I made". The real artifacts: `myplanBYU/tests/` (a browser test site — curated cases + recorded goldens are the benchmark side; the site's whole purpose is reading full plan diffs, which is the human side; it is **git-excluded/local-only**, so the write-up may describe it but must not link it) and `myplanBYU/scraper/eval/eval_advisor.py` (a fixed question set through the real advisor API — automated checks for mechanical failures, transcripts for human reading; Jordan's own docstring, usable verbatim: *"the transcript is for reading, because 'is this good advice' is not a thing a regex knows"*).
+  - **Universe Scroller:** artistic AI — directing video/image generation.
+  - **Process:** no items given by Jordan; proposed `process mapping · trial design · variance` — confirm wording with him at draft time.
 
 ## The write-ups
 
@@ -32,7 +36,9 @@ Split the seven project cards into **three featured projects with personal write
 
 First person, short declaratives, concrete numbers, warm with a dry edge. Contractions fine. No résumé-speak ("leveraged", "spearheaded"), no feature lists disguised as prose. Calibrated against the About section and the Process page ("The routine didn't just get faster, it got predictable").
 
-Common structure: **why → what it is → what got hard (highlights only) → what happened with real people → where it's going.**
+Common structure: **why → what it is → what got hard (highlights only) → what happened with real people → what it taught me → where it's going.**
+
+The "what it taught me" beat is short — the same items as the card's `learned:` chips, one plain sentence each, not a bullet dump.
 
 ### myplanBYU (~650 words — the longest)
 
@@ -40,7 +46,8 @@ Common structure: **why → what it is → what got hard (highlights only) → w
 2. **What it is.** Type your major (or two, plus minors); get a prerequisite-valid, semester-by-semester plan built from live catalog data. Import your transcript. Compare what-ifs. And the point: it surfaces the scholarships and study abroads that fit the plan you actually have.
 3. **What got hard** (kept brief). Teaching it BYU's real rules — the official MAP sheet outranks the catalog when they disagree. A scraper that refreshes the data weekly without me touching it. An AI advisor that had to stay free, so it runs on a quota. (Verify current numbers at draft time: ~161 MAP majors solvable, advisor quota, course counts — check `myplanBYU/js/data.js` and the live site rather than trusting this spec.)
 4. **Real people.** Classmates text me asking for the link. The feedback form keeps changing the product — real students found real bugs, and the git log shows them fixed the same week. This is the part that made it feel less like a project and more like a product.
-5. **Where it's going.** I'm now seeing whether BYU wants to adopt its ideas. In-progress phrasing only.
+5. **What it taught me.** Building a RAG AI solution end to end; scrapers that keep data fresh without me; and that testing an AI system takes two nets — benchmark datasets for the mechanical failures, and human evaluation for the rest (I built a little testing website just to read the results, because "is this good advice" is not a thing a regex knows).
+6. **Where it's going.** I'm now seeing whether BYU wants to adopt its ideas. In-progress phrasing only.
 
 ### Universe Scroller (~550 words)
 
@@ -48,14 +55,15 @@ Common structure: **why → what it is → what got hard (highlights only) → w
 2. **What it is.** A powers-of-ten journey you drive. It opens on a leaf at human scale and travels both ways: down into the cell, out to the galaxy. Scroll is the camera.
 3. **Honest about the footage.** I directed AI-generated zoom clips and stitched them into one continuous shot. Then the part no AI did: 1,445 frames that would decode to ~5 GB, kept inside a phone's memory budget with a sliding window (~135 frames live at once); scroll mapped to orders of magnitude, not frames, so an inch of scroll always means the same zoom; stars that know where the planets are (precomputed masks, not pixel reads).
 4. **The test that lied** (short beat). A verification harness once reported eleven green checks against a page that had rendered zero frames — the render loop was frozen and the test couldn't tell. Lesson: a passing check that a stopped system can also pass proves nothing. Real headless-Chrome verification now drives the whole span.
-5. **Close.** No framework, no build step, a lot of deleting.
+5. **What it taught me.** Directing artistic AI — video generation as a filmmaking tool, where the skill is deciding what to ask for and what to throw away — plus what it takes to make heavy media feel weightless in a browser.
+6. **Close.** No framework, no build step, a lot of deleting.
 
 ### Process Improvement Analysis (~450 words)
 
 1. **Context.** Moved for a London study abroad; the old morning routine stopped working in the new place. Treated it like a process problem, not a willpower problem.
 2. **The redesign.** One baseline week, then two deliberately boring changes: timers in the bathroom (10-minute shower, 5-minute shave — capped at 15), and decisions moved to the night before (clothes laid out, grab-and-go breakfast).
 3. **The result.** Five trials each. 43.6 → 29.4 minutes average, 33% faster — but the better story is the spread: 13 minutes down to 4. Every improved trial beat every baseline trial; the two sets don't overlap. *The routine didn't just get faster, it got predictable.*
-4. **Why it's here.** Same muscle as the bigger projects — measure, change one thing, measure again — pointed at the smallest system I own.
+4. **What it taught me / why it's here.** Same muscle as the bigger projects — map the process, change one thing, measure again, let variance tell the truth — pointed at the smallest system I own. (Learned items proposed, pending Jordan's confirmation: process mapping, trial design, variance as the honest metric.)
 
 ### Card blurbs (visible, collapsed state)
 
@@ -77,7 +85,12 @@ Each card also gets a row of three stat chips (mono, small):
 
 - Label `FEATURED` (mono, small) above the trio; the `SELECTED WORK` ghost backdrop and particles stay.
 - Desktop (≥ ~1100px): three cards in one row, sized so all three are fully on screen at once — roughly 30vw each, taller than current cards. Tablet/mobile: stacked full-width.
-- Card anatomy (top to bottom): window bar (path, index, min/max/close dots — max and the page icon both expand, close is decorative in collapsed state), kind line, title, blurb, stat chips, tags, footer row with `> open_project` (opens the live project, as today) and a page-icon button `read the story` (expands the card).
+- Card anatomy (top to bottom): window bar (path, index, min/max/close dots — max and the page icon both expand, close is decorative in collapsed state), kind line, title, blurb, stat chips, **learned row**, footer row with `> open_project` (opens the live project, as today) and a page-icon button `read the story` (expands the card).
+- The learned row **replaces** the old bracket-tags row (net zero rows added). Mono, small, labeled so it reads as skills at a glance:
+  - myplanBYU: `learned: rag ai · scrapers · ai evals (benchmark + human)`
+  - Universe Scroller: `learned: video-gen ai · canvas performance · memory budgets`
+  - Process: `learned: process mapping · trial design · variance` (wording pending Jordan)
+- Featured cards drop the `[bracket] [tags]` row entirely; other-projects cards keep their existing tags unchanged.
 - Entry animation: cards slide in **from the right** (x offset ~120px + fade), staggered ~0.15s, when the desk section enters view. Replaces the current rise-up `ScrollTrigger.batch`. Runs once. `prefers-reduced-motion`: no offset, instant reveal.
 - Numbering keeps the inventory joke: featured are `01/07`–`03/07`.
 
