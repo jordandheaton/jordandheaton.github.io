@@ -90,10 +90,25 @@ body {
   stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
 }
 .topbar .back:active { opacity: 1; }
+/* Groups the two links so row-reverse on desktop still moves them together. */
+.topbar-nav { display: inline-flex; align-items: center; gap: 2px; pointer-events: none; }
+.topbar .howto {
+  margin: -12px 0; padding: 12px 10px;
+  color: var(--accent); text-decoration: none; pointer-events: auto;
+  font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+  opacity: .5; transition: opacity .25s;
+  text-shadow: 0 1px 6px rgba(0,0,0,.9);
+  border-left: 1px solid rgba(159,192,255,.25);
+}
+.topbar .howto:hover, .topbar .howto:active { opacity: .9; }
+.topbar .howto span, .topbar .howto { white-space: nowrap; }
 .topbar .title {
   font-size: 10px; letter-spacing: .34em; text-transform: uppercase;
   color: var(--accent); opacity: .5; text-shadow: 0 1px 6px rgba(0,0,0,.9);
   white-space: nowrap;
+  /* Hidden on phones: two links plus the title overflow a 390px bar, and the
+     title is the one item carrying no navigation. Restored on desktop. */
+  display: none;
 }
 
 /* ------------------------------------------------------------ chapter rail */
@@ -105,8 +120,11 @@ body {
 .rail .tick {
   -webkit-appearance: none; appearance: none; background: none; border: 0;
   display: flex; align-items: center; justify-content: flex-end;
-  /* small marks, generous invisible hit area */
-  width: 40px; height: 26px; padding: 0 6px 0 0; cursor: pointer;
+  /* Small marks, generous invisible hit area. The rail carries one tick per
+     chapter (17 since the micro half came back), so the hit area gives up height
+     rather than let the rail run off a short viewport. --ticks is set by JS. */
+  width: 40px; height: min(26px, calc(78vh / var(--ticks, 12)));
+  padding: 0 6px 0 0; cursor: pointer;
   pointer-events: auto;
 }
 .rail .tick i {
@@ -191,6 +209,7 @@ body {
 @media (min-width: 760px) {
   :root { --pad: 26px; --safe-b: 24px; --safe-t: 20px; }
   .topbar { flex-direction: row-reverse; }
+  .topbar .title { display: inline; }
   .topbar .title { font-size: 11px; letter-spacing: .4em; opacity: .62; }
   .topbar .back { font-size: 11px; }
   .hud { right: auto; bottom: calc(var(--safe-b) + 22px); }
@@ -198,7 +217,7 @@ body {
   .hud .label { font-size: 11px; }
   .hud .exp { font-size: 12px; }
   .hint { left: 50%; bottom: calc(var(--safe-b) + 22px); }
-  .rail .tick { height: 30px; width: 46px; }
+  .rail .tick { height: min(30px, calc(78vh / var(--ticks, 12))); width: 46px; }
   .rail .tick:hover i { opacity: .85; width: 16px; }
 }
 

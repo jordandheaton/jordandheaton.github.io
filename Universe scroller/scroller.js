@@ -46,8 +46,16 @@
     const PAD = manifest.pad || 4;
     const src = i => manifest.pattern.replace('{i}', String(i + 1).padStart(PAD, '0'));
     const CH = manifest.chapters;
-    const FIRST = CH[0].start;          // journey opens here (the leaf)
+    const FIRST = CH[0].start;          // smallest scale in the journey (chromosome)
     const LAST  = CH[CH.length - 1].end;
+
+    // The journey OPENS in the middle, not at either end: you land at human scale
+    // on the leaf and travel out to the galaxy or down into the cell. FIRST is the
+    // floor, OPEN_* is only where the page starts -- everything below the leaf
+    // stays reachable by scrolling up.
+    const OPEN_CH    = Math.max(0, CH.findIndex(c => c.label === manifest.openAt));
+    const OPEN_FRAME = CH[OPEN_CH].start;
+    const OPEN_LOG   = CH[OPEN_CH].a0;
 
     if (reduced) return renderStatic(src, CH);
 
@@ -237,7 +245,14 @@
       clearTimeout(rTimer);
       rTimer = setTimeout(() => {
         lastW = innerWidth; lastH = innerHeight;
-        sizeCanvas(); sizeSpacer(); dirty = true;
+        // Crossing the 760px breakpoint rewrites PX_PER_DECADE, so the same
+        // scrollY means a different scale afterwards. Re-anchor on the scale
+        // actually on screen, or a rotation would fling you across the journey.
+        const heldLog = logMAt(playhead);
+        sizeCanvas(); sizeSpacer();
+        scrollTo(0, Math.round(scrollForLog(heldLog)));
+        restY = openY();
+        dirty = true;
       }, 140);
     });
 
@@ -351,6 +366,7 @@
     }
 
     // ---- chapter rail ----------------------------------------------------
+    railEl.style.setProperty('--ticks', CH.length);   // rail sizes itself to fit
     const ticks = CH.map((c, i) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -372,9 +388,14 @@
     let activeCh = -1;
 
     // ---- boot preload ----------------------------------------------------
+    // Straddles the opening frame rather than starting at it: the leaf is a fork,
+    // and a visitor who scrolls up into the cell on arrival should not hit a wall
+    // of undecoded frames. Weighted outward, since most people travel out first.
     let booted = 0;
     const bootTotal = Math.min(BOOT_FRAMES, LAST - FIRST + 1);
-    for (let i = FIRST; i < FIRST + bootTotal; i++) {
+    const bootLo = Math.max(FIRST, Math.min(LAST - bootTotal + 1,
+                                            OPEN_FRAME - Math.round(bootTotal * 0.35)));
+    for (let i = bootLo; i < bootLo + bootTotal; i++) {
       req(i);
       const im = store.get(i);
       im.addEventListener('load',  onBoot);
@@ -385,7 +406,7 @@
       lfillEl.style.width = (booted / bootTotal * 100) + '%';
       if (booted >= bootTotal) {
         loaderEl.classList.add('gone');
-        ensureWindow(FIRST);
+        ensureWindow(OPEN_FRAME);
       }
     }
     function decodedCount() {
@@ -394,15 +415,28 @@
     }
 
     // ---- scroll → target -------------------------------------------------
-    let playhead = FIRST, target = FIRST, dirty = true, lastWin = -999, lastDrawn = -999;
-    scrollTo(0, 0);
+    let playhead = OPEN_FRAME, target = OPEN_FRAME, dirty = true, lastWin = -999, lastDrawn = -999;
 
-    $('hint-text').textContent = isTouch ? 'Swipe up to travel' : 'Scroll to travel';
-    addEventListener('scroll', () => { if (scrollY > 40) hintEl.classList.add('gone'); }, { passive: true });
+    // Land on the leaf. scrollRestoration is already 'manual', so this is the
+    // position on every visit, including a reload part-way through the journey.
+    const openY = () => Math.round(scrollForLog(OPEN_LOG));
+    let restY = openY();
+    scrollTo(0, restY);
+
+    // The hint hides once you have MOVED, in either direction -- measured against
+    // the opening offset, not against zero, which is now half a journey away.
+    $('hint-text').textContent = isTouch ? 'Swipe to travel' : 'Scroll either way to travel';
+    const moved = () => Math.abs(scrollY - restY) > 40;
+    addEventListener('scroll', () => { if (moved()) hintEl.classList.add('gone'); }, { passive: true });
     let lastScrollY = -1;
 
+    // Chapters share their boundary frame (Leaf surface ends on 507, Leaf starts
+    // on it), so a frame on a seam belongs to the chapter it OPENS -- half-open
+    // [start, end). Without this the journey opens on frame 507 labelled "Leaf
+    // surface", one chapter behind where it actually is. The final frame has no
+    // chapter after it to fall into, hence the trailing clamp.
     const chapterIdxAt = idx => {
-      for (let i = 0; i < CH.length; i++) if (idx >= CH[i].start && idx <= CH[i].end) return i;
+      for (let i = 0; i < CH.length; i++) if (idx >= CH[i].start && idx < CH[i].end) return i;
       return CH.length - 1;
     };
     function logMAt(ph) {
@@ -436,7 +470,7 @@
       if (scrollY !== lastScrollY) {
         lastScrollY = scrollY;
         target = Math.max(FIRST, Math.min(LAST, frameFromScroll(scrollY)));
-        if (scrollY > 40) hintEl.classList.add('gone');
+        if (moved()) hintEl.classList.add('gone');
       }
       playhead += (target - playhead) * 0.22;
       if (Math.abs(target - playhead) < 0.005) playhead = target;
@@ -495,7 +529,7 @@
 
     const wrap = document.createElement('div');
     wrap.className = 'rm-wrap';
-    wrap.innerHTML = '<h1>Universe Scroller</h1><p class="sub">Leaf to the Milky Way &middot; static view (reduced motion)</p>';
+    wrap.innerHTML = '<h1>Universe Scroller</h1><p class="sub">Chromosome to the Milky Way &middot; static view (reduced motion)</p>';
     CH.forEach((c, k) => {
       const step = document.createElement('div');
       step.className = 'rm-step';
