@@ -745,7 +745,15 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
   .wmax-bar { border-radius: 0; }
   .wmax-scroll { padding: 4px 22px 24px; }
   .wmax-live { padding: 13px 22px 15px; }
-  .pane-arrow { right: -6px; padding: 12px 6px; }
+  /* on phones the arrow inevitably rides the full-width cards, so it becomes a
+     floating pill — backed and bordered — instead of a bare glyph over text */
+  .pane-arrow {
+    right: -6px; padding: 12px 8px;
+    background: rgba(11, 15, 24, 0.88);
+    border: 1px solid rgba(120, 150, 220, 0.28);
+    border-radius: 999px;
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  }
   .arrow-back { left: -6px; }
 }
 
