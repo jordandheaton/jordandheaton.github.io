@@ -573,8 +573,6 @@
     });
     tl.to({}, { duration: HOLD_PX }); // brief hold on the dark screen, then the pin releases into the desk
 
-    // staggered vertical reveal — each project window rises + fades in as it enters
-    // view; clearProps afterwards so the CSS hover-lift keeps working
     // featured trio slides in FROM THE RIGHT, staggered; the other-projects
     // strip keeps a quiet rise. clearProps afterwards so the CSS hover-lift
     // keeps working.
