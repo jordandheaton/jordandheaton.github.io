@@ -573,19 +573,23 @@
     });
     tl.to({}, { duration: HOLD_PX }); // brief hold on the dark screen, then the pin releases into the desk
 
-    // featured trio slides in FROM THE RIGHT, staggered; the other-projects
-    // strip keeps a quiet rise. clearProps afterwards so the CSS hover-lift
-    // keeps working.
+    // the trio slides in from the right BY ITSELF as soon as the desk locks —
+    // no extra scrolling required. A beat of delay lets the title start typing
+    // first so the entrance reads title → cards.
     if (!reduced) {
       gsap.set("#featured-grid .wcard", { opacity: 0, x: 120 });
-      ScrollTrigger.batch("#featured-grid .wcard", {
-        start: "top 85%",
-        onEnter: (els) => gsap.to(els, {
-          opacity: 1, x: 0, duration: 0.9, ease: "power3.out",
-          stagger: 0.15, overwrite: true, clearProps: "transform,opacity",
-        }),
+      ScrollTrigger.create({
+        trigger: "#work-desk",
+        start: "top 55%",
         once: true,
+        onEnter: () => gsap.to("#featured-grid .wcard", {
+          opacity: 1, x: 0, duration: 0.85, ease: "power3.out",
+          stagger: 0.18, delay: 0.35, overwrite: true, clearProps: "transform,opacity",
+        }),
       });
+    }
+
+    if (!reduced) {
       gsap.set("#other-grid .wcard", { opacity: 0, y: 40 });
       ScrollTrigger.batch("#other-grid .wcard", {
         start: "top 92%",
