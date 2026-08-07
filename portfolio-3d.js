@@ -575,13 +575,25 @@
 
     // staggered vertical reveal — each project window rises + fades in as it enters
     // view; clearProps afterwards so the CSS hover-lift keeps working
+    // featured trio slides in FROM THE RIGHT, staggered; the other-projects
+    // strip keeps a quiet rise. clearProps afterwards so the CSS hover-lift
+    // keeps working.
     if (!reduced) {
-      gsap.set("#work-grid .wcard", { opacity: 0, y: 80 });
-      ScrollTrigger.batch("#work-grid .wcard", {
-        start: "top 90%",
+      gsap.set("#featured-grid .wcard", { opacity: 0, x: 120 });
+      ScrollTrigger.batch("#featured-grid .wcard", {
+        start: "top 85%",
         onEnter: (els) => gsap.to(els, {
-          opacity: 1, y: 0, duration: 1.0, ease: "power3.out",
-          stagger: 0.12, overwrite: true, clearProps: "transform,opacity",
+          opacity: 1, x: 0, duration: 0.9, ease: "power3.out",
+          stagger: 0.15, overwrite: true, clearProps: "transform,opacity",
+        }),
+        once: true,
+      });
+      gsap.set("#other-grid .wcard", { opacity: 0, y: 40 });
+      ScrollTrigger.batch("#other-grid .wcard", {
+        start: "top 92%",
+        onEnter: (els) => gsap.to(els, {
+          opacity: 1, y: 0, duration: 0.8, ease: "power3.out",
+          stagger: 0.08, overwrite: true, clearProps: "transform,opacity",
         }),
         once: true,
       });
