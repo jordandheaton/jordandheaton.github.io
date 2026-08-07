@@ -710,12 +710,13 @@
   const wmaxBackdrop = document.getElementById("wmax-backdrop");
   const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe", process: "card-process" };
   let wmaxCard = null;      // card whose story is open
+  let wmaxBusy = false;  // held through open/close tweens — the wmaxCard mutex alone frees too early (onComplete lags it by ~0.4s)
   let wmaxLastFocus = null;
 
   function wmaxInstant() { return reduced || document.hidden; }
 
   function openStory(card) {
-    if (!wmax || !card || wmaxCard) return;
+    if (!wmax || !card || wmaxCard || wmaxBusy) return;
     const content = card.querySelector(".wexp-content");
     if (!content) return;
     wmaxCard = card;
@@ -741,16 +742,17 @@
 
     if (wmaxInstant()) { wmaxFocusIn(); return; }
     const to = wmax.getBoundingClientRect();
+    wmaxBusy = true;
     gsap.fromTo(wmax,
       { x: from.left - to.left, y: from.top - to.top,
         scaleX: from.width / to.width, scaleY: from.height / to.height,
         transformOrigin: "top left" },
       { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.45, ease: "power3.inOut",
-        onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); wmaxFocusIn(); } });
+        onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); wmaxFocusIn(); wmaxBusy = false; } });
   }
 
   function closeStory() {
-    if (!wmaxCard) return;
+    if (!wmaxCard || wmaxBusy) return;
     const card = wmaxCard;
     wmaxCard = null;
     const finish = () => {
@@ -771,14 +773,16 @@
     const from = wmax.getBoundingClientRect();
     // card scrolled far off screen → just fade instead of flying across the page
     if (to.bottom < -40 || to.top > innerHeight + 40) {
-      gsap.to(wmax, { opacity: 0, duration: 0.2, onComplete: () => { gsap.set(wmax, { clearProps: "opacity" }); finish(); } });
+      wmaxBusy = true;
+      gsap.to(wmax, { opacity: 0, duration: 0.2, onComplete: () => { gsap.set(wmax, { clearProps: "opacity" }); finish(); wmaxBusy = false; } });
       return;
     }
+    wmaxBusy = true;
     gsap.to(wmax, {
       x: to.left - from.left, y: to.top - from.top,
       scaleX: to.width / from.width, scaleY: to.height / from.height,
       transformOrigin: "top left", duration: 0.4, ease: "power3.inOut",
-      onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); finish(); },
+      onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); finish(); wmaxBusy = false; },
     });
   }
 
