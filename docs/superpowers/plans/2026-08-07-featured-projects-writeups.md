@@ -879,6 +879,175 @@ Tell Jordan the rework is live locally and ask him to: read all three write-ups 
 
 ---
 
+## Amendment — 2026-08-07 live review (Tasks 8–10)
+
+Jordan reviewed the built state after Task 5 and requested three changes (see the spec's Amendments section). Tasks 8–10 below implement them. Execution order: Task 8 → 9 → 10 → 6 → 7. Task 2's strip markup is intentionally restructured by Task 10 (its cards and CSS survive inside the new pane). Task 7 additionally verifies the amendment behaviors and gives mobile a dedicated pass.
+
+### Task 8: Bracket-style skill row on cards
+
+**Files:**
+- Modify: `index.html` (3 featured cards: replace each `span.wcard-learned` line; add a label line inside each `.wx-learned`)
+- Modify: `portfolio-3d.css` (remove `.wcard-learned` rules; add `.wx-learned-label`)
+
+**Interfaces:** consumes existing `.wcard-tags` styling; `.wx-learned` keeps its class and position.
+
+- [ ] **Step 1:** In each featured card, replace the `<span class="wcard-learned mono">…</span>` line with a bracket-tags line:
+  - myplan: `<span class="wcard-tags mono">[optimization algorithms] [rag ai] [api design] [ai evals]</span>`
+  - universe: `<span class="wcard-tags mono">[video-gen ai] [canvas performance] [memory budgets]</span>`
+  - process: `<span class="wcard-tags mono">[process mapping] [trial design] [variance]</span>`
+- [ ] **Step 2:** In each card's `.wexp-content`, insert immediately before the `<div class="wx-learned …">` line: `<span class="wx-learned-label mono">learned &amp; worked with</span>`
+- [ ] **Step 3:** In `portfolio-3d.css`, delete the two `.wcard-learned` rules (`.wcard-learned { … }` and `.wcard-learned b { … }`) and append after the `.wx-learned span` rule:
+
+```css
+.wx-learned-label { display: block; margin-top: 26px; color: var(--theme, #4d8cff); font-size: 0.62rem; letter-spacing: 0.26em; text-transform: uppercase; opacity: 0.8; }
+.wx-learned { margin-top: 10px; }
+```
+
+- [ ] **Step 4:** Verify: `document.querySelectorAll('.wcard-learned').length` → 0; `document.querySelectorAll('#featured-grid .wcard-tags').length` → 3; `document.querySelectorAll('.wx-learned-label').length` → 3; open the myplan story → label renders above the chips. Console clean.
+- [ ] **Step 5:** Commit: `git add index.html portfolio-3d.css && git commit -m "Cards: skills as bracket tags; the labeled learned grid lives in the story"`
+
+### Task 9: Auto slide-in when the desk appears
+
+**Files:**
+- Modify: `portfolio-3d.css` (`.work-grid` padding)
+- Modify: `portfolio-3d.js` (replace the featured `ScrollTrigger.batch` with a desk-appear trigger)
+
+- [ ] **Step 1:** In `portfolio-3d.css`, change `.work-grid` padding from `118vh 0 34vh` to `16vh 0 30vh` (the trio now sits on the first desk screen, over the ghost title).
+- [ ] **Step 2:** In `portfolio-3d.js`, replace the featured half of the reveal block (the `gsap.set("#featured-grid .wcard", …)` + its `ScrollTrigger.batch(…)`) with:
+
+```js
+    // the trio slides in from the right BY ITSELF as soon as the desk locks —
+    // no extra scrolling required. A beat of delay lets the title start typing
+    // first so the entrance reads title → cards.
+    if (!reduced) {
+      gsap.set("#featured-grid .wcard", { opacity: 0, x: 120 });
+      ScrollTrigger.create({
+        trigger: "#work-desk",
+        start: "top 55%",
+        once: true,
+        onEnter: () => gsap.to("#featured-grid .wcard", {
+          opacity: 1, x: 0, duration: 0.85, ease: "power3.out",
+          stagger: 0.18, delay: 0.35, overwrite: true, clearProps: "transform,opacity",
+        }),
+      });
+    }
+```
+
+Keep the `#other-grid` batch for now — Task 10 removes it when the pane takes over. Note the featured and other reveals end up as two separate `if (!reduced)` blocks; that is fine.
+
+- [ ] **Step 3:** Verify: initial `gsap.set` state (`getComputedStyle(...).opacity === "0"`); `grep -n "work-desk" portfolio-3d.js` shows the new trigger; scroll-feel lands on Jordan in Task 7. Console clean.
+- [ ] **Step 4:** Commit: `git add portfolio-3d.css portfolio-3d.js && git commit -m "Featured trio slides in on its own when the desk appears"`
+
+### Task 10: Right-edge arrow + swipe pane for other projects
+
+**Files:**
+- Modify: `index.html` (restructure inside `#work-grid`)
+- Modify: `portfolio-3d.css`
+- Modify: `portfolio-3d.js` (pane toggle; drop the `#other-grid` scroll batch)
+
+**Interfaces:** produces `#work-panes`, `#pane-featured`, `#pane-others`, `#pane-next`, `#pane-back`; class `.is-active` marks the visible pane. Deep links and `openStory` are unaffected (cards keep their ids).
+
+- [ ] **Step 1:** Restructure `index.html` inside `#work-grid` to:
+
+```html
+        <div class="work-grid" id="work-grid">
+          <div class="work-panes" id="work-panes">
+
+            <div class="work-pane is-active" id="pane-featured">
+              <span class="work-label mono">FEATURED</span>
+              <div id="featured-grid">
+                <!-- the three existing article.wcard-featured cards, unchanged -->
+              </div>
+            </div>
+
+            <div class="work-pane" id="pane-others" aria-hidden="true">
+              <span class="work-label mono">OTHER PROJECTS</span>
+              <div id="other-grid">
+                <!-- the four existing a.wcard-mini cards, unchanged -->
+              </div>
+            </div>
+
+          </div><!-- /work-panes -->
+
+          <button class="pane-arrow arrow-next" id="pane-next" type="button" aria-label="See other projects">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+            <span class="mono">other<br>projects</span>
+          </button>
+          <button class="pane-arrow arrow-back" id="pane-back" type="button" aria-label="Back to featured projects" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            <span class="mono">featured</span>
+          </button>
+        </div><!-- /work-grid -->
+```
+
+Move (do not rewrite) the existing featured cards and mini cards into their panes. Delete the old standalone `work-label` lines. `id="work-grid"` stays on the wrapper.
+
+- [ ] **Step 2:** CSS — replace the `.work-label-other` rule and add the pane/arrow system (append to the featured section):
+
+```css
+/* ---- panes: featured <-> others swipe ---- */
+.work-panes { position: relative; display: grid; overflow: hidden; }
+.work-pane {
+  grid-area: 1 / 1; min-width: 0;
+  transform: translateX(0); opacity: 1;
+  transition: transform 0.55s cubic-bezier(.6,.05,.25,1), opacity 0.4s, visibility 0s 0s;
+}
+.work-pane:not(.is-active) { pointer-events: none; visibility: hidden; opacity: 0; transition: transform 0.55s cubic-bezier(.6,.05,.25,1), opacity 0.4s, visibility 0s 0.55s; }
+#pane-featured:not(.is-active) { transform: translateX(-8%); }
+#pane-others:not(.is-active) { transform: translateX(8%); }
+
+.pane-arrow {
+  position: absolute; top: 50%; right: -14px; transform: translateY(-50%);
+  z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 18px 10px; background: none; border: 0; cursor: pointer;
+  color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
+  transition: color 0.25s, transform 0.25s;
+}
+.pane-arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pane-arrow::before {
+  content: ""; position: absolute; inset: -12px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(120,150,220,0.22), transparent 72%);
+  opacity: 0; transition: opacity 0.3s; z-index: -1;
+}
+.pane-arrow:hover { color: #eaf2ff; transform: translateY(-50%) translateX(3px); }
+.pane-arrow:hover::before { opacity: 1; }
+.arrow-back { right: auto; left: -14px; }
+.arrow-back:hover { transform: translateY(-50%) translateX(-3px); }
+.pane-arrow[hidden] { display: none; }
+```
+
+Also delete the now-dead `.work-label-other { margin-top: 72px; }` rule and, in the two `@media` blocks, any `#other-grid` column overrides stay as-is (they still apply inside the pane).
+
+- [ ] **Step 3:** JS — in `portfolio-3d.js`: delete the `#other-grid` `gsap.set` + `ScrollTrigger.batch` block (the pane swipe replaces it), and add after the expansion module:
+
+```js
+  /* ---------------- work panes: featured <-> other projects ---------------- */
+  const paneFeat = document.getElementById("pane-featured");
+  const paneOthers = document.getElementById("pane-others");
+  const paneNext = document.getElementById("pane-next");
+  const paneBack = document.getElementById("pane-back");
+  if (paneFeat && paneOthers && paneNext && paneBack) {
+    function showPane(others) {
+      paneFeat.classList.toggle("is-active", !others);
+      paneOthers.classList.toggle("is-active", others);
+      paneFeat.setAttribute("aria-hidden", others ? "true" : "false");
+      paneOthers.setAttribute("aria-hidden", others ? "false" : "true");
+      paneNext.hidden = others;
+      paneBack.hidden = !others;
+      (others ? paneBack : paneNext).focus();
+    }
+    paneNext.addEventListener("click", () => showPane(true));
+    paneBack.addEventListener("click", () => showPane(false));
+  }
+```
+
+- [ ] **Step 4:** Verify in the preview: initial state (featured active, next arrow visible, back hidden); `document.getElementById('pane-next').click()` → others pane `.is-active`, aria-hidden flipped, back arrow visible, 4 mini cards present and clickable; `pane-back.click()` → featured returns; story expansion still opens from featured pane; console clean.
+- [ ] **Step 5:** Commit: `git add index.html portfolio-3d.css portfolio-3d.js && git commit -m "Other projects live behind a right-edge arrow — the work area swipes between panes"`
+
+### Task 7 (amended scope)
+
+Task 7's matrix additionally covers: auto slide-in setup state, pane swipe round-trip, arrow hover glow (screenshot), story expansion from both panes' context, and a dedicated mobile pass at 375×812 — panes swipe correctly, arrows are reachable and not overlapping cards (shrink/offset via a `@media (max-width: 720px)` tweak if needed: `.pane-arrow { right: -6px; padding: 12px 6px; }` / `.arrow-back { left: -6px; }`), story sheet still full-screen, and the trio's auto slide-in fires at phone width.
+
 ## Self-review notes (already applied)
 
 - **Spec coverage:** featured trio + blurbs + stat chips + learned rows (T1), other strip + numbering (T2), slide-from-right + reduced-motion (T3), maximize window + media slot + learned grid + chrome (T4), open/close/Esc/backdrop/focus/scroll-lock/hash/one-at-a-time (T5), deep links + scroller retarget + writeup.html deletion (T6), verification matrix + cache-bust + Jordan gate (T7). Videos/Higgsfield: out of scope per spec.

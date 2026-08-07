@@ -133,6 +133,15 @@ No new runtime dependencies (GSAP already loaded; Flip plugin from the same CDN 
 - Checks: three featured cards fully visible together at 1280×800; slide-in fires once; expand/collapse round-trip from both triggers; Esc + backdrop close; focus restore; body scroll lock; deep links `#myplan` / `#universe` / `#process` open the right window after boot; scroller's "how it works" lands on the auto-opened universe card; other-projects links unchanged; mobile sheet at 375×812; reduced-motion path; no regression to the laptop dive or desk typing effect.
 - Fact-check every number in the write-ups against the current code/site before shipping (major count, frame count, quota) — the spec's numbers are from memory and may drift.
 
+## Amendments — 2026-08-07 live review (Jordan, after seeing Tasks 1–5)
+
+Jordan approved the direction ("I like how it is so far") with three changes:
+
+1. **Card skill row: brackets, not a label.** The collapsed card drops the `learned:` labeled row; the same learned items render in the old bracket-tag style instead (e.g. `[optimization algorithms] [rag ai] [api design] [ai evals]`), reusing `.wcard-tags`. The labeled "learned & worked with" presentation lives ONLY in the expanded window (`.wx-learned`, which gains a small label line).
+2. **Auto slide-in.** The featured trio no longer waits for per-card scroll intersection. When the desk section appears (pin release / "SELECTED WORK" locking), the three cards slide in from the right automatically, one after the other, over the ghost title — no further scrolling required. The desk's tall top padding shrinks so the trio sits on the first desk screen. Reduced motion: instant.
+3. **Others behind an arrow, not below.** The other-projects strip below the trio is removed. A right-edge arrow control (chevron with "other projects" text beneath, soft gradient glow on hover) swipes the work area horizontally to an OTHER PROJECTS pane holding the four mini cards; a mirrored left arrow swipes back to FEATURED. Numbering stays 01/07–07/07.
+4. **Mobile pass** after all of the above: panes, arrows, auto slide-in, and the story sheet all verified at phone width.
+
 ## Out of scope
 
 - Autoplay showcase videos + Higgsfield generation (next phase; media slot reserved).
