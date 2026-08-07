@@ -700,6 +700,115 @@
     if (ccv && !reduced) spawnBits(ccv, document.getElementById("contact"));
   }
 
+  /* ---------------- featured story: maximize-window expansion ----------------
+     One overlay serves all three cards. Opening MOVES the card's .wexp-content
+     node into #wmax-body (no cloning, no fetching); closing moves it back.
+     Instant path when reduced-motion OR document.hidden — a frozen rAF loop
+     must never leave the window half-open. */
+  const wmax = document.getElementById("wmax");
+  const wmaxBody = document.getElementById("wmax-body");
+  const wmaxBackdrop = document.getElementById("wmax-backdrop");
+  const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe", process: "card-process" };
+  let wmaxCard = null;      // card whose story is open
+  let wmaxLastFocus = null;
+
+  function wmaxInstant() { return reduced || document.hidden; }
+
+  function openStory(card) {
+    if (!wmax || !card || wmaxCard) return;
+    const content = card.querySelector(".wexp-content");
+    if (!content) return;
+    wmaxCard = card;
+    wmaxLastFocus = document.activeElement;
+
+    wmaxBody.appendChild(content);
+    content.hidden = false;
+    document.getElementById("wmax-path").textContent = card.dataset.path || "";
+    document.getElementById("wmax-open").setAttribute("href", card.dataset.href || "#");
+    wmax.style.setProperty("--theme", getComputedStyle(card).getPropertyValue("--theme").trim());
+
+    wmaxBackdrop.hidden = false;
+    wmax.hidden = false;
+    document.documentElement.classList.add("wmax-open");
+    lenis.stop();
+    if (card.dataset.slug) history.replaceState(null, "", "#" + card.dataset.slug);
+
+    const from = card.getBoundingClientRect();      // measure BEFORE hiding the card
+    card.classList.add("is-open");
+    wmaxBackdrop.classList.add("show");
+    wmax.classList.add("show");
+    wmaxBody.scrollTop = 0;
+
+    if (wmaxInstant()) { wmaxFocusIn(); return; }
+    const to = wmax.getBoundingClientRect();
+    gsap.fromTo(wmax,
+      { x: from.left - to.left, y: from.top - to.top,
+        scaleX: from.width / to.width, scaleY: from.height / to.height,
+        transformOrigin: "top left" },
+      { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.45, ease: "power3.inOut",
+        onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); wmaxFocusIn(); } });
+  }
+
+  function closeStory() {
+    if (!wmaxCard) return;
+    const card = wmaxCard;
+    wmaxCard = null;
+    const finish = () => {
+      wmax.classList.remove("show");
+      wmaxBackdrop.classList.remove("show");
+      wmax.hidden = true;
+      wmaxBackdrop.hidden = true;
+      const content = wmaxBody.querySelector(".wexp-content");
+      if (content) { content.hidden = true; card.appendChild(content); }
+      card.classList.remove("is-open");
+      document.documentElement.classList.remove("wmax-open");
+      lenis.start();
+      history.replaceState(null, "", location.pathname + location.search);
+      if (wmaxLastFocus && wmaxLastFocus.focus) wmaxLastFocus.focus();
+    };
+    if (wmaxInstant()) { finish(); return; }
+    const to = card.getBoundingClientRect();
+    const from = wmax.getBoundingClientRect();
+    // card scrolled far off screen → just fade instead of flying across the page
+    if (to.bottom < -40 || to.top > innerHeight + 40) {
+      gsap.to(wmax, { opacity: 0, duration: 0.2, onComplete: () => { gsap.set(wmax, { clearProps: "opacity" }); finish(); } });
+      return;
+    }
+    gsap.to(wmax, {
+      x: to.left - from.left, y: to.top - from.top,
+      scaleX: to.width / from.width, scaleY: to.height / from.height,
+      transformOrigin: "top left", duration: 0.4, ease: "power3.inOut",
+      onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); finish(); },
+    });
+  }
+
+  function wmaxFocusIn() {
+    const btn = document.getElementById("wmax-close");
+    if (btn) btn.focus();
+  }
+
+  if (wmax) {
+    document.querySelectorAll(".wcard-featured").forEach((card) => {
+      card.querySelectorAll(".w-max, .wcard-read").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openStory(card); });
+      });
+    });
+    wmaxBackdrop.addEventListener("click", closeStory);
+    document.getElementById("wmax-close").addEventListener("click", closeStory);
+    document.addEventListener("keydown", (e) => {
+      if (!wmaxCard) return;
+      if (e.key === "Escape") { closeStory(); return; }
+      if (e.key === "Tab") {
+        // keep focus inside the dialog
+        const focusables = wmax.querySelectorAll("button, a[href]");
+        if (!focusables.length) return;
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+  }
+
   /* ============================================================
      HERO — black-studio walk-in video, plays once per page load.
      A small analysis canvas watches for him entering the frame,
