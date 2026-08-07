@@ -728,6 +728,12 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 /* scroll lock while the window is open */
 html.wmax-open, html.wmax-open body { overflow: hidden; }
 
+/* the JS reveal/FLIP paths already gate on `reduced`; these CSS transitions
+   (pane swipe, overlay fade, arrow glow) need their own gate */
+@media (prefers-reduced-motion: reduce) {
+  .work-pane, .wmax, .wmax-backdrop, .pane-arrow, .pane-arrow::before { transition: none; }
+}
+
 /* the grid card whose story is open hides so the window reads as it, maximized */
 .wcard-featured.is-open { visibility: hidden; }
 
@@ -889,7 +895,7 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
   .scroll-cue { flex-direction: row; align-items: center; }
   .scroll-line { width: 54px; height: 1px; background: linear-gradient(90deg, var(--accent-2), transparent); transform-origin: left; animation-name: scroll-drip-h; }
   @keyframes scroll-drip-h { 0% { transform: scaleX(0); } 45% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0; } }
-  .work-grid { padding: 120vh 4vw 30vh; }
+  .work-grid { padding: 16vh 4vw 26vh; }  /* match the desktop compact desk: the trio starts on the first screen after the dive */
   #featured-grid { grid-template-columns: 1fr; gap: 26px; }
   .work-grid .wcard, .work-grid .wcard:nth-child(odd), .work-grid .wcard:nth-child(even) { align-self: center; margin-left: 0; margin-right: 0; }
   .wcard-featured { min-height: 0; }
