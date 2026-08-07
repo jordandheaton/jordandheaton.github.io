@@ -691,6 +691,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wmax {
   position: fixed; inset: 0; margin: auto; z-index: 61;  /* inset+margin centers WITHOUT transform, so GSAP owns transform for the FLIP */
   width: min(940px, 94vw); height: min(86vh, 900px);
+  padding: 0;  /* #wmax is a <section>: the site's generic `section` padding (16vh 7vw) must not inset the window chrome */
   display: flex; flex-direction: column;
   border: 1px solid rgba(120, 150, 220, 0.28); border-radius: 12px;
   background: linear-gradient(180deg, rgba(18, 23, 36, 0.985), rgba(11, 15, 24, 0.985));
@@ -718,7 +719,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 }
 .wx-learned-label { display: block; margin-top: 26px; color: var(--theme, #4d8cff); font-size: 0.62rem; letter-spacing: 0.26em; text-transform: uppercase; opacity: 0.8; }
 .wx-learned { margin-top: 10px; }
-.wx-sec { margin-top: 28px; }
+.wx-sec { margin-top: 28px; padding: 0; }  /* .wx-sec is a <section> too — kill the generic section padding */
 .wx-step { display: block; color: var(--theme, #4d8cff); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 10px; opacity: 0.85; }
 .wx-sec p { color: #a8b8d8; font-size: 0.97rem; line-height: 1.75; max-width: 66ch; margin-bottom: 12px; }
 .wx-sec p:last-child { margin-bottom: 0; }
