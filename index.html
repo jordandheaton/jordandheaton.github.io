@@ -220,117 +220,179 @@
         </div>
         <div class="work-grid" id="work-grid">
 
-          <a class="wcard theme-myplan" href="https://myplan.jordanheaton.com/" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-map-location-dot" aria-hidden="true"></i>
-            <span class="wcard-bar">
-              <span class="wpath mono">~/projects/myplan-byu.app</span>
-              <span class="wcard-index mono">01/07</span>
-              <span class="wwin" aria-hidden="true"><b class="w-min"></b><b class="w-max"></b><b class="w-close"></b></span>
-            </span>
-            <div class="wcard-body">
-              <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>WEB APP — RUNNING</span>
-              <h3>myplanBYU — Degree Optimizer</h3>
-              <p>A constraint solver that builds a prerequisite-valid, semester-by-semester plan for any BYU major. Import your transcript, compare what-ifs, and see scholarships &amp; study-abroad that fit — all from live catalog data.</p>
-              <span class="wcard-tags mono">[constraint-solver] [javascript] [rag]</span>
-            </div>
-            <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
-          </a>
+          <span class="work-label mono">FEATURED</span>
+          <div id="featured-grid">
 
-          <a class="wcard theme-liquid" href="Liquid%20Simulator/liquid-simulator.html" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-droplet" aria-hidden="true"></i>
-            <span class="wcard-bar">
-              <span class="wpath mono">~/projects/liquid-sim.exe</span>
-              <span class="wcard-index mono">02/07</span>
-              <span class="wwin" aria-hidden="true"><b class="w-min"></b><b class="w-max"></b><b class="w-close"></b></span>
-            </span>
-            <div class="wcard-body">
-              <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>SIMULATION — RUNNING</span>
-              <h3>Liquid Simulator</h3>
-              <p>A real-time, interactive liquid &amp; particle physics simulation on HTML canvas, with live controls to tune the fluid.</p>
-              <span class="wcard-tags mono">[canvas] [physics] [javascript]</span>
-            </div>
-            <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
-          </a>
+            <!-- ============ 01 · myplanBYU ============ -->
+            <article class="wcard wcard-featured theme-myplan" id="card-myplan" data-slug="myplan"
+                     data-path="~/projects/myplan-byu.app" data-href="https://myplan.jordanheaton.com/">
+              <i class="wcard-bg fas fa-map-location-dot" aria-hidden="true"></i>
+              <span class="wcard-bar">
+                <span class="wpath mono">~/projects/myplan-byu.app</span>
+                <span class="wcard-index mono">01/07</span>
+                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the myplanBYU story"></button><b class="w-close" aria-hidden="true"></b></span>
+              </span>
+              <div class="wcard-body">
+                <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>WEB APP — RUNNING</span>
+                <h3>myplanBYU — Degree Optimizer</h3>
+                <p class="wcard-blurb">Students miss scholarships and study abroads they never knew existed. I built the tool I wish I'd had: type your major, get a real semester-by-semester plan — and see everything that fits it. Classmates text me for the link now.</p>
+                <ul class="wcard-stats mono" aria-label="Quick stats">
+                  <li>175 majors</li><li>live catalog</li><li>real users</li>
+                </ul>
+                <span class="wcard-learned mono"><b>learned:</b> optimization algorithms · rag ai · api design · ai evals (benchmark + human)</span>
+              </div>
+              <div class="wcard-foot">
+                <a class="wcard-cta mono" href="https://myplan.jordanheaton.com/" target="_blank" rel="noopener">&gt; open_project<span class="wcur" aria-hidden="true"></span></a>
+                <button class="wcard-read mono" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  read_the_story
+                </button>
+              </div>
+              <div class="wexp-content" hidden>
+                <div class="wx-media" aria-hidden="true"></div>
+                <div class="wx-learned mono" aria-label="Learned and worked with">
+                  <span>optimization algorithms</span><span>rag ai</span><span>api design</span><span>ai evals — benchmark + human</span><span>scrapers + data pipelines with quality gates</span><span>data modeling (7,000+ courses)</span><span>prompt-injection testing</span><span>serverless / edge deployment</span><span>cost engineering</span>
+                </div>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">01 · The problem I actually had</h4>
+                  <p>Planning my own path through BYU was painful — MAP sheets, prerequisite chains, GE boxes, all of it spread across PDFs and tabs that don't talk to each other. But that wasn't the thing that bothered me most. The thing that bothered me was how much students miss because nobody tells them it exists. Scholarships with three applicants. Study abroads that fit their major perfectly. Clubs, research grants, test-out exams. You can't ask about something you don't know exists — and by the time you find out, it's often too late to matter.</p>
+                  <p>So this is the tool I wish someone had handed me as a freshman: one that answers the questions you didn't know to ask.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">02 · What it is</h4>
+                  <p>Type in your major — or two majors and a minor, if you're feeling ambitious — and it builds a semester-by-semester plan that respects every prerequisite, every season a course is actually offered, and BYU's own credit rules. Import your transcript and it picks up where you are, not where a template thinks you should be. Then the part I care about most: it looks at the plan you actually have and surfaces what fits it — scholarships, study abroads, clubs, even who's teaching each course next semester.</p>
+                  <p>There's an AI advisor built in, grounded in the same data, for the questions a form can't anticipate.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">03 · What got hard</h4>
+                  <p>Almost everything, eventually. BYU's official MAP sheets and its course catalog disagree with each other more than you'd hope, so the solver had to learn a rule I never found written down anywhere: the sheet advisors actually hand out wins, and the conflict becomes a warning instead of a silent re-shuffle. The data refreshes itself weekly through a scraper pipeline that rejects its own bad output before it can deploy. And the advisor had to stay free for students, which meant building quotas and budget caps before building anything clever.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">04 · Real people</h4>
+                  <p>Classmates text me asking for the link. That still feels strange to say. There's a feedback form inside the app, and real students keep finding real problems — a GE that should double-count, a course the plan dropped — and those reports have turned into same-week fixes more times than I can count. Somewhere along the way this stopped being a project and started being a product with users I don't want to let down.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">05 · What it taught me</h4>
+                  <p>How to build a RAG AI system end to end — scraping, embeddings, retrieval, and the prompt that ties it together. How to design a small API with quotas and budget caps so a free tool stays free. How to schedule under real constraints, which is optimization with feelings. And how to test an AI: benchmark datasets catch the mechanical failures, but I ended up building a little testing website just to read the answers myself — because "is this good advice" is not a thing a regex knows.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">06 · Where it's going</h4>
+                  <p>I'm talking with people at BYU about whether the university could adopt it — or at least its ideas. Whatever happens there, it keeps getting better every week, because the feedback keeps coming.</p>
+                </section>
+              </div>
+            </article>
 
-          <a class="wcard theme-resume" href="IS%20201%20Web%20Project/index.html" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-file-lines" aria-hidden="true"></i>
-            <span class="wcard-bar">
-              <span class="wpath mono">~/projects/interactive-resume.html</span>
-              <span class="wcard-index mono">03/07</span>
-              <span class="wwin" aria-hidden="true"><b class="w-min"></b><b class="w-max"></b><b class="w-close"></b></span>
-            </span>
-            <div class="wcard-body">
-              <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>WEBSITE — RUNNING</span>
-              <h3>Interactive Résumé</h3>
-              <p>A responsive personal résumé site built from scratch — sticky nav, sidebar profile, clean typographic sections.</p>
-              <span class="wcard-tags mono">[html] [css] [responsive]</span>
-            </div>
-            <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
-          </a>
+            <!-- ============ 02 · Universe Scroller ============ -->
+            <article class="wcard wcard-featured theme-universe" id="card-universe" data-slug="universe"
+                     data-path="~/projects/universe-scroller.app" data-href="Universe%20scroller/index.html">
+              <i class="wcard-bg fas fa-leaf" aria-hidden="true"></i>
+              <span class="wcard-bar">
+                <span class="wpath mono">~/projects/universe-scroller.app</span>
+                <span class="wcard-index mono">02/07</span>
+                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the Universe Scroller story"></button><b class="w-close" aria-hidden="true"></b></span>
+              </span>
+              <div class="wcard-body">
+                <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>SCROLL EXPERIENCE — RUNNING</span>
+                <h3>Universe Scroller</h3>
+                <p class="wcard-blurb">I've been building 3D worlds since a Blender tutorial at age ten. This one runs from a chromosome to the Milky Way — 27 orders of magnitude of AI footage I directed, scrubbed frame-by-frame to your scroll.</p>
+                <ul class="wcard-stats mono" aria-label="Quick stats">
+                  <li>27 orders of magnitude</li><li>1,445 frames</li><li>ai-directed footage</li>
+                </ul>
+                <span class="wcard-learned mono"><b>learned:</b> video-gen ai · canvas performance · memory budgets</span>
+              </div>
+              <div class="wcard-foot">
+                <a class="wcard-cta mono" href="Universe%20scroller/index.html" target="_blank" rel="noopener">&gt; open_project<span class="wcur" aria-hidden="true"></span></a>
+                <button class="wcard-read mono" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  read_the_story
+                </button>
+              </div>
+              <div class="wexp-content" hidden>
+                <div class="wx-media" aria-hidden="true"></div>
+                <div class="wx-learned mono" aria-label="Learned and worked with">
+                  <span>video-gen ai</span><span>canvas performance</span><span>memory budgets</span><span>media pipelines</span><span>offline precomputation</span><span>headless-browser automation</span><span>responsive media design</span>
+                </div>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">01 · The Blender kid</h4>
+                  <p>When I was ten I found a Blender tutorial, and that was more or less that. I've been making 3D things ever since — it's the hobby that never wore off. What I always actually wanted was to build worlds, and this is the closest I've gotten: a single continuous shot from a chromosome inside a leaf cell out to the Milky Way. Twenty-seven orders of magnitude, and you're holding the camera.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">02 · What it is</h4>
+                  <p>A powers-of-ten journey driven entirely by scroll. It opens on a leaf at human scale — something you recognize — and travels both directions: scroll down and you're inside the cell; scroll up and the forest becomes a coastline becomes a planet. A readout in the corner tracks the scale, from micrometers to light-years. Stopping halfway to stare is a legitimate use of it.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">03 · I directed the footage — AI rendered it</h4>
+                  <p>The zoom clips are AI-generated video, and I'm saying that plainly because directing them was the artistic education. I decided what each scale should look like, where each cut lands, how a canopy should give way to coastline — then color-matched and stitched the clips into one continuous journey, 1,445 frames long. Video models are a strange film crew: unlimited budget, no memory. You learn fast that the skill is knowing what to ask for and what to throw away.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">04 · The engineering no AI did</h4>
+                  <p>Those 1,445 frames would decode to about five gigabytes of bitmap — phones give up long before that. So only a sliding window of roughly 135 frames exists in memory at once, weighted toward the direction you're traveling. Scroll maps to orders of magnitude rather than to frames, so an inch of scroll always means the same amount of zoom whether you're crossing a forest or the solar system. And the ambient starfield knows where the planets are — brightness masks baked ahead of time, 72 bytes per frame — so a star fades out before it would ever sit on top of the Sun.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">05 · The test that lied</h4>
+                  <p>My first automated check reported eleven green passes on a page that had rendered zero frames. The render loop was frozen; the test's success condition could be satisfied by a dead page. That lesson was worth the whole project: a check a stopped system can pass isn't a check. The journey is now verified in real headless Chrome, chapter by chapter, from one micrometer to 105,631 light-years.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">06 · The rest</h4>
+                  <p>No framework, no build step, no libraries. Plain JavaScript, one canvas, and a lot of deleting.</p>
+                </section>
+              </div>
+            </article>
 
-          <a class="wcard theme-game" href="IS%20201%20Web%20Project/game.html" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-gamepad" aria-hidden="true"></i>
-            <span class="wcard-bar">
-              <span class="wpath mono">~/projects/target-chaser.exe</span>
-              <span class="wcard-index mono">04/07</span>
-              <span class="wwin" aria-hidden="true"><b class="w-min"></b><b class="w-max"></b><b class="w-close"></b></span>
-            </span>
-            <div class="wcard-body">
-              <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>GAME — RUNNING</span>
-              <h3>BYU Target Chaser</h3>
-              <p>A fast little browser arcade game with combos, power-ups, lives, and a local high score. Vanilla JavaScript.</p>
-              <span class="wcard-tags mono">[javascript] [game]</span>
-            </div>
-            <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
-          </a>
+            <!-- ============ 03 · Process Improvement ============ -->
+            <article class="wcard wcard-featured theme-process" id="card-process" data-slug="process"
+                     data-path="~/projects/process-analysis.doc" data-href="Process%20Analysis%20Project/index.html">
+              <i class="wcard-bg fas fa-chart-line" aria-hidden="true"></i>
+              <span class="wcard-bar">
+                <span class="wpath mono">~/projects/process-analysis.doc</span>
+                <span class="wcard-index mono">03/07</span>
+                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the process improvement story"></button><b class="w-close" aria-hidden="true"></b></span>
+              </span>
+              <div class="wcard-body">
+                <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>CASE STUDY — RUNNING</span>
+                <h3>Process Improvement Analysis</h3>
+                <p class="wcard-blurb">My mornings broke when I moved to London, so I fixed them like a process, not a willpower problem. Five timed trials later: 33% faster, and every improved morning beat every baseline one.</p>
+                <ul class="wcard-stats mono" aria-label="Quick stats">
+                  <li>33% faster</li><li>5/5 trials</li><li>no overlap</li>
+                </ul>
+                <span class="wcard-learned mono"><b>learned:</b> process mapping · trial design · variance</span>
+              </div>
+              <div class="wcard-foot">
+                <a class="wcard-cta mono" href="Process%20Analysis%20Project/index.html" target="_blank" rel="noopener">&gt; open_project<span class="wcur" aria-hidden="true"></span></a>
+                <button class="wcard-read mono" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  read_the_story
+                </button>
+              </div>
+              <div class="wexp-content" hidden>
+                <div class="wx-media" aria-hidden="true"></div>
+                <div class="wx-learned mono" aria-label="Learned and worked with">
+                  <span>process mapping</span><span>trial design</span><span>variance</span><span>data storytelling</span>
+                </div>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">01 · The problem</h4>
+                  <p>I moved to London for a study abroad, and my mornings fell apart. New flat, new routine, no rhythm — I was leaving later than I meant to every day, and never by the same amount. I could have tried to have more willpower. Instead I treated it like a process problem, because that's what it was.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">02 · Baseline first</h4>
+                  <p>For a week I just measured. Wake up, shower, shave, dress, breakfast, teeth, out the door — timed every day, changing nothing. The baseline came out at 43.6 minutes on average, with a 13-minute spread between the best morning and the worst. That spread was the real finding: the routine wasn't just slow, it was unpredictable.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">03 · Two boring changes</h4>
+                  <p>The redesign is deliberately unimpressive. A 10-minute shower timer and a 5-minute shave timer cap the bathroom at fifteen minutes. Clothes get laid out the night before; breakfast becomes grab-and-go. That's it — the decisions moved to the evening, when there's time to make them, and vanished from the morning, when there isn't.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">04 · The result</h4>
+                  <p>Five trials of each. The improved mornings averaged 29.4 minutes — 33% faster — and the spread collapsed from 13 minutes to 4. Every single improved trial beat every single baseline trial; the two sets don't overlap at all. The routine didn't just get faster. It got predictable, which is the property I actually wanted. The chart on the project page is hand-built SVG, and the range bands are drawn in on purpose — the no-overlap <em>is</em> the argument.</p>
+                </section>
+                <section class="wx-sec">
+                  <h4 class="wx-step mono">05 · Why it's on this page</h4>
+                  <p>Because it's the same muscle as the big projects, pointed at the smallest system I own: map the process, change one thing at a time, measure honestly, and let variance — not vibes — tell you whether it worked.</p>
+                </section>
+              </div>
+            </article>
 
-          <a class="wcard theme-process" href="Process%20Analysis%20Project/index.html" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-chart-line" aria-hidden="true"></i>
-            <span class="wcard-bar">
-              <span class="wpath mono">~/projects/process-analysis.doc</span>
-              <span class="wcard-index mono">05/07</span>
-              <span class="wwin" aria-hidden="true"><b class="w-min"></b><b class="w-max"></b><b class="w-close"></b></span>
-            </span>
-            <div class="wcard-body">
-              <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>CASE STUDY — RUNNING</span>
-              <h3>Process Improvement Analysis</h3>
-              <p>A measured case study of a real daily workflow — baseline mapped, two changes tested, 14 minutes cut across five trials.</p>
-              <span class="wcard-tags mono">[process-design] [data-analysis]</span>
-            </div>
-            <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
-          </a>
-
-          <a class="wcard theme-ballroom" href="IS%20201%20Web%20Project/about.html" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-music" aria-hidden="true"></i>
-            <span class="wcard-bar">
-              <span class="wpath mono">~/projects/art-of-ballroom.mov</span>
-              <span class="wcard-index mono">06/07</span>
-              <span class="wwin" aria-hidden="true"><b class="w-min"></b><b class="w-max"></b><b class="w-close"></b></span>
-            </span>
-            <div class="wcard-body">
-              <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>FEATURE — RUNNING</span>
-              <h3>The Art of Ballroom</h3>
-              <p>A cinematic scroll experience on competitive ballroom — the styles, the discipline, and a featured performance.</p>
-              <span class="wcard-tags mono">[3d-scroll] [passion-project]</span>
-            </div>
-            <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
-          </a>
-
-          <a class="wcard theme-universe" href="Universe%20scroller/index.html" target="_blank" rel="noopener">
-            <i class="wcard-bg fas fa-leaf" aria-hidden="true"></i>
-            <span class="wcard-bar">
-              <span class="wpath mono">~/projects/universe-scroller.app</span>
-              <span class="wcard-index mono">07/07</span>
-              <span class="wwin" aria-hidden="true"><b class="w-min"></b><b class="w-max"></b><b class="w-close"></b></span>
-            </span>
-            <div class="wcard-body">
-              <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>SCROLL EXPERIENCE — RUNNING</span>
-              <h3>Universe Scroller</h3>
-              <p>A powers-of-ten scroll journey that opens on a leaf and travels both ways — down into a chromosome or out to the Milky Way. 27 orders of magnitude scrubbed frame by frame to your scroll, with a live readout of scale.</p>
-              <span class="wcard-tags mono">[canvas] [scroll-scrub] [powers-of-ten]</span>
-            </div>
-            <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
-          </a>
+          </div><!-- /featured-grid -->
 
         </div><!-- /work-grid -->
       </div><!-- /work-desk -->

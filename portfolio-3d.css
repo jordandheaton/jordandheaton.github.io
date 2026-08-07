@@ -475,26 +475,22 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 /* project windows: a staggered vertical column that overlaps the sticky backdrop
    (margin pulls it up) and floats up over the fixed title as you scroll */
 .work-grid {
-  --cw: min(400px, 26vw);          /* narrower cards so they scatter inside the middle 3/4 */
   position: relative; z-index: 2;
   margin-top: -100vh;              /* overlap the sticky backdrop */
-  padding: 160vh 0 175vh;          /* top: title types/holds before tiles rise · bottom: last tile fully clears the top (+ a beat of empty desktop) before contact scrolls in */
-  max-width: 75vw;                 /* keep the windows within the MIDDLE 3/4 of the screen */
+  padding: 118vh 0 34vh;           /* top: title types/holds before the cards arrive · bottom: exit beat before contact */
+  max-width: min(1560px, 92vw);
   margin-left: auto; margin-right: auto;
-  display: flex; flex-direction: column;
-  gap: clamp(120px, 22vh, 300px);  /* big gaps so they arrive one at a time */
 }
-/* scatter the six windows across the middle-3/4 band — margin-left is a fraction of the
-   free space (content minus card), fracs spanning 0→1 so they fill the band without ever
-   overflowing it at any width */
-.work-grid .wcard { align-self: flex-start; margin-left: 0; margin-right: 0; }
-.work-grid .wcard:nth-child(1) { margin-left: calc((100% - var(--cw)) * 0.00); }
-.work-grid .wcard:nth-child(2) { margin-left: calc((100% - var(--cw)) * 0.74); }
-.work-grid .wcard:nth-child(3) { margin-left: calc((100% - var(--cw)) * 0.30); }
-.work-grid .wcard:nth-child(4) { margin-left: calc((100% - var(--cw)) * 1.00); }
-.work-grid .wcard:nth-child(5) { margin-left: calc((100% - var(--cw)) * 0.16); }
-.work-grid .wcard:nth-child(6) { margin-left: calc((100% - var(--cw)) * 0.56); }
-.work-grid .wcard:nth-child(7) { margin-left: calc((100% - var(--cw)) * 0.86); }
+.work-label {
+  display: block;
+  color: #5a6884; font-size: 0.68rem; letter-spacing: 0.34em;
+  margin: 0 0 22px 4px;
+}
+#featured-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 1.6vw, 28px);
+  align-items: stretch;
+}
 
 /* faint themed watermark icon peeking from the window's corner */
 .wcard-bg {
@@ -603,6 +599,41 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .theme-process  { --theme: #1fa88f; }
 .theme-ballroom { --theme: #c065d8; }
 .theme-universe { --theme: #6a5cf5; }
+
+/* ===================== FEATURED CARDS (2026-08 rework) ===================== */
+.wcard-featured { width: auto; min-height: min(560px, 64vh); }
+.wcard-featured h3 { font-size: clamp(1.45rem, 1.9vw, 2.1rem); }
+.wcard-featured .wcard-body { padding: 26px 30px 8px; }
+.wcard-featured p.wcard-blurb { font-size: 0.94rem; max-width: none; }
+
+.wcard-stats { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0 0 14px; }
+.wcard-stats li {
+  border: 1px solid rgba(120, 150, 220, 0.22); border-radius: 999px;
+  padding: 4px 11px; font-size: 0.62rem; letter-spacing: 0.08em; color: #8fa2c4;
+}
+.wcard-learned { display: block; color: #5a6884; font-size: 0.66rem; letter-spacing: 0.08em; line-height: 1.8; }
+.wcard-learned b { color: var(--theme, #4d8cff); font-weight: 600; }
+
+/* footer: launch link + read-the-story button side by side */
+.wcard-foot { display: flex; align-items: stretch; margin-top: 22px; border-top: 1px solid rgba(120, 150, 220, 0.12); position: relative; z-index: 1; }
+.wcard-foot .wcard-cta { flex: 1; margin: 0; border-top: 0; }
+.wcard-read {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 20px; background: none; border: 0;
+  border-left: 1px solid rgba(120, 150, 220, 0.12);
+  color: #8fa2c4; font-size: 0.66rem; letter-spacing: 0.12em;
+  cursor: pointer; transition: color 0.2s, background 0.2s;
+}
+.wcard-read svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.wcard-read:hover { color: #eaf2ff; background: rgba(120, 150, 220, 0.06); }
+.wwin button { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.wwin button.w-max { width: 28px; height: 20px; border-radius: 4px; display: grid; place-items: center; color: #5a6685; transition: background 0.2s, color 0.2s; }
+.wwin button.w-max::before { content: "\25A1"; font-size: 0.6rem; line-height: 1; }
+.wcard:hover .wwin button.w-max { color: #9aa6c2; }
+.wwin button.w-max:hover { background: rgba(255,255,255,0.09); color: #eaf2ff; }
+
+/* hidden write-up payload (adopted by the maximize window in Task 4/5) */
+.wexp-content[hidden] { display: none; }
 
 /* ============================================================
    SKILLS marquees
@@ -754,9 +785,10 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   .scroll-cue { flex-direction: row; align-items: center; }
   .scroll-line { width: 54px; height: 1px; background: linear-gradient(90deg, var(--accent-2), transparent); transform-origin: left; animation-name: scroll-drip-h; }
   @keyframes scroll-drip-h { 0% { transform: scaleX(0); } 45% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0; } }
-  .work-grid { padding: 150vh 5vw 120vh; gap: clamp(80px, 18vh, 160px); max-width: 100%; }
+  .work-grid { padding: 120vh 4vw 30vh; }
+  #featured-grid { grid-template-columns: 1fr; gap: 26px; }
   .work-grid .wcard, .work-grid .wcard:nth-child(odd), .work-grid .wcard:nth-child(even) { align-self: center; margin-left: 0; margin-right: 0; }
-  .wcard { width: min(440px, 84vw); min-height: 420px; }
+  .wcard-featured { min-height: 0; }
   .wcard-body { padding: 24px 24px 6px; }
   .wcard-cta { padding: 13px 24px 15px; }
   .wpath { font-size: 0.6rem; }
@@ -818,8 +850,6 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   /* giant title wraps to two stacked lines ("SELECTED" / "WORK") instead of
      shrinking to fit one — keeps it monumental on a narrow screen */
   .work-ghost .wg { white-space: normal; text-align: center; font-size: 16.5vw; line-height: 0.95; }
-  .work-grid { padding: 135vh 4vw 125vh; gap: clamp(60px, 12vh, 110px); }
-  .wcard { width: 100%; min-height: 0; }
   .wcard-body { padding: 18px 18px 4px; }
   .wcard h3 { font-size: 1.3rem; }
   .wcard p { font-size: 0.88rem; margin-bottom: 14px; }
