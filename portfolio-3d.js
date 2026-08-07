@@ -580,7 +580,7 @@
       gsap.set("#featured-grid .wcard", { opacity: 0, x: 120 });
       ScrollTrigger.create({
         trigger: "#work-desk",
-        start: "top 55%",
+        start: "top top",
         once: true,
         onEnter: () => gsap.to("#featured-grid .wcard", {
           opacity: 1, x: 0, duration: 0.85, ease: "power3.out",
