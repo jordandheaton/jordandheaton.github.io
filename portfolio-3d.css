@@ -635,6 +635,22 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 /* hidden write-up payload (adopted by the maximize window in Task 4/5) */
 .wexp-content[hidden] { display: none; }
 
+/* ---- other projects: compact strip ---- */
+.work-label-other { margin-top: 72px; }
+#other-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 1.2vw, 22px); }
+.wcard-mini { width: auto; min-height: 0; }
+.wcard-mini .wcard-bar { padding: 9px 14px; }
+.wcard-mini .wcard-body { padding: 18px 20px 4px; }
+.wcard-mini h3 { font-size: 1.12rem; margin-bottom: 8px; }
+.wcard-mini p { font-size: 0.8rem; margin-bottom: 12px; max-width: none; }
+.wcard-mini .wcard-tags { font-size: 0.6rem; }
+.wcard-mini .wcard-cta { margin-top: 12px; padding: 10px 20px 12px; font-size: 0.64rem; }
+.wcard-mini .wcard-bg { font-size: 6.5rem; right: -14px; bottom: -22px; }
+.wcard-mini:hover { transform: translateY(-6px); }
+
+@media (max-width: 1100px) { #other-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { #other-grid { grid-template-columns: 1fr; } }
+
 /* ============================================================
    SKILLS marquees
    ============================================================ */
