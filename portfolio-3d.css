@@ -611,8 +611,6 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   border: 1px solid rgba(120, 150, 220, 0.22); border-radius: 999px;
   padding: 4px 11px; font-size: 0.62rem; letter-spacing: 0.08em; color: #8fa2c4;
 }
-.wcard-learned { display: block; color: #5a6884; font-size: 0.66rem; letter-spacing: 0.08em; line-height: 1.8; }
-.wcard-learned b { color: var(--theme, #4d8cff); font-weight: 600; }
 
 /* footer: launch link + read-the-story button side by side */
 .wcard-foot { display: flex; align-items: stretch; margin-top: 22px; border-top: 1px solid rgba(120, 150, 220, 0.12); position: relative; z-index: 1; }
@@ -689,6 +687,8 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   border: 1px solid rgba(120, 150, 220, 0.22); border-radius: 999px;
   padding: 5px 12px; font-size: 0.64rem; letter-spacing: 0.08em; color: #8fa2c4;
 }
+.wx-learned-label { display: block; margin-top: 26px; color: var(--theme, #4d8cff); font-size: 0.62rem; letter-spacing: 0.26em; text-transform: uppercase; opacity: 0.8; }
+.wx-learned { margin-top: 10px; }
 .wx-sec { margin-top: 28px; }
 .wx-step { display: block; color: var(--theme, #4d8cff); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 10px; opacity: 0.85; }
 .wx-sec p { color: #a8b8d8; font-size: 0.97rem; line-height: 1.75; max-width: 66ch; margin-bottom: 12px; }
