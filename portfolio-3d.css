@@ -634,7 +634,6 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wexp-content[hidden] { display: none; }
 
 /* ---- other projects: compact strip ---- */
-.work-label-other { margin-top: 72px; }
 #other-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 1.2vw, 22px); }
 .wcard-mini { width: auto; min-height: 0; }
 .wcard-mini .wcard-bar { padding: 9px 14px; }
@@ -648,6 +647,36 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 
 @media (max-width: 1100px) { #other-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px)  { #other-grid { grid-template-columns: 1fr; } }
+
+/* ---- panes: featured <-> others swipe ---- */
+.work-panes { position: relative; display: grid; overflow: hidden; }
+.work-pane {
+  grid-area: 1 / 1; min-width: 0;
+  transform: translateX(0); opacity: 1;
+  transition: transform 0.55s cubic-bezier(.6,.05,.25,1), opacity 0.4s, visibility 0s 0s;
+}
+.work-pane:not(.is-active) { pointer-events: none; visibility: hidden; opacity: 0; transition: transform 0.55s cubic-bezier(.6,.05,.25,1), opacity 0.4s, visibility 0s 0.55s; }
+#pane-featured:not(.is-active) { transform: translateX(-8%); }
+#pane-others:not(.is-active) { transform: translateX(8%); }
+
+.pane-arrow {
+  position: absolute; top: 50%; right: -14px; transform: translateY(-50%);
+  z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 18px 10px; background: none; border: 0; cursor: pointer;
+  color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
+  transition: color 0.25s, transform 0.25s;
+}
+.pane-arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pane-arrow::before {
+  content: ""; position: absolute; inset: -12px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(120,150,220,0.22), transparent 72%);
+  opacity: 0; transition: opacity 0.3s; z-index: -1;
+}
+.pane-arrow:hover { color: #eaf2ff; transform: translateY(-50%) translateX(3px); }
+.pane-arrow:hover::before { opacity: 1; }
+.arrow-back { right: auto; left: -14px; }
+.arrow-back:hover { transform: translateY(-50%) translateX(-3px); }
+.pane-arrow[hidden] { display: none; }
 
 /* ===================== MAXIMIZE WINDOW (story overlay) ===================== */
 .wmax-backdrop {

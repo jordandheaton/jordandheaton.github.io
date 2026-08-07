@@ -219,9 +219,11 @@
           </div>
         </div>
         <div class="work-grid" id="work-grid">
+          <div class="work-panes" id="work-panes">
 
-          <span class="work-label mono">FEATURED</span>
-          <div id="featured-grid">
+            <div class="work-pane is-active" id="pane-featured">
+              <span class="work-label mono">FEATURED</span>
+              <div id="featured-grid">
 
             <!-- ============ 01 · myplanBYU ============ -->
             <article class="wcard wcard-featured theme-myplan" id="card-myplan" data-slug="myplan"
@@ -395,10 +397,12 @@
               </div>
             </article>
 
-          </div><!-- /featured-grid -->
+              </div>
+            </div>
 
-          <span class="work-label mono work-label-other">OTHER PROJECTS</span>
-          <div id="other-grid">
+            <div class="work-pane" id="pane-others" aria-hidden="true">
+              <span class="work-label mono">OTHER PROJECTS</span>
+              <div id="other-grid">
 
             <a class="wcard wcard-mini theme-liquid" href="Liquid%20Simulator/liquid-simulator.html" target="_blank" rel="noopener">
               <i class="wcard-bg fas fa-droplet" aria-hidden="true"></i>
@@ -460,8 +464,19 @@
               <span class="wcard-cta mono">&gt; open_project<span class="wcur" aria-hidden="true"></span></span>
             </a>
 
-          </div><!-- /other-grid -->
+              </div>
+            </div>
 
+          </div><!-- /work-panes -->
+
+          <button class="pane-arrow arrow-next" id="pane-next" type="button" aria-label="See other projects">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+            <span class="mono">other<br>projects</span>
+          </button>
+          <button class="pane-arrow arrow-back" id="pane-back" type="button" aria-label="Back to featured projects" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            <span class="mono">featured</span>
+          </button>
         </div><!-- /work-grid -->
       </div><!-- /work-desk -->
     </section>

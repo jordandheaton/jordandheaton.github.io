@@ -589,18 +589,6 @@
       });
     }
 
-    if (!reduced) {
-      gsap.set("#other-grid .wcard", { opacity: 0, y: 40 });
-      ScrollTrigger.batch("#other-grid .wcard", {
-        start: "top 92%",
-        onEnter: (els) => gsap.to(els, {
-          opacity: 1, y: 0, duration: 0.8, ease: "power3.out",
-          stagger: 0.08, overwrite: true, clearProps: "transform,opacity",
-        }),
-        once: true,
-      });
-    }
-
     // "SELECTED WORK" TYPES OUT as you scroll into the dark desk (scroll-driven, so
     // no auto-type flicker) then stays as the fixed backdrop the windows float over
     if (wgTitle && wgTitleText) {
@@ -815,6 +803,25 @@
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     });
+  }
+
+  /* ---------------- work panes: featured <-> other projects ---------------- */
+  const paneFeat = document.getElementById("pane-featured");
+  const paneOthers = document.getElementById("pane-others");
+  const paneNext = document.getElementById("pane-next");
+  const paneBack = document.getElementById("pane-back");
+  if (paneFeat && paneOthers && paneNext && paneBack) {
+    function showPane(others) {
+      paneFeat.classList.toggle("is-active", !others);
+      paneOthers.classList.toggle("is-active", others);
+      paneFeat.setAttribute("aria-hidden", others ? "true" : "false");
+      paneOthers.setAttribute("aria-hidden", others ? "false" : "true");
+      paneNext.hidden = others;
+      paneBack.hidden = !others;
+      (others ? paneBack : paneNext).focus();
+    }
+    paneNext.addEventListener("click", () => showPane(true));
+    paneBack.addEventListener("click", () => showPane(false));
   }
 
   /* ============================================================
