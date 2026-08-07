@@ -578,15 +578,19 @@
     // first so the entrance reads title → cards.
     if (!reduced) {
       gsap.set("#featured-grid .wcard", { opacity: 0, x: 120 });
-      ScrollTrigger.create({
+      const featIn = () => gsap.to("#featured-grid .wcard", {
+        opacity: 1, x: 0, duration: 0.85, ease: "power3.out",
+        stagger: 0.18, delay: 0.35, overwrite: true, clearProps: "transform,opacity",
+      });
+      const featST = ScrollTrigger.create({
         trigger: "#work-desk",
         start: "top top",
         once: true,
-        onEnter: () => gsap.to("#featured-grid .wcard", {
-          opacity: 1, x: 0, duration: 0.85, ease: "power3.out",
-          stagger: 0.18, delay: 0.35, overwrite: true, clearProps: "transform,opacity",
-        }),
+        onEnter: featIn,
       });
+      // refresh-mid-page: scroll restoration can land past the desk before this
+      // trigger exists — a crossing that already happened never fires onEnter.
+      if (featST.progress > 0) { featST.kill(); featIn(); }
     }
 
     // "SELECTED WORK" TYPES OUT as you scroll into the dark desk (scroll-driven, so
@@ -823,6 +827,29 @@
     paneNext.addEventListener("click", () => showPane(true));
     paneBack.addEventListener("click", () => showPane(false));
   }
+
+  // Deep links: #myplan / #universe / #process open the story directly.
+  // Wait out the boot overlay (class-based — never touch bootDone: it is
+  // declared AFTER the boot block's early return and would throw in
+  // reduced-motion mode), then land on the desk and open the window.
+  (function wmaxDeepLink() {
+    const slug = location.hash.replace("#", "");
+    const cardId = WMAX_SLUGS[slug];
+    if (!cardId) return;
+    const tryOpen = () => {
+      if (document.documentElement.classList.contains("booting")) { setTimeout(tryOpen, 150); return; }
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const desk = document.getElementById("work-desk");
+      if (desk) {
+        const y = desk.getBoundingClientRect().top + window.scrollY + window.innerHeight * 0.06;
+        lenis.scrollTo(y, { immediate: true });
+        window.scrollTo(0, y); // belt and braces: lenis may be frozen in a hidden tab
+      }
+      openStory(card);
+    };
+    tryOpen();
+  })();
 
   /* ============================================================
      HERO — black-studio walk-in video, plays once per page load.

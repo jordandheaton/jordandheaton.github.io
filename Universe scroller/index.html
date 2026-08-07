@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04060c">
-<title>Universe Scroller — Leaf to the Milky Way</title>
-<meta name="description" content="A Powers-of-Ten style scroll journey: from a single leaf all the way out to the Milky Way.">
-<link rel="stylesheet" href="scroller.css?v=12">
+<title>Universe Scroller — Chromosome to the Milky Way</title>
+<meta name="description" content="A Powers-of-Ten style scroll journey. It opens on a leaf at human scale; scroll out to the Milky Way or down into the cell — 27 orders of magnitude, scrubbed to your scroll.">
+<link rel="stylesheet" href="scroller.css?v=15">
 </head>
 <body>
 <div id="spacer"></div>
@@ -17,10 +17,13 @@
 <div id="vignette" aria-hidden="true"></div>
 
 <header class="topbar">
-  <a class="back" href="../index.html" aria-label="Back to portfolio">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-    <span>portfolio</span>
-  </a>
+  <span class="topbar-nav">
+    <a class="back" href="../index.html" aria-label="Back to portfolio">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      <span>portfolio</span>
+    </a>
+    <a class="howto" href="../index.html#universe">how it works</a>
+  </span>
   <span class="title">Universe Scroller</span>
 </header>
 
@@ -40,21 +43,31 @@
 <div id="loader">
   <div class="lmark">Universe Scroller</div>
   <div class="lbar"><i id="lfill"></i></div>
-  <div class="lsub">Leaf to the Milky Way</div>
+  <div class="lsub">Chromosome to the Milky Way</div>
 </div>
 
 <!-- Manifest inlined so the page works from file:// (double-click) as well as any
      static server. frames/manifest.json is kept on disk as the source of truth.
-     Frame indices stay ABSOLUTE (the journey now opens on the leaf at frame 507,
-     but motion.js and starmask.js are baked against absolute indices, so the
-     numbering must not be rebased). -->
+     Frame indices are ABSOLUTE: motion.js and starmask.js are baked against them,
+     so the numbering must not be rebased.
+
+     "openAt" is the chapter the journey OPENS on, which is deliberately not the
+     first chapter. You land on the leaf at human scale and can travel either way
+     from there -- down into the cell, or out to the galaxy. Everything before
+     "Leaf" is reachable by scrolling UP. -->
 <script type="application/json" id="manifest-data">
 {
   "frameCount": 1445,
   "pad": 4,
   "pattern": "frames/frame-{i}.jpg?v=10",
   "fps": 24,
+  "openAt": "Leaf",
   "chapters": [
+    { "start": 0,    "end": 84,   "label": "Chromosome",           "a0": -6.0, "a1": -5.0 },
+    { "start": 84,   "end": 169,  "label": "Cell nucleus",         "a0": -5.0, "a1": -4.0 },
+    { "start": 169,  "end": 338,  "label": "Plant cell",           "a0": -4.0, "a1": -3.0 },
+    { "start": 338,  "end": 422,  "label": "Leaf cells",           "a0": -3.0, "a1": -2.0 },
+    { "start": 422,  "end": 507,  "label": "Leaf surface",         "a0": -2.0, "a1": -1.0 },
     { "start": 507,  "end": 555,  "label": "Leaf",                 "a0": -1.0, "a1": 1.0 },
     { "start": 555,  "end": 579,  "label": "Tree canopy",          "a0": 1.0,  "a1": 3.0 },
     { "start": 579,  "end": 651,  "label": "Forest",               "a0": 3.0,  "a1": 5.3 },
@@ -73,6 +86,6 @@
 
 <script src="motion.js?v=4"></script>
 <script src="starmask.js?v=1"></script>
-<script src="scroller.js?v=20"></script>
+<script src="scroller.js?v=21"></script>
 </body>
 </html>
