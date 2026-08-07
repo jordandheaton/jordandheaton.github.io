@@ -25,10 +25,19 @@ Split the seven project cards into **three featured projects with personal write
 - myplanBYU users: "Classmates use it — I got a few texts from people saying they use it and asking for the link," feedback keeps evolving the product, and "I'm in the process of seeing if I can get BYU to buy or implement its ideas." (Write-up must phrase the BYU conversation as in-progress — no claims of adoption.)
 - Universe Scroller footage: **AI-generated clips Jordan directed**, assembled into one continuous journey. The write-up is honest about this; the engineering (memory budget, scroll mapping, star masking) is the human work.
 - Universe Scroller hook: the Blender kid — the age-ten Blender tutorial from the About section, the itch to build worlds.
-- **What he learned** (added at spec review; appears both as card chips and as a short write-up beat):
-  - **myplanBYU:** building a RAG AI solution; web scrapers; testing by both benchmark datasets and human evaluation — "that testing website I made". The real artifacts: `myplanBYU/tests/` (a browser test site — curated cases + recorded goldens are the benchmark side; the site's whole purpose is reading full plan diffs, which is the human side; it is **git-excluded/local-only**, so the write-up may describe it but must not link it) and `myplanBYU/scraper/eval/eval_advisor.py` (a fixed question set through the real advisor API — automated checks for mechanical failures, transcripts for human reading; Jordan's own docstring, usable verbatim: *"the transcript is for reading, because 'is this good advice' is not a thing a regex knows"*).
-  - **Universe Scroller:** artistic AI — directing video/image generation.
-  - **Process:** no items given by Jordan; proposed `process mapping · trial design · variance` — confirm wording with him at draft time.
+- **What he learned** (added at spec review, finalized with Jordan 2026-08-07; appears at two resolutions — see "Learned sets" below):
+  - His verbatim seeds — myplanBYU: RAG AI solution, scrapers, "Testing by both Benchmark datasets and Human Evaluation (that testing website I made)", plus at review: "optimization algorithms, API modeling, other stuff like that". Universe Scroller: "artistic AI or video/image gen AI".
+  - The real testing artifacts: `myplanBYU/tests/` (a browser test site — curated cases + recorded goldens are the benchmark side; the site's whole purpose is reading full plan diffs, which is the human side; it is **git-excluded/local-only**, so the write-up may describe it but must not link it) and `myplanBYU/scraper/eval/eval_advisor.py` (a fixed question set through the real advisor API — automated checks for mechanical failures, transcripts for human reading; Jordan's own docstring, usable verbatim: *"the transcript is for reading, because 'is this good advice' is not a thing a regex knows"*).
+
+### Learned sets (approved)
+
+Two resolutions, both approved: **3–4 chips on the collapsed card** (skimmable), and a **complete "learned & worked with" chip grid in the expanded window**. Every item is grounded in something real in the repo — no padding.
+
+| Project | Card chips (3–4) | Expanded grid adds |
+|---|---|---|
+| myplanBYU | `optimization algorithms · rag ai · api design · ai evals (benchmark + human)` | scrapers + data pipelines with quality gates (`_rejected/` auto-gate) · data modeling (7,000+ courses, prereq graphs, GE double-counting, envelopes) · prompt-injection testing (eval suite has injection probes) · serverless/edge deployment (Cloudflare Worker) · cost engineering (per-visitor quotas, budget caps) |
+| Universe Scroller | `video-gen ai · canvas performance · memory budgets` | media pipelines (extract, color-match, assemble clips) · offline precomputation (star masks, motion tables) · headless-browser automation (verification + demo-reel capture) · responsive media design (cover→contain easing) |
+| Process Analysis | `process mapping · trial design · variance` | data storytelling (hand-built SVG chart whose range bands make the no-overlap argument) — deliberately nothing more; its credibility is its modesty |
 
 ## The write-ups
 
@@ -38,7 +47,7 @@ First person, short declaratives, concrete numbers, warm with a dry edge. Contra
 
 Common structure: **why → what it is → what got hard (highlights only) → what happened with real people → what it taught me → where it's going.**
 
-The "what it taught me" beat is short — the same items as the card's `learned:` chips, one plain sentence each, not a bullet dump.
+The "what it taught me" beat is short — the card's headline chips, one plain sentence each, not a bullet dump. The expanded window's chip grid (see Learned sets) carries the complete list without prose; the beat never tries to narrate every chip.
 
 ### myplanBYU (~650 words — the longest)
 
@@ -46,7 +55,7 @@ The "what it taught me" beat is short — the same items as the card's `learned:
 2. **What it is.** Type your major (or two, plus minors); get a prerequisite-valid, semester-by-semester plan built from live catalog data. Import your transcript. Compare what-ifs. And the point: it surfaces the scholarships and study abroads that fit the plan you actually have.
 3. **What got hard** (kept brief). Teaching it BYU's real rules — the official MAP sheet outranks the catalog when they disagree. A scraper that refreshes the data weekly without me touching it. An AI advisor that had to stay free, so it runs on a quota. (Verify current numbers at draft time: ~161 MAP majors solvable, advisor quota, course counts — check `myplanBYU/js/data.js` and the live site rather than trusting this spec.)
 4. **Real people.** Classmates text me asking for the link. The feedback form keeps changing the product — real students found real bugs, and the git log shows them fixed the same week. This is the part that made it feel less like a project and more like a product.
-5. **What it taught me.** Building a RAG AI solution end to end; scrapers that keep data fresh without me; and that testing an AI system takes two nets — benchmark datasets for the mechanical failures, and human evaluation for the rest (I built a little testing website just to read the results, because "is this good advice" is not a thing a regex knows).
+5. **What it taught me.** Building a RAG AI solution end to end; designing a small API with quotas and budget caps; optimization under real constraints; and that testing an AI system takes two nets — benchmark datasets for the mechanical failures, and human evaluation for the rest (I built a little testing website just to read the results, because "is this good advice" is not a thing a regex knows).
 6. **Where it's going.** I'm now seeing whether BYU wants to adopt its ideas. In-progress phrasing only.
 
 ### Universe Scroller (~550 words)
@@ -63,7 +72,7 @@ The "what it taught me" beat is short — the same items as the card's `learned:
 1. **Context.** Moved for a London study abroad; the old morning routine stopped working in the new place. Treated it like a process problem, not a willpower problem.
 2. **The redesign.** One baseline week, then two deliberately boring changes: timers in the bathroom (10-minute shower, 5-minute shave — capped at 15), and decisions moved to the night before (clothes laid out, grab-and-go breakfast).
 3. **The result.** Five trials each. 43.6 → 29.4 minutes average, 33% faster — but the better story is the spread: 13 minutes down to 4. Every improved trial beat every baseline trial; the two sets don't overlap. *The routine didn't just get faster, it got predictable.*
-4. **What it taught me / why it's here.** Same muscle as the bigger projects — map the process, change one thing, measure again, let variance tell the truth — pointed at the smallest system I own. (Learned items proposed, pending Jordan's confirmation: process mapping, trial design, variance as the honest metric.)
+4. **What it taught me / why it's here.** Same muscle as the bigger projects — map the process, change one thing, measure again, let variance tell the truth — pointed at the smallest system I own. (Learned chips confirmed: process mapping, trial design, variance.)
 
 ### Card blurbs (visible, collapsed state)
 
@@ -86,10 +95,7 @@ Each card also gets a row of three stat chips (mono, small):
 - Label `FEATURED` (mono, small) above the trio; the `SELECTED WORK` ghost backdrop and particles stay.
 - Desktop (≥ ~1100px): three cards in one row, sized so all three are fully on screen at once — roughly 30vw each, taller than current cards. Tablet/mobile: stacked full-width.
 - Card anatomy (top to bottom): window bar (path, index, min/max/close dots — max and the page icon both expand, close is decorative in collapsed state), kind line, title, blurb, stat chips, **learned row**, footer row with `> open_project` (opens the live project, as today) and a page-icon button `read the story` (expands the card).
-- The learned row **replaces** the old bracket-tags row (net zero rows added). Mono, small, labeled so it reads as skills at a glance:
-  - myplanBYU: `learned: rag ai · scrapers · ai evals (benchmark + human)`
-  - Universe Scroller: `learned: video-gen ai · canvas performance · memory budgets`
-  - Process: `learned: process mapping · trial design · variance` (wording pending Jordan)
+- The learned row **replaces** the old bracket-tags row (net zero rows added). Mono, small, labeled so it reads as skills at a glance. Contents per project: the approved card chips in the **Learned sets** table above.
 - Featured cards drop the `[bracket] [tags]` row entirely; other-projects cards keep their existing tags unchanged.
 - Entry animation: cards slide in **from the right** (x offset ~120px + fade), staggered ~0.15s, when the desk section enters view. Replaces the current rise-up `ScrollTrigger.batch`. Runs once. `prefers-reduced-motion`: no offset, instant reveal.
 - Numbering keeps the inventory joke: featured are `01/07`–`03/07`.
@@ -103,7 +109,7 @@ Each card also gets a row of three stat chips (mono, small):
 
 - Trigger: page-icon button or the maximize dot. Both are real `<button>`s (keyboard-accessible); the card's outer link still opens the live project, so the expand triggers must `preventDefault`/stop propagation cleanly. Note: the current card is one big `<a>` — the markup needs restructuring so buttons are not nested inside the anchor (invalid HTML). Likely: card becomes a `<article>` with an explicit title/CTA link inside it rather than a wrapping anchor.
 - Animation: the card's rect animates to a large centered window (~min(920px, 92vw) wide, ~85vh tall; full-screen sheet under ~720px). Implementation may use GSAP Flip via CDN or manual rect interpolation — implementer's choice. Backdrop dims the desk. Reduced motion: instant swap.
-- The expanded window: same terminal chrome (path bar, dots — close is now real), a **reserved media slot** at the top (a structural container that stays collapsed/invisible this phase — no empty box is rendered; the autoplay video lands there later), then the full write-up scrolling inside. A persistent `open the live project →` button.
+- The expanded window: same terminal chrome (path bar, dots — close is now real), a **reserved media slot** at the top (a structural container that stays collapsed/invisible this phase — no empty box is rendered; the autoplay video lands there later), a **"learned & worked with" chip grid** (the complete set from the Learned sets table — card chips plus the expanded-grid items), then the full write-up scrolling inside. A persistent `open the live project →` button.
 - Close: close dot, Esc, backdrop click. Body scroll locks while open; focus moves into the window (`role="dialog"`, `aria-modal="true"`) and returns to the trigger on close.
 - Write-up HTML lives **inline in `index.html`** inside each card (hidden until expanded). No fetches; works from `file://`.
 - Deep links: `#myplan`, `#universe`, `#process` auto-open the corresponding write-up after the boot overlay finishes (scrolls the desk into view, then opens). Opening sets the hash via `history.replaceState`; closing clears it the same way — no history entries, back button uninvolved.
