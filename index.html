@@ -467,16 +467,20 @@
               </div>
             </div>
 
-          </div><!-- /work-panes -->
+            <!-- The arrows live INSIDE the panes box on purpose: absolutely
+                 positioned children of the grid resolve against its padding box,
+                 so `top: 50%` centres them on the CARDS. Against .work-grid they
+                 centred on its 96vh of desk padding — 216px above the cards. -->
+            <button class="pane-arrow arrow-next" id="pane-next" type="button" aria-label="See other projects">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+              <span class="mono">other<br>projects</span>
+            </button>
+            <button class="pane-arrow arrow-back" id="pane-back" type="button" aria-label="Back to featured projects" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+              <span class="mono">featured</span>
+            </button>
 
-          <button class="pane-arrow arrow-next" id="pane-next" type="button" aria-label="See other projects">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-            <span class="mono">other<br>projects</span>
-          </button>
-          <button class="pane-arrow arrow-back" id="pane-back" type="button" aria-label="Back to featured projects" hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-            <span class="mono">featured</span>
-          </button>
+          </div><!-- /work-panes -->
         </div><!-- /work-grid -->
       </div><!-- /work-desk -->
     </section>

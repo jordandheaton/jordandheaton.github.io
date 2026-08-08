@@ -584,7 +584,11 @@
       gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
       const featST = ScrollTrigger.create({
         trigger: "#featured-grid",
-        start: "top 80%",
+        // 55%, not 80%: at 80% only a quarter of the row was on screen, so the
+        // cards finished flying in below the fold and merely "appeared" by the
+        // time you scrolled to them. Here the row is over half visible when it
+        // fires, and the entrance plays itself out in front of you.
+        start: "top 55%",
         once: true,
         onEnter: featIn,
       });

@@ -663,6 +663,10 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .work-panes { position: relative; z-index: 2; display: grid; }
 .work-pane {
   grid-area: 1 / 1; min-width: 0;
+  /* both panes share one cell, so the shorter others-pane would otherwise sit at
+     the top of the taller featured pane's box — centre it so its cards line up
+     with the arrow that sits beside them */
+  display: flex; flex-direction: column; justify-content: center;
   transform: translateX(0); opacity: 1;
   transition: transform 0.55s cubic-bezier(.6,.05,.25,1), opacity 0.4s, visibility 0s 0s;
 }
@@ -671,7 +675,9 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 #pane-others:not(.is-active) { transform: translateX(8%); }
 
 .pane-arrow {
-  position: absolute; top: 50%; right: calc(50% - 50vw + 4px); transform: translateY(-50%);
+  /* +20px: the panes box starts at the section label, so its midpoint sits ~half
+     a label above the card row. This lands the arrow on the tiles' own centre. */
+  position: absolute; top: calc(50% + 20px); right: calc(50% - 50vw + 4px); transform: translateY(-50%);
   z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 14px 4px; background: none; border: 0; cursor: pointer;
   color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
@@ -690,19 +696,26 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .arrow-back:hover { transform: translateY(-50%) translateX(-3px); }
 .pane-arrow[hidden] { display: none; }
 
-/* sunset band: light rising from the screen edge that says "there's more over
-   here" — sits under the cards (panes z2, arrows z3), flips sides with the pane */
-#work-grid::before {
-  content: ""; position: absolute; top: 0; bottom: 0; z-index: 1;
-  right: calc(50% - 50vw); width: 24vw;
-  background: linear-gradient(270deg, rgba(77, 163, 255, 0.16), rgba(77, 163, 255, 0.05) 45%, transparent);
-  opacity: 0.65; transition: opacity 0.35s; pointer-events: none;
+/* Sunset band: light rising from the screen edge that says "there's more over
+   here". It hangs on the PANES, not on .work-grid — the grid box includes 96vh
+   of desk padding, so a band spanning it ran the whole side of the screen and
+   ended on two hard horizontal lines. Masked top and bottom so it dissolves
+   into the desk instead. z-index -1 keeps it behind the cards inside the panes'
+   own stacking context (.work-panes is z2, arrows z3). */
+#work-panes::before {
+  content: ""; position: absolute; z-index: -1;
+  top: -16vh; bottom: -16vh;
+  right: calc(50% - 50vw); width: 26vw;
+  background: linear-gradient(270deg, rgba(77, 163, 255, 0.18), rgba(77, 163, 255, 0.05) 45%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
+  opacity: 0.7; transition: opacity 0.35s; pointer-events: none;
 }
-#work-grid.others-active::before {
+#work-grid.others-active #work-panes::before {
   right: auto; left: calc(50% - 50vw);
-  background: linear-gradient(90deg, rgba(77, 163, 255, 0.16), rgba(77, 163, 255, 0.05) 45%, transparent);
+  background: linear-gradient(90deg, rgba(77, 163, 255, 0.18), rgba(77, 163, 255, 0.05) 45%, transparent);
 }
-#work-grid:has(.pane-arrow:hover)::before { opacity: 1; }
+#work-grid:has(.pane-arrow:hover) #work-panes::before { opacity: 1; }
 
 /* ===================== MAXIMIZE WINDOW (story overlay) ===================== */
 .wmax-backdrop {
