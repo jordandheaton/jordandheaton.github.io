@@ -617,7 +617,12 @@
           end: "+=900",
           pin: "#work-panes",
           pinSpacing: true,
-          anticipatePin: 1,
+          // NO anticipatePin. It pins slightly early based on scroll velocity,
+          // and Lenis's smoothing makes that estimate wrong: the section
+          // snapped 62px in a single frame the moment the pin engaged, which
+          // is the "cards jump into place at the end" — the cards had already
+          // landed, it was the whole row lurching underneath them.
+          anticipatePin: 0,
           invalidateOnRefresh: true,
           // the laptop dive above is also pinned, and its pin-spacer shifts
           // every offset below it. Without an explicit order this measures
