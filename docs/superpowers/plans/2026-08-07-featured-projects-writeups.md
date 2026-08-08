@@ -1056,7 +1056,7 @@ Jordan's feedback after using the built version (see spec Amendments round 2). E
 
 **Files:** Modify `portfolio-3d.css`, `portfolio-3d.js`.
 
-- [ ] **Step 1 (CSS):** In `.work-grid` (base rule): `padding: 118vh 0 34vh` was already reduced to `16vh 0 30vh` — change to `padding: 52vh 0 30vh;` and update its comment to `/* top: a beat of desk — title + particles — before the cards' zone · bottom: exit beat */`. Change `max-width: min(1560px, 92vw)` to `max-width: min(1680px, 93vw)`. In the 900px media block change `.work-grid { padding: 16vh 4vw 26vh; }` to `.work-grid { padding: 42vh 4vw 26vh; }` (comment: match the desk beat on phones). Change `.wcard-featured { width: auto; min-height: min(560px, 64vh); }` to `min-height: min(600px, 68vh)`. In `.work-panes` DELETE `overflow: hidden;` and add the comment `/* no overflow clip: entering cards fly in from beyond the viewport edge; the pane swipe only translates 8% under a fade, and body clips horizontal overflow */` — and add `z-index: 2;` (it already has `position: relative`).
+- [ ] **Step 1 (CSS):** In `.work-grid` (base rule): change padding to `padding: 96vh 0 30vh;` with comment `/* top: a beat of desk — title + particles — before the cards' zone · bottom: exit beat */`. (Execution note: the amendment originally said 52vh, which put the trigger BEFORE desk lock — cards animated during the dive tail. 96vh keeps the grid below the fold at lock.) Change `max-width: min(1560px, 92vw)` to `max-width: min(1680px, 93vw)`. In the 900px media block set `.work-grid { padding: 70vh 4vw 26vh; }`. Change `.wcard-featured` min-height to `min(600px, 68vh)`. In `.work-panes` DELETE `overflow: hidden;` (comment: `/* no overflow clip here: entering cards fly in from beyond the viewport edge; .work-desk clips at the viewport instead */`) and add `z-index: 2;`. Add directly above the `.work-backdrop` rule: `.work-desk { overflow-x: clip; }  /* clip at the viewport edge: entering cards fly in from past it, and the parked pane's 8% offset must not widen the page. clip (not hidden) so the sticky backdrop keeps sticking */` — body's overflow-x:hidden does NOT contain the pane transforms (measured; scrollX genuinely moved), and `clip` avoids both the scrollbar and the sticky-breaking behavior of `hidden`.
 - [ ] **Step 2 (JS):** Replace the featured reveal block (currently `gsap.set` + named `featIn`/`featST` with `trigger: "#work-desk", start: "top top"` + progress catch-up) with:
 
 ```js
@@ -1071,7 +1071,7 @@ Jordan's feedback after using the built version (see spec Amendments round 2). E
       gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
       const featST = ScrollTrigger.create({
         trigger: "#featured-grid",
-        start: "top 82%",
+        start: "top 80%",
         once: true,
         onEnter: featIn,
       });
