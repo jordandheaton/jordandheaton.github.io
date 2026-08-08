@@ -715,10 +715,12 @@
     if (!wmax || !card || wmaxCard || wmaxBusy) return;
     const content = card.querySelector(".wexp-content");
     if (!content) return;
+    const body = card.querySelector(".wcard-body");
     wmaxCard = card;
     wmaxLastFocus = document.activeElement;
 
-    wmaxBody.appendChild(content);
+    if (body) wmaxBody.appendChild(body);   // the card's presentation rides along —
+    wmaxBody.appendChild(content);          // the window IS the card, expanded
     content.hidden = false;
     document.getElementById("wmax-path").textContent = card.dataset.path || "";
     document.getElementById("wmax-open").setAttribute("href", card.dataset.href || "#");
@@ -756,6 +758,8 @@
       wmaxBackdrop.classList.remove("show");
       wmax.hidden = true;
       wmaxBackdrop.hidden = true;
+      const body = wmaxBody.querySelector(".wcard-body");
+      if (body) card.insertBefore(body, card.querySelector(".wcard-foot"));
       const content = wmaxBody.querySelector(".wexp-content");
       if (content) { content.hidden = true; card.appendChild(content); }
       card.classList.remove("is-open");

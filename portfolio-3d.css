@@ -784,6 +784,11 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
   .wmax-live { padding: 13px 22px 15px; }
 }
 
+/* the card's presentation block, as it appears inside the opened window */
+#wmax-body .wcard-body { padding: 28px 0 0; }
+#wmax-body .wcard-body h3 { font-size: clamp(2rem, 3.4vw, 2.8rem); }
+#wmax-body .wcard-blurb { max-width: 62ch; }
+
 /* ============================================================
    SKILLS marquees
    ============================================================ */
