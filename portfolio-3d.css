@@ -720,8 +720,8 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
               rgba(77, 163, 255, 0.30), rgba(77, 163, 255, 0.10) 42%, transparent 74%);
 }
 /* the band and the arrow arrive together, once the cards have landed */
-#work-grid.work-lit #work-panes::before { opacity: 0.34; }   /* 60% more transparent than it was */
-#work-grid.work-lit:has(.pane-arrow:hover) #work-panes::before { opacity: 0.55; }
+#work-grid.work-lit #work-panes::before { opacity: 0.14; }   /* barely there — a hint of light, not a panel */
+#work-grid.work-lit:has(.pane-arrow:hover) #work-panes::before { opacity: 0.3; }
 
 body.js:not(.reduced) .pane-arrow { opacity: 0; transform: translateY(-50%) translateX(16px); }
 body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: translateY(-50%); }
@@ -759,17 +759,9 @@ body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 
   box-shadow: 0 60px 140px rgba(0, 0, 0, 0.7), 0 0 60px -12px var(--theme, #4d8cff);
 }
 .wcard.is-expanded:hover { transform: none; }   /* the hover lift would fight the tween */
-/* the default scrollbar is a bright white rail down the side of a dark window */
-.wcard.is-expanded { scrollbar-width: thin; scrollbar-color: rgba(120, 150, 220, 0.34) transparent; }
-.wcard.is-expanded::-webkit-scrollbar { width: 10px; }
-.wcard.is-expanded::-webkit-scrollbar-track { background: transparent; }
-.wcard.is-expanded::-webkit-scrollbar-thumb {
-  background: rgba(120, 150, 220, 0.28);
-  border-radius: 999px;
-  border: 3px solid transparent;      /* inset the thumb off the window edge */
-  background-clip: content-box;
-}
-.wcard.is-expanded::-webkit-scrollbar-thumb:hover { background: var(--theme, #4d8cff); background-clip: content-box; }
+/* no scrollbar at all — it still scrolls with the wheel, trackpad and keys */
+.wcard.is-expanded { scrollbar-width: none; -ms-overflow-style: none; }
+.wcard.is-expanded::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .wcard.is-expanded .wcard-bar { position: sticky; top: 0; z-index: 3; background: #10151f; }
 .wcard.is-expanded .wcard-bg { opacity: 0; }
 .wcard.is-expanded .wcard-body { padding: 30px 36px 0; }

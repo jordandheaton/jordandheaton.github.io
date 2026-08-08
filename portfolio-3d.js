@@ -726,6 +726,7 @@
   let wmaxSlot = null;       // placeholder holding its grid slot
   let wmaxLastFocus = null;
   let wmaxBusy = false;      // held across the tween: wmaxCard alone frees too early
+  let wmaxHideTimer = null;  // defers backdrop[hidden] until its fade-out has run
 
   function wmaxInstant() { return reduced || document.hidden; }
 
@@ -766,6 +767,7 @@
     // Fixed + explicit pixel geometry means the move is visually a no-op.
     document.body.appendChild(card);
 
+    clearTimeout(wmaxHideTimer);   // a pending hide from a just-closed story
     wmaxBackdrop.hidden = false;
     document.documentElement.classList.add("wmax-open");
     lenis.stop();
@@ -809,7 +811,10 @@
       if (content) { content.hidden = true; gsap.set(content, { clearProps: "opacity" }); }
       if (wmaxSlot) { wmaxSlot.remove(); wmaxSlot = null; }
       wmaxBackdrop.classList.remove("show");
-      wmaxBackdrop.hidden = true;
+      // hide only AFTER the fade has run — setting hidden here is what made the
+      // blur vanish in one frame on the way out while it ramped on the way in
+      clearTimeout(wmaxHideTimer);
+      wmaxHideTimer = setTimeout(() => { if (!wmaxCard) wmaxBackdrop.hidden = true; }, 560);
       document.documentElement.classList.remove("wmax-open");
       lenis.start();
       history.replaceState(null, "", location.pathname + location.search);
@@ -820,10 +825,13 @@
     // the reader did while it was open
     const to = (wmaxSlot || card).getBoundingClientRect();
     wmaxBusy = true;
-    if (content) gsap.to(content, { opacity: 0, duration: 0.18 });
+    // start the dim/blur lifting NOW so the page comes back into focus as the
+    // card travels home, rather than snapping clear once it has already landed
+    wmaxBackdrop.classList.remove("show");
+    if (content) gsap.to(content, { opacity: 0, duration: 0.22 });
     gsap.to(card, {
       left: to.left, top: to.top, width: to.width, height: to.height,
-      duration: 0.48, ease: "power3.inOut",
+      duration: 0.62, ease: "power2.inOut",   // mirrors the opening exactly
       onComplete: () => { finish(); wmaxBusy = false; },
     });
   }
