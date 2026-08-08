@@ -612,6 +612,10 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wcard-featured .wcard-body { padding: 26px 30px 8px; }
 .wcard-featured p.wcard-blurb { font-size: 0.94rem; max-width: none; }
 
+.wcard-featured { cursor: pointer; }  /* the whole card opens the story; links inside keep their own jobs */
+.wcard-title-link { color: inherit; transition: color 0.2s; }
+.wcard-title-link:hover { color: var(--theme, #4d8cff); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+
 .wcard-stats { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0 0 14px; }
 .wcard-stats li {
   border: 1px solid rgba(120, 150, 220, 0.22); border-radius: 999px;

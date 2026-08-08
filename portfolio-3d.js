@@ -792,6 +792,12 @@
       card.querySelectorAll(".w-max, .wcard-read").forEach((btn) => {
         btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openStory(card); });
       });
+      // click anywhere on the card = open the story; real links (title, CTA)
+      // and the explicit buttons keep their own behavior.
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("a, button")) return;
+        openStory(card);
+      });
     });
     wmaxBackdrop.addEventListener("click", closeStory);
     document.getElementById("wmax-close").addEventListener("click", closeStory);
