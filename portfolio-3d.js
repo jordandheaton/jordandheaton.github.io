@@ -577,26 +577,52 @@
     // scrolled a beat into the desk — the dark desktop (title + particles)
     // gets a moment to exist before the windows arrive.
     if (!reduced) {
-      const flyIn = (els, stagger) => gsap.to(els, {
+      const featLabel = document.querySelector("#pane-featured .work-label");
+      const flyIn = (els, stagger, onDone) => gsap.to(els, {
         opacity: 1, x: 0, duration: 1.0, ease: "power3.out",
         stagger, overwrite: true, clearProps: "transform,opacity",
+        onComplete: onDone,
       });
+      // the section label rides in behind the windows — seeing "FEATURED" hang
+      // over an empty desk gives the entrance away before it happens
+      const labelIn = () => gsap.to(featLabel, { opacity: 1, duration: 0.45, ease: "power2.out" });
       gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
+      if (featLabel) gsap.set(featLabel, { opacity: 0 });
 
       if (window.matchMedia("(max-width: 900px)").matches) {
         // Phones stack the trio into a ~3-screen column, so one group tween would
         // fly in cards that are still a screen away. Each card arrives as it does.
+        // No scroll freeze here: three separate arrivals, so holding the page
+        // each time would fight the reader rather than frame the moment.
         ScrollTrigger.batch("#featured-grid .wcard", {
           start: "top 78%",
           once: true,
-          onEnter: (els) => flyIn(els, 0.12),
+          onEnter: (els) => flyIn(els, 0.12, labelIn),
         });
         // same refresh-mid-page catch-up as below, per card
         gsap.utils.toArray("#featured-grid .wcard").forEach((el) => {
-          if (el.getBoundingClientRect().top < window.innerHeight * 0.78) flyIn(el, 0);
+          if (el.getBoundingClientRect().top < window.innerHeight * 0.78) flyIn(el, 0, labelIn);
         });
       } else {
-        const featIn = () => flyIn("#featured-grid .wcard", 0.18);
+        // Hold the page still for the length of the entrance so it plays out in
+        // front of the reader instead of sliding past under them. The failsafe
+        // matters more than the timer: a locked page that never unlocks is the
+        // worst possible outcome here.
+        let thawTimer = null;
+        const thawWork = () => {
+          clearTimeout(thawTimer);
+          document.documentElement.classList.remove("work-freeze");
+          lenis.start();
+        };
+        const freezeWork = () => {
+          document.documentElement.classList.add("work-freeze");
+          lenis.stop();
+          thawTimer = setTimeout(thawWork, 2600);
+        };
+        const featIn = () => {
+          freezeWork();
+          flyIn("#featured-grid .wcard", 0.18, () => { labelIn(); thawWork(); });
+        };
         const featST = ScrollTrigger.create({
           trigger: "#featured-grid",
           // 55%, not 80%: at 80% only a quarter of the row was on screen, so the
@@ -770,13 +796,35 @@
     if (wmaxInstant()) { wmaxFocusIn(); return; }
     const to = wmax.getBoundingClientRect();
     wmaxBusy = true;
-    gsap.fromTo(wmax,
-      { x: from.left - to.left, y: from.top - to.top,
-        scaleX: from.width / to.width, scaleY: from.height / to.height,
-        transformOrigin: "top left" },
-      { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.45, ease: "power3.inOut",
-        onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); wmaxFocusIn(); wmaxBusy = false; } });
+    // Morph the BOX, don't scale it. Scaling stretched the type on the way out
+    // and snapped back the instant the transform cleared — that snap is what
+    // read as the card "jumping" rather than expanding. Animating the actual
+    // geometry keeps every glyph at its true size the whole way across.
+    wmaxPin();
+    gsap.fromTo(wmax, wmaxRect(from), {
+      ...wmaxRect(to), duration: 0.52, ease: "power3.inOut",
+      onComplete: () => {
+        gsap.set(wmax, { clearProps: WMAX_GEOM });
+        wmaxFocusIn(); wmaxBusy = false;
+      },
+    });
+    // the story itself arrives a beat later, so what you see first is the card
+    // you clicked, at the size you clicked it
+    gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.34, delay: 0.16 });
   }
+
+  // The window normally centres itself with inset:0 + margin:auto, which cannot
+  // be tweened. Pin it to real pixels first — as its own set() call, because an
+  // `inset: auto` sitting in the tween's vars is applied AFTER left/top and
+  // silently wipes them (the box then morphs from the screen edge instead of
+  // from the card).
+  function wmaxPin() {
+    gsap.set(wmax, { position: "fixed", margin: 0, right: "auto", bottom: "auto" });
+  }
+  function wmaxRect(r) {
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  }
+  const WMAX_GEOM = "position,margin,right,bottom,left,top,width,height";
 
   function closeStory() {
     if (!wmaxCard || wmaxBusy) return;
@@ -808,11 +856,18 @@
       return;
     }
     wmaxBusy = true;
-    gsap.to(wmax, {
-      x: to.left - from.left, y: to.top - from.top,
-      scaleX: to.width / from.width, scaleY: to.height / from.height,
-      transformOrigin: "top left", duration: 0.4, ease: "power3.inOut",
-      onComplete: () => { gsap.set(wmax, { clearProps: "transform" }); finish(); wmaxBusy = false; },
+    // same box morph in reverse — the story fades out first so the card's own
+    // face is what shrinks back into the grid
+    const story = wmaxBody.querySelector(".wexp-content");
+    if (story) gsap.to(story, { opacity: 0, duration: 0.18 });
+    wmaxPin();
+    gsap.fromTo(wmax, wmaxRect(from), {
+      ...wmaxRect(to), duration: 0.46, ease: "power3.inOut",
+      onComplete: () => {
+        gsap.set(wmax, { clearProps: WMAX_GEOM });
+        if (story) gsap.set(story, { clearProps: "opacity" });
+        finish(); wmaxBusy = false;
+      },
     });
   }
 

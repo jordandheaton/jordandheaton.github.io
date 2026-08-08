@@ -705,15 +705,15 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 #work-panes::before {
   content: ""; position: absolute; z-index: -1;
   top: -16vh; bottom: -16vh;
-  right: calc(50% - 50vw); width: 30vw;
-  background: linear-gradient(270deg, rgba(77, 163, 255, 0.26), rgba(77, 163, 255, 0.07) 45%, transparent);
+  right: calc(50% - 50vw); width: 15vw;
+  background: linear-gradient(270deg, rgba(77, 163, 255, 0.26), rgba(77, 163, 255, 0.07) 55%, transparent);
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
   opacity: 0.8; transition: opacity 0.35s; pointer-events: none;
 }
 #work-grid.others-active #work-panes::before {
   right: auto; left: calc(50% - 50vw);
-  background: linear-gradient(90deg, rgba(77, 163, 255, 0.26), rgba(77, 163, 255, 0.07) 45%, transparent);
+  background: linear-gradient(90deg, rgba(77, 163, 255, 0.26), rgba(77, 163, 255, 0.07) 55%, transparent);
 }
 #work-grid:has(.pane-arrow:hover) #work-panes::before { opacity: 1; }
 
@@ -766,6 +766,10 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 /* scroll lock while the window is open */
 html.wmax-open, html.wmax-open body { overflow: hidden; }
 
+/* ...and a brief one while the trio flies in, so the entrance plays out instead
+   of scrolling past under the reader. Released by thawWork() (with a failsafe). */
+html.work-freeze, html.work-freeze body { overflow: hidden; }
+
 /* the JS reveal/FLIP paths already gate on `reduced`; these CSS transitions
    (pane swipe, overlay fade, arrow glow) need their own gate */
 @media (prefers-reduced-motion: reduce) {
@@ -800,10 +804,19 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
   .wmax-live { padding: 13px 22px 15px; }
 }
 
-/* the card's presentation block, as it appears inside the opened window */
+/* The card's presentation block, as it appears inside the opened window. It
+   deliberately keeps the card's OWN type sizes: the window grows out of the
+   card at real pixel geometry, so restyling the title mid-flight would put back
+   exactly the jump the morph exists to remove. */
 #wmax-body .wcard-body { padding: 28px 0 0; }
-#wmax-body .wcard-body h3 { font-size: clamp(2rem, 3.4vw, 2.8rem); }
-#wmax-body .wcard-blurb { max-width: 62ch; }
+/* h3 and p were styled via `.wcard h3` / `.wcard p`, and the body is no longer
+   inside a .wcard once it moves in here — without these it fell back to browser
+   defaults (title 27px -> 18.7px) the instant the window opened. */
+#wmax-body .wcard-body h3 {
+  font-family: var(--font-display); font-weight: 700; color: #eaf2ff;
+  font-size: clamp(1.45rem, 1.9vw, 2.1rem); line-height: 1.05; margin-bottom: 16px;
+}
+#wmax-body .wcard-blurb { color: #8fa2c4; font-size: 0.94rem; margin-bottom: 20px; max-width: 62ch; }
 
 /* ============================================================
    SKILLS marquees
