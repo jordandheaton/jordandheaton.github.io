@@ -142,6 +142,14 @@ Jordan approved the direction ("I like how it is so far") with three changes:
 3. **Others behind an arrow, not below.** The other-projects strip below the trio is removed. A right-edge arrow control (chevron with "other projects" text beneath, soft gradient glow on hover) swipes the work area horizontally to an OTHER PROJECTS pane holding the four mini cards; a mirrored left arrow swipes back to FEATURED. Numbering stays 01/07–07/07.
 4. **Mobile pass** after all of the above: panes, arrows, auto slide-in, and the story sheet all verified at phone width.
 
+## Amendments round 2 — 2026-08-07 (Jordan, after playing with the built version)
+
+1. **Desk pacing.** The instant-cards version broke the inside-the-laptop illusion. Restore a beat: desk locks, "SELECTED WORK" types with the particles visible, and the cards slide in only after a little more scrolling (element-triggered again, ~half a viewport of desk before the trio's zone).
+2. **True edge entrance, bigger cards.** Cards must enter from beyond the viewport's right edge (Art-of-Ballroom style), not a 120px nudge — requires dropping the pane container's `overflow: hidden` (safe: panes translate only 8% under an opacity fade; body already clips horizontal overflow). Featured cards get more presence: wider grid, taller min-height.
+3. **Arrow + sunset gradient.** The pane arrow must sit fully clear of the Process card, out at the viewport's right edge. The hover glow becomes a full-height "sunset" band rising from the right screen edge (site-accent blue, not literal orange) that suggests more content off-screen; it brightens on arrow hover and mirrors to the left edge when the others pane is active.
+4. **Click model.** The card title is a link to the live project. Clicking anywhere else on a featured card opens the story. Footer controls stay (CTA link = live project; read button = story).
+5. **Expanding-card continuity.** Opening a story must not swap content: the maximized window starts with the card's own presentation block (kind, title, blurb, stat chips, tags) and continues into the learned grid + write-up below it. Implementation: `openStory` moves the card's `.wcard-body` node into the window above the `.wexp-content`; close returns both.
+
 ## Out of scope
 
 - Autoplay showcase videos + Higgsfield generation (next phase; media slot reserved).

@@ -1048,6 +1048,136 @@ Also delete the now-dead `.work-label-other { margin-top: 72px; }` rule and, in 
 
 Task 7's matrix additionally covers: auto slide-in setup state, pane swipe round-trip, arrow hover glow (screenshot), story expansion from both panes' context, and a dedicated mobile pass at 375×812 — panes swipe correctly, arrows are reachable and not overlapping cards (shrink/offset via a `@media (max-width: 720px)` tweak if needed: `.pane-arrow { right: -6px; padding: 12px 6px; }` / `.arrow-back { left: -6px; }`), story sheet still full-screen, and the trio's auto slide-in fires at phone width.
 
+## Amendment round 2 — 2026-08-07 (Tasks 11–15)
+
+Jordan's feedback after using the built version (see spec Amendments round 2). Execution order: 11 → 12 → 13 → 14 → 15.
+
+### Task 11: Desk pacing + edge entrance + bigger cards
+
+**Files:** Modify `portfolio-3d.css`, `portfolio-3d.js`.
+
+- [ ] **Step 1 (CSS):** In `.work-grid` (base rule): `padding: 118vh 0 34vh` was already reduced to `16vh 0 30vh` — change to `padding: 52vh 0 30vh;` and update its comment to `/* top: a beat of desk — title + particles — before the cards' zone · bottom: exit beat */`. Change `max-width: min(1560px, 92vw)` to `max-width: min(1680px, 93vw)`. In the 900px media block change `.work-grid { padding: 16vh 4vw 26vh; }` to `.work-grid { padding: 42vh 4vw 26vh; }` (comment: match the desk beat on phones). Change `.wcard-featured { width: auto; min-height: min(560px, 64vh); }` to `min-height: min(600px, 68vh)`. In `.work-panes` DELETE `overflow: hidden;` and add the comment `/* no overflow clip: entering cards fly in from beyond the viewport edge; the pane swipe only translates 8% under a fade, and body clips horizontal overflow */` — and add `z-index: 2;` (it already has `position: relative`).
+- [ ] **Step 2 (JS):** Replace the featured reveal block (currently `gsap.set` + named `featIn`/`featST` with `trigger: "#work-desk", start: "top top"` + progress catch-up) with:
+
+```js
+    // the trio flies in from BEYOND the right edge of the screen once you've
+    // scrolled a beat into the desk — the dark desktop (title + particles)
+    // gets a moment to exist before the windows arrive.
+    if (!reduced) {
+      const featIn = () => gsap.to("#featured-grid .wcard", {
+        opacity: 1, x: 0, duration: 1.0, ease: "power3.out",
+        stagger: 0.18, overwrite: true, clearProps: "transform,opacity",
+      });
+      gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
+      const featST = ScrollTrigger.create({
+        trigger: "#featured-grid",
+        start: "top 82%",
+        once: true,
+        onEnter: featIn,
+      });
+      // refresh-mid-page: scroll restoration can land past the trigger before it
+      // exists — a crossing that already happened never fires onEnter.
+      if (featST.progress > 0) { featST.kill(); featIn(); }
+    }
+```
+
+- [ ] **Step 3 (verify):** preview reload (cache-bust v71 css / v74 js): at desk lock cards NOT visible (`getComputedStyle(...).opacity === "0"` while `#featured-grid` is below 82%); pre-reveal `gsap.getProperty(document.querySelector('#featured-grid .wcard'), "x")` ≥ `innerWidth`; after scrolling the grid into 82% + manual ticks, all three settle opacity 1; `document.documentElement.scrollWidth === document.documentElement.clientWidth` (no horizontal overflow) both before and during entrance; pane swipe round-trip still clean without the overflow clip; console clean.
+- [ ] **Step 4:** Commit `portfolio-3d.css portfolio-3d.js`: "Desk gets its beat back; cards fly in from past the screen edge, larger"
+
+### Task 12: Arrow clearance + sunset edge gradient
+
+**Files:** Modify `portfolio-3d.css`, `portfolio-3d.js`.
+
+- [ ] **Step 1 (CSS):** In `.pane-arrow` change `right: -14px;` to `right: calc(50% - 50vw + 8px);` (containing block is the centered `.work-grid`, so this anchors to the viewport edge). In `.arrow-back` change `left: -14px` to `left: calc(50% - 50vw + 8px);`. (The 720px mobile block's `right/left: -6px` overrides stay — they come later in the file.) Then add after the `.pane-arrow[hidden]` rule:
+
+```css
+/* sunset band: light rising from the screen edge that says "there's more over
+   here" — sits under the cards (panes z2, arrows z3), flips sides with the pane */
+#work-grid::before {
+  content: ""; position: absolute; top: 0; bottom: 0; z-index: 1;
+  right: calc(50% - 50vw); width: 24vw;
+  background: linear-gradient(270deg, rgba(77, 163, 255, 0.16), rgba(77, 163, 255, 0.05) 45%, transparent);
+  opacity: 0.65; transition: opacity 0.35s; pointer-events: none;
+}
+#work-grid.others-active::before {
+  right: auto; left: calc(50% - 50vw);
+  background: linear-gradient(90deg, rgba(77, 163, 255, 0.16), rgba(77, 163, 255, 0.05) 45%, transparent);
+}
+#work-grid:has(.pane-arrow:hover)::before { opacity: 1; }
+```
+
+(`::before` not `::after` — `::after` on `#work-grid` would paint above the panes regardless of z-index tricks in some stacking orders; `::before` + explicit z-indexes is deterministic: band 1, panes 2, arrows 3.)
+- [ ] **Step 2 (JS):** In `showPane`, after the two `classList.toggle` lines add: `document.getElementById("work-grid").classList.toggle("others-active", others);`
+- [ ] **Step 3 (verify):** arrow rect fully right of the Process card rect (`arrow.left >= processCard.right`); band pseudo present (`getComputedStyle(workGrid,'::before').width` ≈ 24vw) on the right; after `pane-next.click()` the band flips left (`::before` left offset 0-ish, right auto); hover intensify via `:has` (`opacity` 0.65 → 1 when hovering the arrow); band never intercepts clicks; console clean.
+- [ ] **Step 4:** Commit: "Arrow owns the screen edge; a sunset band hints at the other pane"
+
+### Task 13: Click model — title links, card expands
+
+**Files:** Modify `index.html`, `portfolio-3d.css`, `portfolio-3d.js`.
+
+- [ ] **Step 1 (HTML):** Wrap each featured card's `<h3>` text in a link (3 cards, hrefs = the card's `data-href` values):
+  - myplan: `<h3><a class="wcard-title-link" href="https://myplan.jordanheaton.com/" target="_blank" rel="noopener">myplanBYU — Degree Optimizer</a></h3>`
+  - universe: `<h3><a class="wcard-title-link" href="Universe%20scroller/index.html" target="_blank" rel="noopener">Universe Scroller</a></h3>`
+  - process: `<h3><a class="wcard-title-link" href="Process%20Analysis%20Project/index.html" target="_blank" rel="noopener">Process Improvement Analysis</a></h3>`
+- [ ] **Step 2 (CSS):** Append near the featured-card styles:
+
+```css
+.wcard-featured { cursor: pointer; }  /* the whole card opens the story; links inside keep their own jobs */
+.wcard-title-link { color: inherit; transition: color 0.2s; }
+.wcard-title-link:hover { color: var(--theme, #4d8cff); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+```
+
+- [ ] **Step 3 (JS):** In the expansion module's wiring loop (`document.querySelectorAll(".wcard-featured").forEach((card) => { ... })`), add inside the loop:
+
+```js
+      // click anywhere on the card = open the story; real links (title, CTA)
+      // and the explicit buttons keep their own behavior.
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("a, button")) return;
+        openStory(card);
+      });
+```
+
+- [ ] **Step 4 (verify):** clicking card padding/blurb/stats opens the story; clicking the title does NOT open the story (and its href is the live project); `> open_project` still a link; read button + max dot still open; after Task 14 lands, the title link inside the open window still points at the live project; console clean.
+- [ ] **Step 5:** Commit: "Titles link to the live projects; the rest of the card opens the story"
+
+### Task 14: Presentation continuity in the expansion
+
+**Files:** Modify `portfolio-3d.js`, `portfolio-3d.css`.
+
+- [ ] **Step 1 (JS, openStory):** After `const content = card.querySelector(".wexp-content"); if (!content) return;` add `const body = card.querySelector(".wcard-body");`. Replace the single move (`wmaxBody.appendChild(content); content.hidden = false;`) with:
+
+```js
+    if (body) wmaxBody.appendChild(body);   // the card's presentation rides along —
+    wmaxBody.appendChild(content);          // the window IS the card, expanded
+    content.hidden = false;
+```
+
+- [ ] **Step 2 (JS, closeStory `finish`):** Replace the content-return block (`const content = wmaxBody.querySelector(".wexp-content"); if (content) { content.hidden = true; card.appendChild(content); }`) with:
+
+```js
+      const body = wmaxBody.querySelector(".wcard-body");
+      if (body) card.insertBefore(body, card.querySelector(".wcard-foot"));
+      const content = wmaxBody.querySelector(".wexp-content");
+      if (content) { content.hidden = true; card.appendChild(content); }
+```
+
+- [ ] **Step 3 (CSS):** Append to the maximize-window section:
+
+```css
+/* the card's presentation block, as it appears inside the opened window */
+#wmax-body .wcard-body { padding: 28px 0 0; }
+#wmax-body .wcard-body h3 { font-size: clamp(2rem, 3.4vw, 2.8rem); }
+#wmax-body .wcard-blurb { max-width: 62ch; }
+```
+
+- [ ] **Step 4 (verify):** open myplan: `#wmax-body` children in order = `.wcard-body`, `.wexp-content`; window shows kind → title(link) → blurb → stat chips → bracket tags → learned label/grid → six write-up sections; close: card intact (`#card-myplan .wcard-body` back between bar and foot, h3 link present, stats/tags in place); repeat round-trip twice on the same card (idempotent); all three cards; deep link `#universe` shows the same continuity; console clean.
+- [ ] **Step 5:** Commit: "Opening a story keeps the card's face — the window is the card, expanded"
+
+### Task 15: Round-2 verification + cache-bust + gate
+
+As Task 7's matrix, plus: desk beat (cards absent at lock, present after the grid's zone enters), edge entrance, arrow clearance + band behavior both panes, click model, continuity round-trips, no horizontal overflow anywhere, full mobile pass (pill, edge entrance, sheet, band width on small screens — clamp or hide the band under 720px if it crowds: `@media (max-width: 720px) { #work-grid::before { width: 30vw; opacity: 0.5; } }` is pre-authorized if needed). Bump `?v=71 → ?v=72` and `?v=74 → ?v=75`. Jordan reviews on a visible tab.
+
 ## Self-review notes (already applied)
 
 - **Spec coverage:** featured trio + blurbs + stat chips + learned rows (T1), other strip + numbering (T2), slide-from-right + reduced-motion (T3), maximize window + media slot + learned grid + chrome (T4), open/close/Esc/backdrop/focus/scroll-lock/hash/one-at-a-time (T5), deep links + scroller retarget + writeup.html deletion (T6), verification matrix + cache-bust + Jordan gate (T7). Videos/Higgsfield: out of scope per spec.
