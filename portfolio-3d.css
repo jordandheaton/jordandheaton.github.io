@@ -667,13 +667,14 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 #pane-others:not(.is-active) { transform: translateX(8%); }
 
 .pane-arrow {
-  position: absolute; top: 50%; right: calc(50% - 50vw + 8px); transform: translateY(-50%);
+  position: absolute; top: 50%; right: calc(50% - 50vw + 4px); transform: translateY(-50%);
   z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 18px 10px; background: none; border: 0; cursor: pointer;
+  padding: 14px 4px; background: none; border: 0; cursor: pointer;
   color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
   transition: color 0.25s, transform 0.25s;
 }
 .pane-arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pane-arrow span { writing-mode: vertical-rl; text-orientation: mixed; }  /* edge-rail label: vertical text keeps the arrow ~30px wide, clear of the cards in the 3.5vw margin */
 .pane-arrow::before {
   content: ""; position: absolute; inset: -12px; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(120,150,220,0.22), transparent 72%);
@@ -681,7 +682,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 }
 .pane-arrow:hover { color: #eaf2ff; transform: translateY(-50%) translateX(3px); }
 .pane-arrow:hover::before { opacity: 1; }
-.arrow-back { right: auto; left: calc(50% - 50vw + 8px); }
+.arrow-back { right: auto; left: calc(50% - 50vw + 4px); }
 .arrow-back:hover { transform: translateY(-50%) translateX(-3px); }
 .pane-arrow[hidden] { display: none; }
 
@@ -757,14 +758,9 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
 /* the grid card whose story is open hides so the window reads as it, maximized */
 .wcard-featured.is-open { visibility: hidden; }
 
-/* full-screen sheet on phones */
-@media (max-width: 720px) {
-  .wmax { width: 100vw; height: 100dvh; border-radius: 0; }
-  .wmax-bar { border-radius: 0; }
-  .wmax-scroll { padding: 4px 22px 24px; }
-  .wmax-live { padding: 13px 22px 15px; }
-  /* on phones the arrow inevitably rides the full-width cards, so it becomes a
-     floating pill — backed and bordered — instead of a bare glyph over text */
+/* below the 3-across layout the cards go full-width, so the arrow can't own a
+   clear margin — it becomes a floating pill riding the edge instead */
+@media (max-width: 1100px) {
   .pane-arrow {
     right: -6px; padding: 12px 8px;
     background: rgba(11, 15, 24, 0.88);
@@ -772,7 +768,16 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
     border-radius: 999px;
     -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
   }
+  .pane-arrow span { writing-mode: horizontal-tb; }  /* pill reads horizontally */
   .arrow-back { left: -6px; }
+}
+
+/* full-screen sheet on phones */
+@media (max-width: 720px) {
+  .wmax { width: 100vw; height: 100dvh; border-radius: 0; }
+  .wmax-bar { border-radius: 0; }
+  .wmax-scroll { padding: 4px 22px 24px; }
+  .wmax-live { padding: 13px 22px 15px; }
 }
 
 /* ============================================================
