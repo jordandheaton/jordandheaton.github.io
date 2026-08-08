@@ -553,6 +553,7 @@
         pin: "#work-pin",
         scrub: reduced ? false : 0.8,
         invalidateOnRefresh: true,
+        refreshPriority: 1,   // refreshes before the cards pin below it
       },
     });
     // pinned phase: most of the open-up + the dive (OPEN_FRAC → 1.0),
@@ -573,30 +574,60 @@
     });
     tl.to({}, { duration: HOLD_PX }); // brief hold on the dark screen, then the pin releases into the desk
 
-    // The trio SLIDES BY AS YOU SCROLL, the way the Art of Ballroom track does:
-    // the movement is scrubbed to scroll position rather than played on a timer,
-    // so the reader drives it and nothing has to freeze the page to be seen.
-    // (An earlier version locked scrolling for the animation; that fought Lenis
-    // and made the SELECTED WORK backdrop jump.)
+    // The trio arrives the way the Art of Ballroom track does: the section PINS
+    // and scroll drives the movement, so the desk holds still with SELECTED WORK
+    // centred while the windows come in. The difference in direction is the
+    // point — there the track pans past you, here the cards come to you.
+    //
+    // gsap.matchMedia, not a one-off matchMedia() check: the layouts need
+    // genuinely different treatments and the choice has to survive a resize.
+    // Read once at setup, a phone that loaded wide got the desktop pin — which
+    // pinned a stack three screens tall.
     if (!reduced) {
-      gsap.fromTo("#featured-grid .wcard",
-        { x: () => window.innerWidth * 0.8, opacity: 0 },
-        {
-          x: 0, opacity: 1, stagger: 0.1,
-          // power2.out across a scrub means the bulk of the distance is covered
-          // early — while the cards are still off-screen — and the part you
-          // actually watch is the slow final approach. With ease "none" over a
-          // short range they crossed ~2.7px per pixel of scroll and lurched
-          // into place.
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: "#featured-grid",
-            start: "top bottom+=250",   // begins before the row even enters
-            end: "top 32%",
-            scrub: 1,
-            invalidateOnRefresh: true,
-          },
+      const mm = gsap.matchMedia();
+
+      mm.add("(min-width: 901px)", () => {
+        gsap.fromTo("#featured-grid .wcard",
+          { x: () => window.innerWidth * 0.85, opacity: 0 },
+          {
+            x: 0, opacity: 1, stagger: 0.12, ease: "power2.out",
+            scrollTrigger: {
+              trigger: "#work-panes",
+              start: "center center",     // engages once the row is dead centre
+              end: "+=1100",
+              pin: "#work-panes",
+              pinSpacing: true,
+              anticipatePin: 1,
+              scrub: 0.8,
+              invalidateOnRefresh: true,
+              // the laptop dive above is also pinned, and its pin-spacer shifts
+              // every offset below it. Without an explicit order this measures
+              // against a layout that does not exist yet and starts ~2600px early.
+              refreshPriority: -1,
+            },
+          });
+      });
+
+      mm.add("(max-width: 900px)", () => {
+        // stacked, the trio runs about three screens tall — pinning that would
+        // hold the reader still while two of the cards sat off-screen, so each
+        // one simply arrives as it is reached
+        gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth * 0.85 });
+        ScrollTrigger.batch("#featured-grid .wcard", {
+          start: "top 78%",
+          once: true,
+          onEnter: (els) => gsap.to(els, {
+            opacity: 1, x: 0, duration: 0.9, ease: "power2.out",
+            stagger: 0.12, overwrite: true, clearProps: "transform,opacity",
+          }),
         });
+        gsap.utils.toArray("#featured-grid .wcard").forEach((el) => {
+          if (el.getBoundingClientRect().top < window.innerHeight * 0.78) {
+            gsap.to(el, { opacity: 1, x: 0, duration: 0.9, ease: "power2.out",
+                          overwrite: true, clearProps: "transform,opacity" });
+          }
+        });
+      });
 
       // the label, the edge arrow and the sunset band all arrive together once
       // the cards have landed — none of them should precede the windows
@@ -880,6 +911,13 @@
     const to = expandedRect();
     gsap.set(wmaxCard, { left: to.left, top: to.top, width: to.width, height: to.height });
   });
+
+  /* Re-measure once everything that changes page height has settled. The two
+     pinned sections insert spacers (2000px for the laptop dive alone), and the
+     hero video and web fonts land late — triggers created during parse measure
+     a page that no longer exists, which put the cards' pin ~2600px above where
+     it belongs. Nothing else in the file forces a refresh. */
+  window.addEventListener("load", () => ScrollTrigger.refresh());
 
   /* ---------------- work panes: featured <-> other projects ---------------- */
   const paneFeat = document.getElementById("pane-featured");
