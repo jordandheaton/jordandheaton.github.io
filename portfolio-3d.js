@@ -719,6 +719,10 @@
     wmaxCard = card;
     wmaxLastFocus = document.activeElement;
 
+    // Measure the card while it is still WHOLE: moving .wcard-body out first
+    // would shrink it, and the FLIP would fly in from a rect the user never saw.
+    const from = card.getBoundingClientRect();
+
     if (body) wmaxBody.appendChild(body);   // the card's presentation rides along —
     wmaxBody.appendChild(content);          // the window IS the card, expanded
     content.hidden = false;
@@ -732,7 +736,6 @@
     lenis.stop();
     if (card.dataset.slug) history.replaceState(null, "", "#" + card.dataset.slug);
 
-    const from = card.getBoundingClientRect();      // measure BEFORE hiding the card
     card.classList.add("is-open");
     wmaxBackdrop.classList.add("show");
     wmax.classList.add("show");
