@@ -587,31 +587,46 @@
       const mm = gsap.matchMedia();
 
       mm.add("(min-width: 901px)", () => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: "#work-panes",
-            start: "center center",     // engages once the row is dead centre
-            end: "+=1600",
-            pin: "#work-panes",
-            pinSpacing: true,
-            anticipatePin: 1,
-            scrub: 0.8,
-            invalidateOnRefresh: true,
-            // the laptop dive above is also pinned, and its pin-spacer shifts
-            // every offset below it. Without an explicit order this measures
-            // against a layout that does not exist yet and starts ~2600px early.
-            refreshPriority: -1,
-          },
+        const cards = gsap.utils.toArray("#featured-grid .wcard");
+        gsap.set(cards, { x: () => window.innerWidth * 0.85, opacity: 0 });
+
+        // Arriving TRIGGERS the entrance; the entrance then plays at its own
+        // pace. Scrubbing it to scroll meant a fast flick had to be honoured
+        // instantly, which is what read as a snap — the animation was only ever
+        // as smooth as the wheel driving it. Scrolling is held for the ~1.9s it
+        // runs, so it always plays out the same way.
+        let played = false;
+        const play = () => {
+          if (played) return;
+          played = true;
+          lenis.stop();
+          const release = () => lenis.start();
+          gsap.to(cards, {
+            x: 0, opacity: 1, duration: 1.15, ease: "power3.out", stagger: 0.24,
+            onComplete: release,
+          });
+          // a page that never scrolls again is far worse than a missed beat
+          gsap.delayedCall(3.4, release);
+        };
+
+        const st = ScrollTrigger.create({
+          trigger: "#work-panes",
+          start: "center center",     // engages once the row is dead centre
+          // the pin keeps holding after the cards land, so they sit finished
+          // for a beat before the page moves on
+          end: "+=900",
+          pin: "#work-panes",
+          pinSpacing: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          // the laptop dive above is also pinned, and its pin-spacer shifts
+          // every offset below it. Without an explicit order this measures
+          // against a layout that does not exist yet and starts ~2600px early.
+          refreshPriority: -1,
+          onEnter: play,
         });
-        tl.fromTo("#featured-grid .wcard",
-          { x: () => window.innerWidth * 0.85, opacity: 0 },
-          { x: 0, opacity: 1, stagger: 0.12, ease: "power2.out", duration: 1 });
-        // A DWELL at the end of the pinned stretch. Without it the last card
-        // finished landing at the exact scroll position where the pin releases,
-        // so its settle and the release collided and read as a snap. Now the
-        // trio glides home with roughly a third of the pin still to go: they
-        // sit there, done, while you keep scrolling before the page moves on.
-        tl.to({}, { duration: 0.62 });
+        // refresh mid-page can land past the trigger; show them, don't lock
+        if (st.progress > 0) { played = true; gsap.set(cards, { x: 0, opacity: 1 }); }
       });
 
       mm.add("(max-width: 900px)", () => {
