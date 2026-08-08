@@ -577,24 +577,40 @@
     // scrolled a beat into the desk — the dark desktop (title + particles)
     // gets a moment to exist before the windows arrive.
     if (!reduced) {
-      const featIn = () => gsap.to("#featured-grid .wcard", {
+      const flyIn = (els, stagger) => gsap.to(els, {
         opacity: 1, x: 0, duration: 1.0, ease: "power3.out",
-        stagger: 0.18, overwrite: true, clearProps: "transform,opacity",
+        stagger, overwrite: true, clearProps: "transform,opacity",
       });
       gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
-      const featST = ScrollTrigger.create({
-        trigger: "#featured-grid",
-        // 55%, not 80%: at 80% only a quarter of the row was on screen, so the
-        // cards finished flying in below the fold and merely "appeared" by the
-        // time you scrolled to them. Here the row is over half visible when it
-        // fires, and the entrance plays itself out in front of you.
-        start: "top 55%",
-        once: true,
-        onEnter: featIn,
-      });
-      // refresh-mid-page: scroll restoration can land past the trigger before it
-      // exists — a crossing that already happened never fires onEnter.
-      if (featST.progress > 0) { featST.kill(); featIn(); }
+
+      if (window.matchMedia("(max-width: 900px)").matches) {
+        // Phones stack the trio into a ~3-screen column, so one group tween would
+        // fly in cards that are still a screen away. Each card arrives as it does.
+        ScrollTrigger.batch("#featured-grid .wcard", {
+          start: "top 78%",
+          once: true,
+          onEnter: (els) => flyIn(els, 0.12),
+        });
+        // same refresh-mid-page catch-up as below, per card
+        gsap.utils.toArray("#featured-grid .wcard").forEach((el) => {
+          if (el.getBoundingClientRect().top < window.innerHeight * 0.78) flyIn(el, 0);
+        });
+      } else {
+        const featIn = () => flyIn("#featured-grid .wcard", 0.18);
+        const featST = ScrollTrigger.create({
+          trigger: "#featured-grid",
+          // 55%, not 80%: at 80% only a quarter of the row was on screen, so the
+          // cards finished flying in below the fold and merely "appeared" by the
+          // time you scrolled to them. Here the row is over half visible when it
+          // fires, and the entrance plays itself out in front of you.
+          start: "top 55%",
+          once: true,
+          onEnter: featIn,
+        });
+        // refresh-mid-page: scroll restoration can land past the trigger before it
+        // exists — a crossing that already happened never fires onEnter.
+        if (featST.progress > 0) { featST.kill(); featIn(); }
+      }
     }
 
     // "SELECTED WORK" TYPES OUT as you scroll into the dark desk (scroll-driven, so
