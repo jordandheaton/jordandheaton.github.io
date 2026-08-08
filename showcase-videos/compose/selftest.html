@@ -1,0 +1,34 @@
+<!DOCTYPE html><meta charset="utf-8"><title>engine selftest</title>
+<style>#box{position:absolute;width:100px;height:50px;background:#4da3ff}</style>
+<div id="box"></div><img id="seqimg" alt="">
+<script src="engine.js"></script>
+<script>
+(async () => {
+  const checks = [], ok = (n, c, d) => checks.push({name:n, ok:!!c, detail:String(d||'')});
+  const box = document.getElementById('box'), seq = document.getElementById('seqimg');
+  // 1x1 px data-uri "frame files" cannot exist as a directory; seq resolution is
+  // tested via the src it ASSIGNS, not via load success.
+  TL.build({fps:60, frames:120, tracks:[
+    {el:box, f0:0, f1:60, ease:'linear', apply:(el,p)=>el.style.opacity = p},
+    {el:seq, f0:30, f1:120, seq:{root:'no-such-dir', count:24, srcFps:24, pad:5, ext:'.jpg', prefix:'f'}},
+    {f0:0, run:f=>window.__lastRun = f},
+  ]});
+  ok('frames global', window.__frames === 120, window.__frames);
+  await window.__seek(30).catch(()=>{});          // seq img 404s — seek must not hang
+  ok('opacity mid', Math.abs(parseFloat(box.style.opacity) - 0.5) < 0.02, box.style.opacity);
+  ok('seq first', seq.getAttribute('src').endsWith('no-such-dir/f00000.jpg'), seq.getAttribute('src'));
+  await window.__seek(90).catch(()=>{});
+  ok('opacity clamped', parseFloat(box.style.opacity) === 1, box.style.opacity);
+  // f=90, f0=30 -> 60 timeline frames elapsed at 60fps over 24fps source = src 24 -> clamped 23
+  ok('seq mapped+clamped', seq.getAttribute('src').endsWith('f00023.jpg'), seq.getAttribute('src'));
+  ok('run track', window.__lastRun === 90, window.__lastRun);
+  const eb = TL.eases.outBack(0.7);
+  ok('outBack overshoots', eb > 1.0 && eb < 1.15, eb);
+  const pass = checks.filter(c=>c.ok).length;
+  const payload = btoa(unescape(encodeURIComponent(JSON.stringify({pass, fail:checks.length-pass, checks}))));
+  if (location.search.includes('emit')) {
+    const pre = document.createElement('pre'); pre.id = 'emit'; pre.textContent = payload;
+    document.body.appendChild(pre);
+  } else console.table(checks);
+})();
+</script>
