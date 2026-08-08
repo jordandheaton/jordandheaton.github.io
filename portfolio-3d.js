@@ -723,6 +723,12 @@
     // would shrink it, and the FLIP would fly in from a rect the user never saw.
     const from = card.getBoundingClientRect();
 
+    // Freeze the slot at that size for as long as the story is open. The card is
+    // a stretch-aligned grid item, so letting it collapse when .wcard-body leaves
+    // would shift the two sibling cards behind the backdrop — and would leave the
+    // close animation flying back to a shrunken rect.
+    card.style.height = from.height + "px";
+
     if (body) wmaxBody.appendChild(body);   // the card's presentation rides along —
     wmaxBody.appendChild(content);          // the window IS the card, expanded
     content.hidden = false;
@@ -765,6 +771,7 @@
       if (body) card.insertBefore(body, card.querySelector(".wcard-foot"));
       const content = wmaxBody.querySelector(".wexp-content");
       if (content) { content.hidden = true; card.appendChild(content); }
+      card.style.height = "";                 // hand the slot back to the grid
       card.classList.remove("is-open");
       document.documentElement.classList.remove("wmax-open");
       lenis.start();
