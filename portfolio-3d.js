@@ -580,14 +580,20 @@
     // and made the SELECTED WORK backdrop jump.)
     if (!reduced) {
       gsap.fromTo("#featured-grid .wcard",
-        { x: () => window.innerWidth * 0.92, opacity: 0 },
+        { x: () => window.innerWidth * 0.8, opacity: 0 },
         {
-          x: 0, opacity: 1, ease: "none", stagger: 0.14,
+          x: 0, opacity: 1, stagger: 0.1,
+          // power2.out across a scrub means the bulk of the distance is covered
+          // early — while the cards are still off-screen — and the part you
+          // actually watch is the slow final approach. With ease "none" over a
+          // short range they crossed ~2.7px per pixel of scroll and lurched
+          // into place.
+          ease: "power2.out",
           scrollTrigger: {
             trigger: "#featured-grid",
-            start: "top 92%",
-            end: "top 38%",
-            scrub: 0.7,
+            start: "top bottom+=250",   // begins before the row even enters
+            end: "top 32%",
+            scrub: 1,
             invalidateOnRefresh: true,
           },
         });
@@ -772,12 +778,17 @@
       wmaxFocusIn(card);
       return;
     }
-    requestAnimationFrame(() => wmaxBackdrop.classList.add("show"));
+    // force a reflow between unhiding and .show, or the transition has no start
+    // value to animate from and the blur/dim land fully formed in one frame
+    void wmaxBackdrop.offsetWidth;
+    wmaxBackdrop.classList.add("show");
     wmaxBusy = true;
     gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.35, delay: 0.18 });
     gsap.to(card, {
       left: to.left, top: to.top, width: to.width, height: to.height,
-      duration: 0.55, ease: "power3.inOut",
+      // power2 rather than power3: a gentler start, so the card eases away from
+      // the click instead of leaping off it
+      duration: 0.62, ease: "power2.inOut",
       onComplete: () => { wmaxBusy = false; wmaxFocusIn(card); },
     });
   }

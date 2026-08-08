@@ -720,8 +720,8 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
               rgba(77, 163, 255, 0.30), rgba(77, 163, 255, 0.10) 42%, transparent 74%);
 }
 /* the band and the arrow arrive together, once the cards have landed */
-#work-grid.work-lit #work-panes::before { opacity: 0.85; }
-#work-grid.work-lit:has(.pane-arrow:hover) #work-panes::before { opacity: 1; }
+#work-grid.work-lit #work-panes::before { opacity: 0.34; }   /* 60% more transparent than it was */
+#work-grid.work-lit:has(.pane-arrow:hover) #work-panes::before { opacity: 0.55; }
 
 body.js:not(.reduced) .pane-arrow { opacity: 0; transform: translateY(-50%) translateX(16px); }
 body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: translateY(-50%); }
@@ -736,11 +736,18 @@ body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 
    resnap. The write-up is already a child of the card; it only fades in. */
 .wmax-backdrop {
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(3, 5, 10, 0.72);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  opacity: 0; transition: opacity 0.3s;
+  background: rgba(3, 5, 10, 0);
+  /* the blur RAMPS: going straight to blur(6px) is the snap that reads as the
+     page "going sharp to blurry" the instant a card is clicked */
+  -webkit-backdrop-filter: blur(0px); backdrop-filter: blur(0px);
+  opacity: 0;
+  transition: opacity 0.5s ease, background 0.5s ease,
+              -webkit-backdrop-filter 0.5s ease, backdrop-filter 0.5s ease;
 }
-.wmax-backdrop.show { opacity: 1; }
+.wmax-backdrop.show {
+  opacity: 1; background: rgba(3, 5, 10, 0.72);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
 .wmax-backdrop[hidden] { display: none; }
 
 .wcard.is-expanded {
@@ -752,6 +759,17 @@ body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 
   box-shadow: 0 60px 140px rgba(0, 0, 0, 0.7), 0 0 60px -12px var(--theme, #4d8cff);
 }
 .wcard.is-expanded:hover { transform: none; }   /* the hover lift would fight the tween */
+/* the default scrollbar is a bright white rail down the side of a dark window */
+.wcard.is-expanded { scrollbar-width: thin; scrollbar-color: rgba(120, 150, 220, 0.34) transparent; }
+.wcard.is-expanded::-webkit-scrollbar { width: 10px; }
+.wcard.is-expanded::-webkit-scrollbar-track { background: transparent; }
+.wcard.is-expanded::-webkit-scrollbar-thumb {
+  background: rgba(120, 150, 220, 0.28);
+  border-radius: 999px;
+  border: 3px solid transparent;      /* inset the thumb off the window edge */
+  background-clip: content-box;
+}
+.wcard.is-expanded::-webkit-scrollbar-thumb:hover { background: var(--theme, #4d8cff); background-clip: content-box; }
 .wcard.is-expanded .wcard-bar { position: sticky; top: 0; z-index: 3; background: #10151f; }
 .wcard.is-expanded .wcard-bg { opacity: 0; }
 .wcard.is-expanded .wcard-body { padding: 30px 36px 0; }
