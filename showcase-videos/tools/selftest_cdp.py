@@ -34,13 +34,9 @@ try:
     for _ in range(30):
         c.vt_step()
     c.shot_jpeg(b)
-    # Threshold measured against this machine's Chrome build, not an arbitrary
-    # guess: a blank about:blank JPEG (q90, 960x540) is ~3818 bytes here, and
-    # this scene's real frames measured 4094-4813 bytes even at JPEG quality 100
-    # (PNG of the same frame: 2753 bytes). 5000 is unreachable for this exact
-    # flat-color scene on this encoder, regardless of capture correctness --
-    # 2000 stays a safe margin above a blank/broken capture while comfortably
-    # below every real-content measurement observed.
+    # Floor check: guard against truncated/zero-byte/failed writes only.
+    # Blank-vs-real-content discrimination is provided by the rAF-counter and
+    # CSS-margin assertions earlier, and by the two-screenshot inequality check below.
     assert px(a) > 2000 and px(b) > 2000, "screenshots suspiciously small"
     assert open(a, "rb").read() != open(b, "rb").read(), "identical frames after 0.5s virtual time"
     r = c.rect("#b")
