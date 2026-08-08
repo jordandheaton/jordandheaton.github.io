@@ -818,6 +818,7 @@
     function showPane(others) {
       paneFeat.classList.toggle("is-active", !others);
       paneOthers.classList.toggle("is-active", others);
+      document.getElementById("work-grid").classList.toggle("others-active", others);
       paneFeat.setAttribute("aria-hidden", others ? "true" : "false");
       paneOthers.setAttribute("aria-hidden", others ? "false" : "true");
       paneNext.hidden = others;

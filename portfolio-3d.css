@@ -667,7 +667,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 #pane-others:not(.is-active) { transform: translateX(8%); }
 
 .pane-arrow {
-  position: absolute; top: 50%; right: -14px; transform: translateY(-50%);
+  position: absolute; top: 50%; right: calc(50% - 50vw + 8px); transform: translateY(-50%);
   z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 18px 10px; background: none; border: 0; cursor: pointer;
   color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
@@ -681,9 +681,23 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 }
 .pane-arrow:hover { color: #eaf2ff; transform: translateY(-50%) translateX(3px); }
 .pane-arrow:hover::before { opacity: 1; }
-.arrow-back { right: auto; left: -14px; }
+.arrow-back { right: auto; left: calc(50% - 50vw + 8px); }
 .arrow-back:hover { transform: translateY(-50%) translateX(-3px); }
 .pane-arrow[hidden] { display: none; }
+
+/* sunset band: light rising from the screen edge that says "there's more over
+   here" — sits under the cards (panes z2, arrows z3), flips sides with the pane */
+#work-grid::before {
+  content: ""; position: absolute; top: 0; bottom: 0; z-index: 1;
+  right: calc(50% - 50vw); width: 24vw;
+  background: linear-gradient(270deg, rgba(77, 163, 255, 0.16), rgba(77, 163, 255, 0.05) 45%, transparent);
+  opacity: 0.65; transition: opacity 0.35s; pointer-events: none;
+}
+#work-grid.others-active::before {
+  right: auto; left: calc(50% - 50vw);
+  background: linear-gradient(90deg, rgba(77, 163, 255, 0.16), rgba(77, 163, 255, 0.05) 45%, transparent);
+}
+#work-grid:has(.pane-arrow:hover)::before { opacity: 1; }
 
 /* ===================== MAXIMIZE WINDOW (story overlay) ===================== */
 .wmax-backdrop {
