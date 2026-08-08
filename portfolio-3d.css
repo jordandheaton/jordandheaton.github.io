@@ -769,7 +769,7 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
     -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
   }
   .pane-arrow span { writing-mode: horizontal-tb; }  /* pill reads horizontally */
-  .arrow-back { left: -6px; }
+  .arrow-back { left: -6px; right: auto; }
 }
 
 /* full-screen sheet on phones */
