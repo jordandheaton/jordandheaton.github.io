@@ -1,0 +1,11 @@
+<!DOCTYPE html><meta charset="utf-8"><title>demo</title>
+<style>body{margin:0;background:#05070f}#t{position:absolute;left:0;top:490px;width:100%;
+text-align:center;color:#eaf2ff;font:700 80px system-ui}</style>
+<div id="t">RENDER TEST</div>
+<script src="render-config.js"></script><script src="engine.js"></script>
+<script>
+TL.build({fps:60, frames:60, tracks:[
+  {el:document.getElementById('t'), f0:0, f1:59, ease:'outCubic',
+   apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*60}px)`}},
+]});
+</script>
