@@ -584,7 +584,7 @@
       gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
       const featST = ScrollTrigger.create({
         trigger: "#featured-grid",
-        start: "top 82%",
+        start: "top 80%",
         once: true,
         onEnter: featIn,
       });
