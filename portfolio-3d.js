@@ -573,70 +573,33 @@
     });
     tl.to({}, { duration: HOLD_PX }); // brief hold on the dark screen, then the pin releases into the desk
 
-    // the trio flies in from BEYOND the right edge of the screen once you've
-    // scrolled a beat into the desk — the dark desktop (title + particles)
-    // gets a moment to exist before the windows arrive.
+    // The trio SLIDES BY AS YOU SCROLL, the way the Art of Ballroom track does:
+    // the movement is scrubbed to scroll position rather than played on a timer,
+    // so the reader drives it and nothing has to freeze the page to be seen.
+    // (An earlier version locked scrolling for the animation; that fought Lenis
+    // and made the SELECTED WORK backdrop jump.)
     if (!reduced) {
-      const featLabel = document.querySelector("#pane-featured .work-label");
-      const flyIn = (els, stagger, onDone) => gsap.to(els, {
-        opacity: 1, x: 0, duration: 1.0, ease: "power3.out",
-        stagger, overwrite: true, clearProps: "transform,opacity",
-        onComplete: onDone,
-      });
-      // the section label rides in behind the windows — seeing "FEATURED" hang
-      // over an empty desk gives the entrance away before it happens
-      const labelIn = () => gsap.to(featLabel, { opacity: 1, duration: 0.45, ease: "power2.out" });
-      gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
-      if (featLabel) gsap.set(featLabel, { opacity: 0 });
+      gsap.fromTo("#featured-grid .wcard",
+        { x: () => window.innerWidth * 0.92, opacity: 0 },
+        {
+          x: 0, opacity: 1, ease: "none", stagger: 0.14,
+          scrollTrigger: {
+            trigger: "#featured-grid",
+            start: "top 92%",
+            end: "top 38%",
+            scrub: 0.7,
+            invalidateOnRefresh: true,
+          },
+        });
 
-      if (window.matchMedia("(max-width: 900px)").matches) {
-        // Phones stack the trio into a ~3-screen column, so one group tween would
-        // fly in cards that are still a screen away. Each card arrives as it does.
-        // No scroll freeze here: three separate arrivals, so holding the page
-        // each time would fight the reader rather than frame the moment.
-        ScrollTrigger.batch("#featured-grid .wcard", {
-          start: "top 78%",
-          once: true,
-          onEnter: (els) => flyIn(els, 0.12, labelIn),
-        });
-        // same refresh-mid-page catch-up as below, per card
-        gsap.utils.toArray("#featured-grid .wcard").forEach((el) => {
-          if (el.getBoundingClientRect().top < window.innerHeight * 0.78) flyIn(el, 0, labelIn);
-        });
-      } else {
-        // Hold the page still for the length of the entrance so it plays out in
-        // front of the reader instead of sliding past under them. The failsafe
-        // matters more than the timer: a locked page that never unlocks is the
-        // worst possible outcome here.
-        let thawTimer = null;
-        const thawWork = () => {
-          clearTimeout(thawTimer);
-          document.documentElement.classList.remove("work-freeze");
-          lenis.start();
-        };
-        const freezeWork = () => {
-          document.documentElement.classList.add("work-freeze");
-          lenis.stop();
-          thawTimer = setTimeout(thawWork, 2600);
-        };
-        const featIn = () => {
-          freezeWork();
-          flyIn("#featured-grid .wcard", 0.18, () => { labelIn(); thawWork(); });
-        };
-        const featST = ScrollTrigger.create({
-          trigger: "#featured-grid",
-          // 55%, not 80%: at 80% only a quarter of the row was on screen, so the
-          // cards finished flying in below the fold and merely "appeared" by the
-          // time you scrolled to them. Here the row is over half visible when it
-          // fires, and the entrance plays itself out in front of you.
-          start: "top 55%",
-          once: true,
-          onEnter: featIn,
-        });
-        // refresh-mid-page: scroll restoration can land past the trigger before it
-        // exists — a crossing that already happened never fires onEnter.
-        if (featST.progress > 0) { featST.kill(); featIn(); }
-      }
+      // the label, the edge arrow and the sunset band all arrive together once
+      // the cards have landed — none of them should precede the windows
+      ScrollTrigger.create({
+        trigger: "#featured-grid",
+        start: "top 44%",
+        onEnter: () => workGrid.classList.add("work-lit"),
+        onLeaveBack: () => workGrid.classList.remove("work-lit"),
+      });
     }
 
     // "SELECTED WORK" TYPES OUT as you scroll into the dark desk (scroll-driven, so
@@ -742,167 +705,162 @@
     if (ccv && !reduced) spawnBits(ccv, document.getElementById("contact"));
   }
 
-  /* ---------------- featured story: maximize-window expansion ----------------
-     One overlay serves all three cards. Opening MOVES the card's .wexp-content
-     node into #wmax-body (no cloning, no fetching); closing moves it back.
-     Instant path when reduced-motion OR document.hidden — a frozen rAF loop
-     must never leave the window half-open. */
-  const wmax = document.getElementById("wmax");
-  const wmaxBody = document.getElementById("wmax-body");
+  /* ---------------- featured story: THE CARD ITSELF EXPANDS ----------------
+     No second element, no cross-fade: the card the reader clicked is lifted out
+     of the grid (position:fixed at its own rect, a placeholder holding its slot
+     open) and its geometry is tweened outward. Its chrome, title and blurb are
+     the same nodes throughout, so there is nothing to swap and nothing to
+     resnap — the write-up is already a child of the card and only fades in.
+     Instant path when reduced-motion OR document.hidden, so a frozen rAF loop
+     can never strand a half-open card. */
   const wmaxBackdrop = document.getElementById("wmax-backdrop");
   const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe", process: "card-process" };
-  let wmaxCard = null;      // card whose story is open
-  let wmaxBusy = false;  // held through open/close tweens — the wmaxCard mutex alone frees too early (onComplete lags it by ~0.4s)
+  const CARD_GEOM = "position,margin,zIndex,left,top,width,height";
+  let wmaxCard = null;       // the card whose story is open
+  let wmaxSlot = null;       // placeholder holding its grid slot
   let wmaxLastFocus = null;
+  let wmaxBusy = false;      // held across the tween: wmaxCard alone frees too early
 
   function wmaxInstant() { return reduced || document.hidden; }
 
+  // where an opened card settles: same box the old overlay used
+  function expandedRect() {
+    const w = Math.min(940, window.innerWidth * 0.94);
+    const h = Math.min(window.innerHeight * 0.86, 900);
+    return { left: (window.innerWidth - w) / 2, top: (window.innerHeight - h) / 2,
+             width: w, height: h };
+  }
+
   function openStory(card) {
-    if (!wmax || !card || wmaxCard || wmaxBusy) return;
+    if (!card || wmaxCard || wmaxBusy) return;
     const content = card.querySelector(".wexp-content");
     if (!content) return;
-    const body = card.querySelector(".wcard-body");
     wmaxCard = card;
     wmaxLastFocus = document.activeElement;
 
-    // Measure the card while it is still WHOLE: moving .wcard-body out first
-    // would shrink it, and the FLIP would fly in from a rect the user never saw.
     const from = card.getBoundingClientRect();
 
-    // Freeze the slot at that size for as long as the story is open. The card is
-    // a stretch-aligned grid item, so letting it collapse when .wcard-body leaves
-    // would shift the two sibling cards behind the backdrop — and would leave the
-    // close animation flying back to a shrunken rect.
-    card.style.height = from.height + "px";
+    // hold the card's place in the grid before it goes fixed, or the row
+    // collapses and the two siblings slide sideways behind the backdrop
+    const slot = document.createElement("div");
+    slot.className = "wcard-slot";
+    slot.style.height = from.height + "px";
+    card.parentNode.insertBefore(slot, card);
+    wmaxSlot = slot;
 
-    if (body) wmaxBody.appendChild(body);   // the card's presentation rides along —
-    wmaxBody.appendChild(content);          // the window IS the card, expanded
     content.hidden = false;
-    document.getElementById("wmax-path").textContent = card.dataset.path || "";
-    document.getElementById("wmax-open").setAttribute("href", card.dataset.href || "#");
-    wmax.style.setProperty("--theme", getComputedStyle(card).getPropertyValue("--theme").trim());
+    card.classList.add("is-expanded");
+    const readLabel = card.querySelector(".wcard-read")?.lastChild;
+    if (readLabel && readLabel.nodeType === 3) readLabel.textContent = "\n                  close_story\n                ";
+    gsap.set(card, { position: "fixed", margin: 0, zIndex: 61,
+                     left: from.left, top: from.top, width: from.width, height: from.height });
+    // Portal it to <body>. The card lives inside .work-pane, which carries a
+    // transform for the swipe and therefore its own stacking context — a
+    // z-index of 61 down there still renders BEHIND a backdrop at 60 up here.
+    // Fixed + explicit pixel geometry means the move is visually a no-op.
+    document.body.appendChild(card);
 
     wmaxBackdrop.hidden = false;
-    wmax.hidden = false;
     document.documentElement.classList.add("wmax-open");
     lenis.stop();
     if (card.dataset.slug) history.replaceState(null, "", "#" + card.dataset.slug);
 
-    card.classList.add("is-open");
-    wmaxBackdrop.classList.add("show");
-    wmax.classList.add("show");
-    wmaxBody.scrollTop = 0;
-
-    if (wmaxInstant()) { wmaxFocusIn(); return; }
-    const to = wmax.getBoundingClientRect();
+    const to = expandedRect();
+    if (wmaxInstant()) {
+      gsap.set(card, { left: to.left, top: to.top, width: to.width, height: to.height });
+      wmaxBackdrop.classList.add("show");
+      wmaxFocusIn(card);
+      return;
+    }
+    requestAnimationFrame(() => wmaxBackdrop.classList.add("show"));
     wmaxBusy = true;
-    // Morph the BOX, don't scale it. Scaling stretched the type on the way out
-    // and snapped back the instant the transform cleared — that snap is what
-    // read as the card "jumping" rather than expanding. Animating the actual
-    // geometry keeps every glyph at its true size the whole way across.
-    wmaxPin();
-    gsap.fromTo(wmax, wmaxRect(from), {
-      ...wmaxRect(to), duration: 0.52, ease: "power3.inOut",
-      onComplete: () => {
-        gsap.set(wmax, { clearProps: WMAX_GEOM });
-        wmaxFocusIn(); wmaxBusy = false;
-      },
+    gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.35, delay: 0.18 });
+    gsap.to(card, {
+      left: to.left, top: to.top, width: to.width, height: to.height,
+      duration: 0.55, ease: "power3.inOut",
+      onComplete: () => { wmaxBusy = false; wmaxFocusIn(card); },
     });
-    // the story itself arrives a beat later, so what you see first is the card
-    // you clicked, at the size you clicked it
-    gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.34, delay: 0.16 });
   }
-
-  // The window normally centres itself with inset:0 + margin:auto, which cannot
-  // be tweened. Pin it to real pixels first — as its own set() call, because an
-  // `inset: auto` sitting in the tween's vars is applied AFTER left/top and
-  // silently wipes them (the box then morphs from the screen edge instead of
-  // from the card).
-  function wmaxPin() {
-    gsap.set(wmax, { position: "fixed", margin: 0, right: "auto", bottom: "auto" });
-  }
-  function wmaxRect(r) {
-    return { left: r.left, top: r.top, width: r.width, height: r.height };
-  }
-  const WMAX_GEOM = "position,margin,right,bottom,left,top,width,height";
 
   function closeStory() {
     if (!wmaxCard || wmaxBusy) return;
     const card = wmaxCard;
     wmaxCard = null;
+    const content = card.querySelector(".wexp-content");
     const finish = () => {
-      wmax.classList.remove("show");
+      // back into its own slot in the grid, then the placeholder goes away
+      if (wmaxSlot && wmaxSlot.parentNode) wmaxSlot.parentNode.insertBefore(card, wmaxSlot);
+      gsap.set(card, { clearProps: CARD_GEOM });
+      card.classList.remove("is-expanded");
+      const readLabel = card.querySelector(".wcard-read")?.lastChild;
+      if (readLabel && readLabel.nodeType === 3) readLabel.textContent = "\n                  read_the_story\n                ";
+      card.scrollTop = 0;
+      if (content) { content.hidden = true; gsap.set(content, { clearProps: "opacity" }); }
+      if (wmaxSlot) { wmaxSlot.remove(); wmaxSlot = null; }
       wmaxBackdrop.classList.remove("show");
-      wmax.hidden = true;
       wmaxBackdrop.hidden = true;
-      const body = wmaxBody.querySelector(".wcard-body");
-      if (body) card.insertBefore(body, card.querySelector(".wcard-foot"));
-      const content = wmaxBody.querySelector(".wexp-content");
-      if (content) { content.hidden = true; card.appendChild(content); }
-      card.style.height = "";                 // hand the slot back to the grid
-      card.classList.remove("is-open");
       document.documentElement.classList.remove("wmax-open");
       lenis.start();
       history.replaceState(null, "", location.pathname + location.search);
       if (wmaxLastFocus && wmaxLastFocus.focus) wmaxLastFocus.focus();
     };
     if (wmaxInstant()) { finish(); return; }
-    const to = card.getBoundingClientRect();
-    const from = wmax.getBoundingClientRect();
-    // card scrolled far off screen → just fade instead of flying across the page
-    if (to.bottom < -40 || to.top > innerHeight + 40) {
-      wmaxBusy = true;
-      gsap.to(wmax, { opacity: 0, duration: 0.2, onComplete: () => { gsap.set(wmax, { clearProps: "opacity" }); finish(); wmaxBusy = false; } });
-      return;
-    }
+    // the slot is exactly where the card belongs again — including any scrolling
+    // the reader did while it was open
+    const to = (wmaxSlot || card).getBoundingClientRect();
     wmaxBusy = true;
-    // same box morph in reverse — the story fades out first so the card's own
-    // face is what shrinks back into the grid
-    const story = wmaxBody.querySelector(".wexp-content");
-    if (story) gsap.to(story, { opacity: 0, duration: 0.18 });
-    wmaxPin();
-    gsap.fromTo(wmax, wmaxRect(from), {
-      ...wmaxRect(to), duration: 0.46, ease: "power3.inOut",
-      onComplete: () => {
-        gsap.set(wmax, { clearProps: WMAX_GEOM });
-        if (story) gsap.set(story, { clearProps: "opacity" });
-        finish(); wmaxBusy = false;
-      },
+    if (content) gsap.to(content, { opacity: 0, duration: 0.18 });
+    gsap.to(card, {
+      left: to.left, top: to.top, width: to.width, height: to.height,
+      duration: 0.48, ease: "power3.inOut",
+      onComplete: () => { finish(); wmaxBusy = false; },
     });
   }
 
-  function wmaxFocusIn() {
-    const btn = document.getElementById("wmax-close");
+  function wmaxFocusIn(card) {
+    const btn = card.querySelector(".w-close");
     if (btn) btn.focus();
   }
 
-  if (wmax) {
-    document.querySelectorAll(".wcard-featured").forEach((card) => {
-      card.querySelectorAll(".w-max, .wcard-read").forEach((btn) => {
-        btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openStory(card); });
-      });
-      // click anywhere on the card = open the story; real links (title, CTA)
-      // and the explicit buttons keep their own behavior.
-      card.addEventListener("click", (e) => {
-        if (e.target.closest("a, button")) return;
-        openStory(card);
+  document.querySelectorAll(".wcard-featured").forEach((card) => {
+    card.querySelectorAll(".w-max, .wcard-read").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (card.classList.contains("is-expanded")) closeStory(); else openStory(card);
       });
     });
-    wmaxBackdrop.addEventListener("click", closeStory);
-    document.getElementById("wmax-close").addEventListener("click", closeStory);
-    document.addEventListener("keydown", (e) => {
-      if (!wmaxCard) return;
-      if (e.key === "Escape") { closeStory(); return; }
-      if (e.key === "Tab") {
-        // keep focus inside the dialog
-        const focusables = wmax.querySelectorAll("button, a[href]");
-        if (!focusables.length) return;
-        const first = focusables[0], last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
+    const closeBtn = card.querySelector(".w-close");
+    if (closeBtn) closeBtn.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation(); closeStory();
     });
-  }
+    // click anywhere on the card = open the story; real links (title, CTA)
+    // and the explicit buttons keep their own behavior.
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("a, button")) return;
+      if (card.classList.contains("is-expanded")) return;  // clicks inside an open story do nothing
+      openStory(card);
+    });
+  });
+
+  if (wmaxBackdrop) wmaxBackdrop.addEventListener("click", closeStory);
+  document.addEventListener("keydown", (e) => {
+    if (!wmaxCard) return;
+    if (e.key === "Escape") { closeStory(); return; }
+    if (e.key === "Tab") {
+      const focusables = wmaxCard.querySelectorAll("button, a[href]");
+      if (!focusables.length) return;
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  // an open card is sized in pixels, so a resize would leave it stale
+  window.addEventListener("resize", () => {
+    if (!wmaxCard || wmaxBusy) return;
+    const to = expandedRect();
+    gsap.set(wmaxCard, { left: to.left, top: to.top, width: to.width, height: to.height });
+  });
 
   /* ---------------- work panes: featured <-> other projects ---------------- */
   const paneFeat = document.getElementById("pane-featured");

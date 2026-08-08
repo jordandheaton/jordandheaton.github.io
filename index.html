@@ -34,7 +34,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <link rel="stylesheet" href="portfolio-3d.css?v=74" />
+  <link rel="stylesheet" href="portfolio-3d.css?v=75" />
 </head>
 <body>
 
@@ -232,7 +232,7 @@
               <span class="wcard-bar">
                 <span class="wpath mono">~/projects/myplan-byu.app</span>
                 <span class="wcard-index mono">01/07</span>
-                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the myplanBYU story"></button><b class="w-close" aria-hidden="true"></b></span>
+                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the myplanBYU story"></button><button class="w-close" type="button" aria-label="Close the myplanBYU story"></button></span>
               </span>
               <div class="wcard-body">
                 <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>WEB APP — RUNNING</span>
@@ -292,7 +292,7 @@
               <span class="wcard-bar">
                 <span class="wpath mono">~/projects/universe-scroller.app</span>
                 <span class="wcard-index mono">02/07</span>
-                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the Universe Scroller story"></button><b class="w-close" aria-hidden="true"></b></span>
+                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the Universe Scroller story"></button><button class="w-close" type="button" aria-label="Close the Universe Scroller story"></button></span>
               </span>
               <div class="wcard-body">
                 <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>SCROLL EXPERIENCE — RUNNING</span>
@@ -350,7 +350,7 @@
               <span class="wcard-bar">
                 <span class="wpath mono">~/projects/process-analysis.doc</span>
                 <span class="wcard-index mono">03/07</span>
-                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the process improvement story"></button><b class="w-close" aria-hidden="true"></b></span>
+                <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the process improvement story"></button><button class="w-close" type="button" aria-label="Close the process improvement story"></button></span>
               </span>
               <div class="wcard-body">
                 <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>CASE STUDY — RUNNING</span>
@@ -511,25 +511,16 @@
       © <span id="year"></span> JORDAN HEATON — BUILT FROM SCRATCH WITH HTML, CSS &amp; JAVASCRIPT
     </footer>
 
-    <!-- Maximize window: one overlay serves all three featured cards. Opening a
-         story MOVES that card's .wexp-content node in here; closing moves it back. -->
+    <!-- Just the dimmer. There is no separate story window any more: the card
+         itself lifts out of the grid and grows, which is the only way it reads
+         as the same card rather than a lookalike fading in over it. -->
     <div class="wmax-backdrop" id="wmax-backdrop" hidden></div>
-    <section class="wmax" id="wmax" role="dialog" aria-modal="true" aria-label="Project story" hidden>
-      <header class="wcard-bar wmax-bar">
-        <span class="wpath mono" id="wmax-path"></span>
-        <span class="wwin"><b class="w-min" aria-hidden="true"></b><b class="w-max" aria-hidden="true"></b><button class="w-close" id="wmax-close" type="button" aria-label="Close story"></button></span>
-      </header>
-      <div class="wmax-scroll" id="wmax-body" data-lenis-prevent></div>
-      <footer class="wmax-foot">
-        <a class="wmax-live mono" id="wmax-open" href="#" target="_blank" rel="noopener">&gt; open_live_project<span class="wcur" aria-hidden="true"></span></a>
-      </footer>
-    </section>
 
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
-  <script src="portfolio-3d.js?v=77"></script>
+  <script src="portfolio-3d.js?v=78"></script>
 </body>
 </html>

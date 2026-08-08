@@ -681,7 +681,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 14px 4px; background: none; border: 0; cursor: pointer;
   color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
-  transition: color 0.25s, transform 0.25s;
+  transition: color 0.25s, transform 0.45s ease, opacity 0.45s ease;
 }
 .pane-arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pane-arrow span { writing-mode: vertical-rl; text-orientation: mixed; }  /* edge-rail label: vertical text keeps the arrow ~30px wide, clear of the cards in the 3.5vw margin */
@@ -705,19 +705,35 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 #work-panes::before {
   content: ""; position: absolute; z-index: -1;
   top: -16vh; bottom: -16vh;
-  right: calc(50% - 50vw); width: 15vw;
-  background: linear-gradient(270deg, rgba(77, 163, 255, 0.26), rgba(77, 163, 255, 0.07) 55%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
-  opacity: 0.8; transition: opacity 0.35s; pointer-events: none;
+  right: calc(50% - 50vw); width: 8vw;
+  /* radial, not linear: it falls off in every direction at once, so there is no
+     edge anywhere — the vertical mask then dissolves whatever the radius leaves */
+  background: radial-gradient(120% 52% at 100% 50%,
+              rgba(77, 163, 255, 0.30), rgba(77, 163, 255, 0.10) 42%, transparent 74%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  opacity: 0; transition: opacity 0.6s ease; pointer-events: none;
 }
 #work-grid.others-active #work-panes::before {
   right: auto; left: calc(50% - 50vw);
-  background: linear-gradient(90deg, rgba(77, 163, 255, 0.26), rgba(77, 163, 255, 0.07) 55%, transparent);
+  background: radial-gradient(120% 52% at 0% 50%,
+              rgba(77, 163, 255, 0.30), rgba(77, 163, 255, 0.10) 42%, transparent 74%);
 }
-#work-grid:has(.pane-arrow:hover) #work-panes::before { opacity: 1; }
+/* the band and the arrow arrive together, once the cards have landed */
+#work-grid.work-lit #work-panes::before { opacity: 0.85; }
+#work-grid.work-lit:has(.pane-arrow:hover) #work-panes::before { opacity: 1; }
 
-/* ===================== MAXIMIZE WINDOW (story overlay) ===================== */
+body.js:not(.reduced) .pane-arrow { opacity: 0; transform: translateY(-50%) translateX(16px); }
+body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: translateY(-50%); }
+body.js:not(.reduced) #pane-featured .work-label { opacity: 0; transition: opacity 0.5s ease; }
+body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 1; }
+
+/* ===================== STORY: THE CARD ITSELF EXPANDS =====================
+   There is no separate window element. openStory() lifts the real card out of
+   the grid (position:fixed at its own rect, a placeholder holding its slot) and
+   tweens its geometry outward. Everything inside — chrome, title, blurb, chips
+   — is the same DOM the reader just clicked, so nothing can cross-fade or
+   resnap. The write-up is already a child of the card; it only fades in. */
 .wmax-backdrop {
   position: fixed; inset: 0; z-index: 60;
   background: rgba(3, 5, 10, 0.72);
@@ -727,29 +743,25 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wmax-backdrop.show { opacity: 1; }
 .wmax-backdrop[hidden] { display: none; }
 
-.wmax {
-  position: fixed; inset: 0; margin: auto; z-index: 61;  /* inset+margin centers WITHOUT transform, so GSAP owns transform for the FLIP */
-  width: min(940px, 94vw); height: min(86vh, 900px);
-  padding: 0;  /* #wmax is a <section>: the site's generic `section` padding (16vh 7vw) must not inset the window chrome */
-  display: flex; flex-direction: column;
-  border: 1px solid rgba(120, 150, 220, 0.28); border-radius: 12px;
-  background: linear-gradient(180deg, rgba(18, 23, 36, 0.985), rgba(11, 15, 24, 0.985));
+.wcard.is-expanded {
+  z-index: 61;                       /* above the backdrop; JS owns the geometry */
+  overflow-y: auto; overscroll-behavior: contain;
+  justify-content: flex-start;       /* content stacks from the top as it grows */
+  cursor: default;
+  border-color: var(--theme, #4d8cff);
   box-shadow: 0 60px 140px rgba(0, 0, 0, 0.7), 0 0 60px -12px var(--theme, #4d8cff);
-  opacity: 0; transition: opacity 0.25s;
 }
-.wmax.show { opacity: 1; }
-.wmax[hidden] { display: none; }
-.wmax-bar { border-radius: 12px 12px 0 0; }
-.wwin button.w-close { width: 28px; height: 20px; border-radius: 4px; display: grid; place-items: center; color: #5a6685; transition: background 0.2s, color 0.2s; }
-.wwin button.w-close::before { content: "\2715"; font-size: 0.72rem; line-height: 1; }
-.wwin button.w-close:hover { background: #e23b4e; color: #fff; }
+.wcard.is-expanded:hover { transform: none; }   /* the hover lift would fight the tween */
+.wcard.is-expanded .wcard-bar { position: sticky; top: 0; z-index: 3; background: #10151f; }
+.wcard.is-expanded .wcard-bg { opacity: 0; }
+.wcard.is-expanded .wcard-body { padding: 30px 36px 0; }
+.wcard.is-expanded .wcard-blurb { max-width: 62ch; }
+.wcard.is-expanded .wcard-foot { order: 9; position: sticky; bottom: 0; background: #0c111b; }
+.wcard.is-expanded .wexp-content { padding: 0 36px 30px; }
+/* the slot the card leaves behind, so the grid row does not collapse under it */
+.wcard-slot { min-width: 0; }
 
-.wmax-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 6px 42px 30px; }
-.wmax-foot { border-top: 1px solid rgba(120, 150, 220, 0.12); }
-.wmax-live { display: block; padding: 14px 42px 16px; color: var(--theme, #4d8cff); font-size: 0.72rem; letter-spacing: 0.14em; transition: background 0.25s, letter-spacing 0.25s; }
-.wmax-live:hover { background: rgba(120, 150, 220, 0.06); letter-spacing: 0.2em; }
-
-/* write-up typography inside the window */
+/* write-up typography */
 .wx-media { display: none; }  /* reserved for the showcase video (later phase) */
 .wx-learned { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
 .wx-learned span {
@@ -763,21 +775,17 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wx-sec p:last-child { margin-bottom: 0; }
 .wx-sec em { color: #dbe6fa; font-style: normal; font-weight: 600; }
 
-/* scroll lock while the window is open */
+.wwin button.w-close { width: 28px; height: 20px; border-radius: 4px; display: grid; place-items: center; color: #5a6685; transition: background 0.2s, color 0.2s; }
+.wwin button.w-close::before { content: "¹5"; font-size: 0.72rem; line-height: 1; }
+.wcard:hover .wwin button.w-close { color: #9aa6c2; }
+.wwin button.w-close:hover { background: #e23b4e; color: #fff; }
+
+/* scroll lock while a story is open */
 html.wmax-open, html.wmax-open body { overflow: hidden; }
 
-/* ...and a brief one while the trio flies in, so the entrance plays out instead
-   of scrolling past under the reader. Released by thawWork() (with a failsafe). */
-html.work-freeze, html.work-freeze body { overflow: hidden; }
-
-/* the JS reveal/FLIP paths already gate on `reduced`; these CSS transitions
-   (pane swipe, overlay fade, arrow glow) need their own gate */
 @media (prefers-reduced-motion: reduce) {
-  .work-pane, .wmax, .wmax-backdrop, .pane-arrow, .pane-arrow::before { transition: none; }
+  .work-pane, .wmax-backdrop, .pane-arrow, .pane-arrow::before { transition: none; }
 }
-
-/* the grid card whose story is open hides so the window reads as it, maximized */
-.wcard-featured.is-open { visibility: hidden; }
 
 /* below the 3-across layout the cards go full-width, so the arrow can't own a
    clear margin — it becomes a floating pill riding the edge instead */
@@ -796,27 +804,11 @@ html.work-freeze, html.work-freeze body { overflow: hidden; }
   #work-panes::before { display: none; }
 }
 
-/* full-screen sheet on phones */
 @media (max-width: 720px) {
-  .wmax { width: 100vw; height: 100dvh; border-radius: 0; }
-  .wmax-bar { border-radius: 0; }
-  .wmax-scroll { padding: 4px 22px 24px; }
-  .wmax-live { padding: 13px 22px 15px; }
+  .wcard.is-expanded { border-radius: 0; }
+  .wcard.is-expanded .wcard-body { padding: 24px 22px 0; }
+  .wcard.is-expanded .wexp-content { padding: 0 22px 24px; }
 }
-
-/* The card's presentation block, as it appears inside the opened window. It
-   deliberately keeps the card's OWN type sizes: the window grows out of the
-   card at real pixel geometry, so restyling the title mid-flight would put back
-   exactly the jump the morph exists to remove. */
-#wmax-body .wcard-body { padding: 28px 0 0; }
-/* h3 and p were styled via `.wcard h3` / `.wcard p`, and the body is no longer
-   inside a .wcard once it moves in here — without these it fell back to browser
-   defaults (title 27px -> 18.7px) the instant the window opened. */
-#wmax-body .wcard-body h3 {
-  font-family: var(--font-display); font-weight: 700; color: #eaf2ff;
-  font-size: clamp(1.45rem, 1.9vw, 2.1rem); line-height: 1.05; margin-bottom: 16px;
-}
-#wmax-body .wcard-blurb { color: #8fa2c4; font-size: 0.94rem; margin-bottom: 20px; max-width: 62ch; }
 
 /* ============================================================
    SKILLS marquees
