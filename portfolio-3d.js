@@ -587,25 +587,31 @@
       const mm = gsap.matchMedia();
 
       mm.add("(min-width: 901px)", () => {
-        gsap.fromTo("#featured-grid .wcard",
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: "#work-panes",
+            start: "center center",     // engages once the row is dead centre
+            end: "+=1600",
+            pin: "#work-panes",
+            pinSpacing: true,
+            anticipatePin: 1,
+            scrub: 0.8,
+            invalidateOnRefresh: true,
+            // the laptop dive above is also pinned, and its pin-spacer shifts
+            // every offset below it. Without an explicit order this measures
+            // against a layout that does not exist yet and starts ~2600px early.
+            refreshPriority: -1,
+          },
+        });
+        tl.fromTo("#featured-grid .wcard",
           { x: () => window.innerWidth * 0.85, opacity: 0 },
-          {
-            x: 0, opacity: 1, stagger: 0.12, ease: "power2.out",
-            scrollTrigger: {
-              trigger: "#work-panes",
-              start: "center center",     // engages once the row is dead centre
-              end: "+=1100",
-              pin: "#work-panes",
-              pinSpacing: true,
-              anticipatePin: 1,
-              scrub: 0.8,
-              invalidateOnRefresh: true,
-              // the laptop dive above is also pinned, and its pin-spacer shifts
-              // every offset below it. Without an explicit order this measures
-              // against a layout that does not exist yet and starts ~2600px early.
-              refreshPriority: -1,
-            },
-          });
+          { x: 0, opacity: 1, stagger: 0.12, ease: "power2.out", duration: 1 });
+        // A DWELL at the end of the pinned stretch. Without it the last card
+        // finished landing at the exact scroll position where the pin releases,
+        // so its settle and the release collided and read as a snap. Now the
+        // trio glides home with roughly a third of the pin still to go: they
+        // sit there, done, while you keep scrolling before the page moves on.
+        tl.to({}, { duration: 0.62 });
       });
 
       mm.add("(max-width: 900px)", () => {

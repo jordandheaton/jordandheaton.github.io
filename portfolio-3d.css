@@ -484,7 +484,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   position: relative; z-index: 2;
   margin-top: -100vh;              /* overlap the sticky backdrop */
   padding: 96vh 0 30vh;            /* top: a beat of desk — title + particles — before the cards' zone · bottom: exit beat */
-  max-width: min(1680px, 93vw);
+  max-width: min(1760px, 92vw);   /* wider than before, but the edge arrow still needs its margin */
   margin-left: auto; margin-right: auto;
 }
 .work-label {
@@ -494,7 +494,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 }
 #featured-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: clamp(16px, 1.6vw, 28px);
+  gap: clamp(28px, 3.6vw, 68px);   /* room to breathe between the windows */
   align-items: stretch;
 }
 
