@@ -480,8 +480,8 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .work-grid {
   position: relative; z-index: 2;
   margin-top: -100vh;              /* overlap the sticky backdrop */
-  padding: 16vh 0 30vh;            /* top: breathing room under the locked title · bottom: exit beat before contact */
-  max-width: min(1560px, 92vw);
+  padding: 52vh 0 30vh;            /* top: a beat of desk — title + particles — before the cards' zone · bottom: exit beat */
+  max-width: min(1680px, 93vw);
   margin-left: auto; margin-right: auto;
 }
 .work-label {
@@ -604,7 +604,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .theme-universe { --theme: #6a5cf5; }
 
 /* ===================== FEATURED CARDS (2026-08 rework) ===================== */
-.wcard-featured { width: auto; min-height: min(560px, 64vh); }
+.wcard-featured { width: auto; min-height: min(600px, 68vh); }
 .wcard-featured h3 { font-size: clamp(1.45rem, 1.9vw, 2.1rem); }
 .wcard-featured .wcard-body { padding: 26px 30px 8px; }
 .wcard-featured p.wcard-blurb { font-size: 0.94rem; max-width: none; }
@@ -652,7 +652,8 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 @media (max-width: 640px)  { #other-grid { grid-template-columns: 1fr; } }
 
 /* ---- panes: featured <-> others swipe ---- */
-.work-panes { position: relative; display: grid; overflow: hidden; }
+/* no overflow clip: entering cards fly in from beyond the viewport edge; the pane swipe only translates 8% under a fade, and body clips horizontal overflow */
+.work-panes { position: relative; z-index: 2; display: grid; }
 .work-pane {
   grid-area: 1 / 1; min-width: 0;
   transform: translateX(0); opacity: 1;
@@ -911,7 +912,7 @@ html.wmax-open, html.wmax-open body { overflow: hidden; }
   .scroll-cue { flex-direction: row; align-items: center; }
   .scroll-line { width: 54px; height: 1px; background: linear-gradient(90deg, var(--accent-2), transparent); transform-origin: left; animation-name: scroll-drip-h; }
   @keyframes scroll-drip-h { 0% { transform: scaleX(0); } 45% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0; } }
-  .work-grid { padding: 16vh 4vw 26vh; }  /* match the desktop compact desk: the trio starts on the first screen after the dive */
+  .work-grid { padding: 42vh 4vw 26vh; }  /* match the desk beat on phones */
   .wcard-featured { min-height: 0; }
   .wcard-body { padding: 24px 24px 6px; }
   .wcard-cta { padding: 13px 24px 15px; }

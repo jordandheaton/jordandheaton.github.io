@@ -573,23 +573,23 @@
     });
     tl.to({}, { duration: HOLD_PX }); // brief hold on the dark screen, then the pin releases into the desk
 
-    // the trio slides in from the right BY ITSELF as soon as the desk locks —
-    // no extra scrolling required. A beat of delay lets the title start typing
-    // first so the entrance reads title → cards.
+    // the trio flies in from BEYOND the right edge of the screen once you've
+    // scrolled a beat into the desk — the dark desktop (title + particles)
+    // gets a moment to exist before the windows arrive.
     if (!reduced) {
-      gsap.set("#featured-grid .wcard", { opacity: 0, x: 120 });
       const featIn = () => gsap.to("#featured-grid .wcard", {
-        opacity: 1, x: 0, duration: 0.85, ease: "power3.out",
-        stagger: 0.18, delay: 0.35, overwrite: true, clearProps: "transform,opacity",
+        opacity: 1, x: 0, duration: 1.0, ease: "power3.out",
+        stagger: 0.18, overwrite: true, clearProps: "transform,opacity",
       });
+      gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth });
       const featST = ScrollTrigger.create({
-        trigger: "#work-desk",
-        start: "top top",
+        trigger: "#featured-grid",
+        start: "top 82%",
         once: true,
         onEnter: featIn,
       });
-      // refresh-mid-page: scroll restoration can land past the desk before this
-      // trigger exists — a crossing that already happened never fires onEnter.
+      // refresh-mid-page: scroll restoration can land past the trigger before it
+      // exists — a crossing that already happened never fires onEnter.
       if (featST.progress > 0) { featST.kill(); featIn(); }
     }
 
