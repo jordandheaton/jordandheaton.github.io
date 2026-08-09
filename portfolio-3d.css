@@ -568,6 +568,8 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .w-close::before { content: "\2715"; }                   /* ✕ */
 .wcard:hover .wwin b { color: #9aa6c2; }
 .wwin b:hover { background: rgba(255,255,255,0.09); color: #eaf2ff; }
+/* a card with no story to open gets chrome that never offers one */
+.wwin-static b { pointer-events: none; }
 .w-close:hover { background: #e23b4e; color: #fff; }
 
 /* window body */
@@ -655,7 +657,11 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wexp-content[hidden] { display: none; }
 
 /* ---- other projects: compact strip ---- */
-#other-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(22px, 2.4vw, 46px); }
+/* the four sit on the same 90vw the featured trio uses, spread wide across it
+   rather than huddled in the middle */
+#other-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(26px, 3.4vw, 66px); }
+/* no min-height: forcing these to the featured cards' stature just left 130px
+   of empty card under the last line of text */
 .wcard-mini { width: auto; min-height: 0; }
 .wcard-mini .wcard-bar { padding: 9px 14px; }
 .wcard-mini .wcard-body { padding: 18px 20px 4px; }
@@ -678,18 +684,16 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
      the top of the taller featured pane's box — centre it so its cards line up
      with the arrow that sits beside them */
   display: flex; flex-direction: column; justify-content: center;
-  transform: translateX(0);
-  /* A GALLERY, not a cross-fade: the featured trio leaves to the right while
-     the small ones arrive from the left, both fully opaque, so it reads as one
-     strip sliding across. .work-desk clips at the viewport edge. */
-  transition: transform 0.62s cubic-bezier(.65, 0, .35, 1), visibility 0s 0s;
 }
-.work-pane:not(.is-active) {
-  pointer-events: none; visibility: hidden;
-  transition: transform 0.62s cubic-bezier(.65, 0, .35, 1), visibility 0s 0.62s;
-}
-#pane-featured:not(.is-active) { transform: translateX(-106%); }  /* exits left */
-#pane-others:not(.is-active) { transform: translateX(106%); }    /* waits off to the right */
+/* A GALLERY, not a cross-fade: the trio leaves to the left card by card while
+   the small ones arrive from the right, both fully opaque, so it reads as one
+   strip sliding past. The panes themselves no longer move — showPane() tweens
+   each CARD by the measured distance to the viewport edge, because a pane-wide
+   translateX(106%) is 106% of the GRID, which is inset from the screen by its
+   own margin: the far card was still on screen when the slide began.
+   .work-desk clips at the viewport edge. */
+.work-pane:not(.is-active):not(.is-leaving) { pointer-events: none; visibility: hidden; }
+.work-pane.is-leaving { pointer-events: none; }   /* still painted, on its way out */
 
 .pane-arrow {
   /* the featured pane has no label any more, so the panes box IS the card row */

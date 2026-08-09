@@ -634,6 +634,9 @@
           // straight timing: constant speed, one after the other, nothing else
           gsap.to(cards, {
             x: 0, opacity: 1, duration: 0.85, ease: "none", stagger: 0.3,
+            // an inline transform of its own outranks the stylesheet, so
+            // without this the cards never lift on hover again
+            clearProps: "transform",
             onComplete: () => {
               cards.forEach((el) => el.classList.remove("is-entering"));
               release();
@@ -813,7 +816,8 @@
      Instant path when reduced-motion OR document.hidden, so a frozen rAF loop
      can never strand a half-open card. */
   const wmaxBackdrop = document.getElementById("wmax-backdrop");
-  const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe", process: "card-process" };
+  // no #process: that project's own page is its write-up, so its card has no story
+  const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe" };
   const CARD_GEOM = "position,margin,zIndex,left,top,width,height,transform";
   const FLIP_D = 0.62, FLIP_E = "power2.inOut";   // open and close are mirror images
   let wmaxCard = null;       // the card whose story is open
@@ -1085,21 +1089,92 @@
   const paneNext = document.getElementById("pane-next");
   const paneBack = document.getElementById("pane-back");
   if (paneFeat && paneOthers && paneNext && paneBack) {
-    function showPane(others) {
-      paneFeat.classList.toggle("is-active", !others);
-      paneOthers.classList.toggle("is-active", others);
-      document.getElementById("work-grid").classList.toggle("others-active", others);
+    const featCards = Array.from(paneFeat.querySelectorAll(".wcard"));
+    const otherCards = Array.from(paneOthers.querySelectorAll(".wcard"));
+    const workGridEl = document.getElementById("work-grid");
+    let paneBusy = false;
+    let othersShown = false;
+
+    // Everything that is not the movement itself: chrome, focus, the sunset
+    // band's side. Fires up front so the click reads as answered immediately.
+    function setPaneChrome(others) {
+      workGridEl.classList.toggle("others-active", others);
       paneFeat.setAttribute("aria-hidden", others ? "true" : "false");
       paneOthers.setAttribute("aria-hidden", others ? "false" : "true");
       paneNext.hidden = others;
       paneBack.hidden = !others;
+    }
+
+    /* How far a card must travel to clear the SCREEN, not the grid. The old
+       pane-wide translateX(106%) was 106% of the grid box, which is inset by
+       ~5vw on each side, so the arriving cards started already inside the
+       viewport and looked like they popped in and then slid. Measuring each
+       card's own rect against innerWidth is the whole fix. */
+    const PAD = 60;
+    const offLeft = (el) => -(el.getBoundingClientRect().right + PAD);
+    const offRight = (el) => window.innerWidth - el.getBoundingClientRect().left + PAD;
+
+    function showPane(others) {
+      if (paneBusy || others === othersShown) return;
+      othersShown = others;
+      const outPane = others ? paneFeat : paneOthers;
+      const inPane = others ? paneOthers : paneFeat;
+      const outCards = others ? featCards : otherCards;
+      const inCards = others ? otherCards : featCards;
+
+      setPaneChrome(others);
+
+      if (reduced || !window.gsap) {
+        outPane.classList.remove("is-active");
+        inPane.classList.add("is-active");
+        (others ? paneBack : paneNext).focus();
+        return;
+      }
+
+      paneBusy = true;
+      // .wcard carries `transition: transform 0.3s` for the hover lift, which
+      // would fight every frame of this — same bug that made the entrance
+      // refuse to follow its curve.
+      outCards.concat(inCards).forEach((el) => el.classList.add("is-entering"));
+
+      // Measure the arriving cards while they are still visibility:hidden —
+      // hidden elements still have layout boxes, so the rects are real — and
+      // park them off-screen BEFORE they are allowed to paint.
+      const inFrom = inCards.map(others ? offRight : offLeft);
+      gsap.set(inCards, { x: (i) => inFrom[i] });
+      outPane.classList.add("is-leaving");
+      outPane.classList.remove("is-active");
+      inPane.classList.add("is-active");
+
+      const STEP = 0.09;                       // one card, then the next
+      const tl = gsap.timeline({
+        onComplete: () => {
+          outPane.classList.remove("is-leaving");
+          // hidden now, so reset without a flicker: a stale x would poison the
+          // next measurement, since getBoundingClientRect includes transforms
+          gsap.set(outCards, { x: 0 });
+          outCards.concat(inCards).forEach((el) => el.classList.remove("is-entering"));
+          paneBusy = false;
+        },
+      });
+      tl.to(outCards, {
+        x: (i) => (others ? offLeft(outCards[i]) : offRight(outCards[i])),
+        duration: 0.52, ease: "power2.in", stagger: STEP,
+      }, 0);
+      // starts while the last of the outgoing three is still leaving, so the
+      // two sets read as one strip travelling past rather than two events
+      tl.to(inCards, {
+        x: 0, duration: 0.62, ease: "power2.out", stagger: STEP,
+        clearProps: "transform",     // give the hover lift its transform back
+      }, 0.22);
+
       (others ? paneBack : paneNext).focus();
     }
     paneNext.addEventListener("click", () => showPane(true));
     paneBack.addEventListener("click", () => showPane(false));
   }
 
-  // Deep links: #myplan / #universe / #process open the story directly.
+  // Deep links: #myplan / #universe open the story directly.
   // Wait out the boot overlay (class-based — never touch bootDone: it is
   // declared AFTER the boot block's early return and would throw in
   // reduced-motion mode), then land on the desk and open the window.
