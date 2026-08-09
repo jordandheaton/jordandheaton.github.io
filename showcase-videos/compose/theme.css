@@ -52,3 +52,33 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;background:
 .fx-credits-line{font:800 44px var(--sans);color:var(--ink);will-change:transform,opacity}
 .fx-wipe{position:absolute;inset:0;width:1920px;height:1080px;background:var(--accent);
   z-index:60;will-change:opacity,clip-path}
+
+/* ---- Revision-2: DM Sans intake (Task R7) ---- */
+/* NOTE: does not touch --sans (scroller composition shares theme.css); R8's
+   page opts into 'DM Sans' itself via its own font-family rule. */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400;
+  src:url('assets/fonts/DMSans-400.woff2') format('woff2');font-display:block}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:500;
+  src:url('assets/fonts/DMSans-500.woff2') format('woff2');font-display:block}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:700;
+  src:url('assets/fonts/DMSans-700.woff2') format('woff2');font-display:block}
+
+/* ---- Revision-2: browserbar / ring FX (Task R7) ---- */
+.fx-browserbar{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);
+  width:1100px;height:64px;display:flex;align-items:center;gap:10px;background:#0b0f1c;
+  border:1px solid rgba(234,242,255,.1);border-radius:14px;padding:0 22px;z-index:30;
+  box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 120px rgba(77,163,255,.18);will-change:transform,opacity}
+.fx-browserbar-dot{width:13px;height:13px;border-radius:50%;flex:0 0 auto}
+.fx-browserbar-dot.r{background:#ff5f57}
+.fx-browserbar-dot.y{background:#febc2e}
+.fx-browserbar-dot.g{background:#28c840}
+.fx-browserbar-url{flex:1;margin-left:14px;height:40px;background:#111731;border-radius:10px;
+  padding:0 20px;display:flex;align-items:center;white-space:nowrap;overflow:hidden}
+.fx-browserbar-scheme{font:500 26px 'DM Sans',var(--sans);color:#5c7099;margin-right:2px}
+.fx-browserbar-text{font:500 26px var(--mono);color:var(--ink)}
+.fx-browserbar-caret{display:inline-block;width:3px;height:26px;margin-left:2px;
+  background:var(--accent);flex:0 0 auto}
+.fx-ring{position:absolute;inset:0;pointer-events:none;z-index:35;will-change:opacity}
+.fx-ring-svg{position:absolute;inset:0;width:1920px;height:1080px;overflow:visible}
+.fx-ring-ellipse{fill:none;stroke:var(--accent);stroke-width:4px;stroke-linecap:round;
+  will-change:stroke-dashoffset}

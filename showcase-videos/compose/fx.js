@@ -155,5 +155,77 @@
     return el;
   }
 
-  window.FX = { title, caption, pill, typewriter, callout, credits, wipe };
+  // ---- Revision-2: browserbar / ring FX (Task R7) ----
+
+  // Minimal dark browser-chrome strip, ~1100px wide, centered on stage
+  // (DM Sans scheme label + monospace typed URL). Pop-in (outBack) over
+  // p 0->0.12. The url text types on LINEARLY over p in [0.12, 0.85]:
+  //   charCount(p) = round(url.length * clamp((p-0.12)/(0.85-0.12), 0, 1))
+  // render/build_myplan_audio.py derives per-keystroke frame timestamps from
+  // this exact mapping given a beat's [f0,f1] range -- do not change the
+  // (0.12, 0.85) window without updating the audio builder to match.
+  // p 0.85->1 holds the completed url. Caret is a steady block (deterministic
+  // -- no wall-clock blink), visible whenever p<1, hidden once typing "ends".
+  // _fx(0) is fully hidden (opacity 0, slight scale-down).
+  function browserbar(container, {url}) {
+    const TYPE_P0 = 0.12, TYPE_P1 = 0.85, POP_P1 = 0.12;
+    const el = document.createElement('div');
+    el.className = 'fx-browserbar';
+    el.innerHTML =
+      `<span class="fx-browserbar-dot r"></span><span class="fx-browserbar-dot y"></span>` +
+      `<span class="fx-browserbar-dot g"></span>` +
+      `<div class="fx-browserbar-url"><span class="fx-browserbar-scheme">https://</span>` +
+      `<span class="fx-browserbar-text"></span><span class="fx-browserbar-caret"></span></div>`;
+    container.appendChild(el);
+    const text = el.querySelector('.fx-browserbar-text');
+    const caret = el.querySelector('.fx-browserbar-caret');
+
+    el._fx = p => {
+      p = Math.max(0, Math.min(1, p));
+      const popQ = TL.eases.outBack(Math.max(0, Math.min(1, p / POP_P1)));
+      el.style.opacity = p === 0 ? '0' : '1';
+      el.style.transform = `translate(-50%,-50%) scale(${p === 0 ? 0.94 : 0.94 + popQ * 0.06})`;
+
+      const typeQ = Math.max(0, Math.min(1, (p - TYPE_P0) / (TYPE_P1 - TYPE_P0)));
+      const n = Math.round(url.length * typeQ);
+      text.textContent = url.slice(0, n);
+      caret.style.opacity = p < 1 ? '1' : '0';
+    };
+    el._fx(0);
+    return el;
+  }
+
+  // Hand-drawn-feel SVG ellipse stroke (accent color, ~4px) centered at stage
+  // coords (x,y) with radii (rx,ry); a small fixed rotation offset gives it a
+  // slightly imperfect, sketched look. The stroke DRAWS ON around the ellipse
+  // over p 0->0.6 (dasharray = circumference via Ramanujan's approximation,
+  // dashoffset counts down from full to 0), holds fully drawn for p>=0.6.
+  // _fx(0) is hidden. No built-in fade-out -- caller fades.
+  function ring(container, {x, y, rx, ry}) {
+    const DRAW_P1 = 0.6, TILT_DEG = -2.5;
+    const el = document.createElement('div');
+    el.className = 'fx-ring';
+    el.innerHTML =
+      `<svg class="fx-ring-svg" viewBox="0 0 1920 1080">` +
+        `<ellipse class="fx-ring-ellipse" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" ` +
+        `transform="rotate(${TILT_DEG} ${x} ${y})"></ellipse>` +
+      `</svg>`;
+    container.appendChild(el);
+    const ellipse = el.querySelector('.fx-ring-ellipse');
+    // Ramanujan's second approximation for ellipse circumference.
+    const h = Math.pow((rx - ry) / (rx + ry), 2);
+    const circumference = Math.PI * (rx + ry) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
+    ellipse.setAttribute('stroke-dasharray', String(circumference));
+
+    el._fx = p => {
+      p = Math.max(0, Math.min(1, p));
+      el.style.opacity = p === 0 ? '0' : '1';
+      const drawQ = TL.eases.outCubic(Math.max(0, Math.min(1, p / DRAW_P1)));
+      ellipse.style.strokeDashoffset = String(circumference * (1 - drawQ));
+    };
+    el._fx(0);
+    return el;
+  }
+
+  window.FX = { title, caption, pill, typewriter, callout, credits, wipe, browserbar, ring };
 })();

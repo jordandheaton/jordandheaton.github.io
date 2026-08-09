@@ -110,6 +110,41 @@
     ok('wipe clean at 0', parseFloat(w.style.opacity) === 0, w.style.opacity);
   });
 
+  // ---- Revision-2: browserbar / ring FX (Task R7) ----
+  safeRun(['browserbar hidden at 0', 'browserbar typed at p=0.5', 'browserbar complete no caret at p=1'], () => {
+    const url = 'byu.edu/mymap';
+    const bb = FX.browserbar(host, {url});
+    const text = bb.querySelector('.fx-browserbar-text');
+    const caret = bb.querySelector('.fx-browserbar-caret');
+    bb._fx(0);
+    ok('browserbar hidden at 0', bb.style.opacity === '0', bb.style.opacity);
+    bb._fx(0.5);
+    // same [0.12, 0.85] linear mapping documented on FX.browserbar in fx.js —
+    // the audio builder derives keystroke timestamps from this exact formula.
+    const q = Math.max(0, Math.min(1, (0.5 - 0.12) / (0.85 - 0.12)));
+    const expectN = Math.round(url.length * q);
+    ok('browserbar typed at p=0.5', text.textContent === url.slice(0, expectN),
+       `got "${text.textContent}" (len ${text.textContent.length}) want len ${expectN}`);
+    bb._fx(1);
+    ok('browserbar complete no caret at p=1', text.textContent === url && caret.style.opacity === '0',
+       `text="${text.textContent}" caretOpacity=${caret.style.opacity}`);
+  });
+
+  safeRun(['ring hidden at 0', 'ring dashoffset mid-draw at p=0.3', 'ring fully drawn at p=0.7'], () => {
+    const ring = FX.ring(host, {x: 600, y: 400, rx: 220, ry: 90});
+    const ellipse = ring.querySelector('.fx-ring-ellipse');
+    ring._fx(0);
+    ok('ring hidden at 0', ring.style.opacity === '0', ring.style.opacity);
+    const full = parseFloat(ellipse.getAttribute('stroke-dasharray'));
+    ring._fx(0.3);
+    const off3 = parseFloat(ellipse.style.strokeDashoffset);
+    ok('ring dashoffset mid-draw at p=0.3', off3 > 0.01 && off3 < full - 0.01,
+       `dashoffset=${off3} full=${full}`);
+    ring._fx(0.7);
+    const off7 = parseFloat(ellipse.style.strokeDashoffset);
+    ok('ring fully drawn at p=0.7', off7 === 0, off7);
+  });
+
   const pass = checks.filter(c=>c.ok).length;
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify({pass, fail:checks.length-pass, checks}))));
   if (location.search.includes('emit')) {
