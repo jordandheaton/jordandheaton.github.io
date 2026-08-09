@@ -262,6 +262,11 @@
     lenis.start();
   }
 
+  // story deep-link slugs — declared ABOVE the work section: the card-entrance
+  // closures below check the hash at setup time, before the story block runs.
+  // no #process: that project's own page is its write-up, so its card has no story
+  const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe" };
+
   /* ---------------- WORK: laptop-dive intro + horizontal cards ----------------
      Phase 1 (VIDEO_PX): scroll scrubs the laptop video — it spins in, opens,
        and the camera dives into the screen, ending on black.
@@ -669,6 +674,17 @@
         });
         // refresh mid-page can land past the trigger; show them, don't lock
         if (st.progress > 0) { played = true; gsap.set(cards, { x: 0, opacity: 1 }); }
+        // A deep-link (#myplan etc.) opens its story over the desk, BEFORE this
+        // trigger's start — and openStory() stops Lenis, so the entrance could
+        // never fire and the cards (the opened one included) sat at opacity:0.
+        // That reader landed past the choreography: resolve it, don't replay it.
+        // clearProps, not x:0 — an inline transform of its own outranks the
+        // stylesheet, and the cards would never lift on hover again
+        if (WMAX_SLUGS[location.hash.replace("#", "")]) {
+          played = true;
+          gsap.set(cards, { opacity: 1, clearProps: "transform" });
+          cards.forEach((el) => el.classList.remove("is-entering"));
+        }
       });
 
       mm.add("(max-width: 900px)", () => {
@@ -692,6 +708,14 @@
                           overwrite: true, clearProps: "transform,opacity" });
           }
         });
+        // same deep-link resolution as the desktop branch: a story is about to
+        // open over cards whose batch trigger can never fire under lockScroll
+        if (WMAX_SLUGS[location.hash.replace("#", "")]) {
+          gsap.utils.toArray("#featured-grid .wcard").forEach((el) => {
+            gsap.set(el, { opacity: 1, clearProps: "transform" });
+            el.classList.remove("is-entering");
+          });
+        }
       });
 
       // the label, the edge arrow and the sunset band all arrive together once
@@ -816,8 +840,6 @@
      Instant path when reduced-motion OR document.hidden, so a frozen rAF loop
      can never strand a half-open card. */
   const wmaxBackdrop = document.getElementById("wmax-backdrop");
-  // no #process: that project's own page is its write-up, so its card has no story
-  const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe" };
   const CARD_GEOM = "position,margin,zIndex,left,top,width,height,transform";
   const FLIP_D = 0.62, FLIP_E = "power2.inOut";   // open and close are mirror images
   let wmaxCard = null;       // the card whose story is open
