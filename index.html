@@ -236,9 +236,9 @@
                   <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the myplanBYU story"></button><button class="w-close" type="button" aria-label="Close the myplanBYU story"></button></span>
                 </span>
                 <div class="wcard-body">
-                  <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>WEB APP — RUNNING</span>
+                  <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>WEB APP · RUNNING</span>
                   <h3>myplanBYU — Degree Optimizer</h3>
-                  <p class="wcard-blurb">Students miss scholarships and study abroads they never knew existed. I built the tool I wish I'd had: type your major, get a real semester-by-semester plan — and see everything that fits it. Classmates text me for the link now.</p>
+                  <p class="wcard-blurb">Students miss scholarships and study abroads they never knew existed. I built the tool I wanted as a freshman: type your major, get a real semester-by-semester plan, and see everything that fits it. Classmates text me for the link now.</p>
                   <ul class="wcard-stats mono" aria-label="Quick stats">
                     <li>175 majors</li><li>live catalog</li><li>real users</li>
                   </ul>
@@ -255,7 +255,7 @@
                   <div class="wx-media" aria-hidden="true"></div>
                   <span class="wx-learned-label mono">learned &amp; worked with</span>
                   <div class="wx-learned mono">
-                    <span>optimization algorithms</span><span>rag ai</span><span>api design</span><span>ai evals — benchmark + human</span><span>scrapers + data pipelines with quality gates</span><span>data modeling (7,000+ courses)</span><span>prompt-injection testing</span><span>serverless / edge deployment</span><span>cost engineering</span>
+                    <span>optimization algorithms</span><span>rag ai</span><span>api design</span><span>ai evals (benchmark + human)</span><span>scrapers + data pipelines with quality gates</span><span>data modeling (7,000+ courses)</span><span>prompt-injection testing</span><span>serverless / edge deployment</span><span>cost engineering</span>
                   </div>
                   <section class="wx-sec wx-video">
                     <video class="wx-showcase" src="showcase-videos/dist/myplanbyu-showcase.mp4"
@@ -263,30 +263,26 @@
                            muted playsinline loop preload="metadata"></video>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">01 · The problem I actually had</h4>
-                    <p>Planning my own path through BYU was painful — MAP sheets, prerequisite chains, GE boxes, all of it spread across PDFs and tabs that don't talk to each other. But that wasn't the thing that bothered me most. The thing that bothered me was how much students miss because nobody tells them it exists. Scholarships with three applicants. Study abroads that fit their major perfectly. Clubs, research grants, test-out exams. You can't ask about something you don't know exists — and by the time you find out, it's often too late to matter.</p>
-                    <p>So this is the tool I wish someone had handed me as a freshman: one that answers the questions you didn't know to ask.</p>
+                    <h4 class="wx-step mono">01 &middot; The problem I actually had</h4>
+                    <p>Planning my own path through BYU meant MAP sheets, prerequisite chains and GE boxes spread across PDFs that don't talk to each other. That part was just annoying. What bothered me more was everything students never hear about: scholarships with three applicants, study abroads that fit their major exactly, test-out exams. You can't ask about something you don't know exists.</p>
+                    <p>So I built the tool I wanted as a freshman.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">02 · What it is</h4>
-                    <p>Type in your major — or two majors and a minor, if you're feeling ambitious — and it builds a semester-by-semester plan that respects every prerequisite, every season a course is actually offered, and BYU's own credit rules. Import your transcript and it picks up where you are, not where a template thinks you should be. Then the part I care about most: it looks at the plan you actually have and surfaces what fits it — scholarships, study abroads, clubs, even who's teaching each course next semester.</p>
-                    <p>There's an AI advisor built in, grounded in the same data, for the questions a form can't anticipate.</p>
+                    <h4 class="wx-step mono">02 &middot; What it is</h4>
+                    <p>Type in your major, or two majors and a minor, and it builds a semester-by-semester plan that respects every prerequisite, every season a course is offered, and BYU's own credit rules. Import your transcript and it starts where you actually are. Then the part I care about most: it reads your plan and shows the scholarships, study abroads and clubs that fit it. An AI advisor sits on the same data for the questions a form can't anticipate.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">03 · What got hard</h4>
-                    <p>Almost everything, eventually. BYU's official MAP sheets and its course catalog disagree with each other more than you'd hope, so the solver had to learn a rule I never found written down anywhere: the sheet advisors actually hand out wins, and the conflict becomes a warning instead of a silent re-shuffle. The data refreshes itself weekly through a scraper pipeline that rejects its own bad output before it can deploy. And the advisor had to stay free for students, which meant building quotas and budget caps before building anything clever.</p>
+                    <h4 class="wx-step mono">03 &middot; What got hard</h4>
+                    <p>Almost everything, eventually. BYU's MAP sheets and its catalog disagree more often than you'd hope, so the solver had to learn a rule nobody writes down: the sheet advisors hand out wins, and the conflict surfaces as a warning instead of a silent reshuffle. The data refreshes itself weekly through a scraper that throws out its own bad output before it deploys.</p>
+                    <p>Testing it took two nets: benchmark data for the mechanical failures, and a small site I built to read the AI's answers myself, because whether advice is any good isn't something a regex can tell you.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">04 · Real people</h4>
-                    <p>Classmates text me asking for the link. That still feels strange to say. There's a feedback form inside the app, and real students keep finding real problems — a GE that should double-count, a course the plan dropped — and those reports have turned into same-week fixes more times than I can count. Somewhere along the way this stopped being a project and started being a product with users I don't want to let down.</p>
+                    <h4 class="wx-step mono">04 &middot; Real people</h4>
+                    <p>Classmates text me for the link, which still feels strange to say. The feedback form keeps turning up real problems: a GE that should double-count, a course the plan quietly dropped. Most became same-week fixes. Somewhere in there it stopped being a project.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">05 · What it taught me</h4>
-                    <p>How to build a RAG AI system end to end — scraping, embeddings, retrieval, and the prompt that ties it together. How to design a small API with quotas and budget caps so a free tool stays free. How to schedule under real constraints, which is optimization with feelings. And how to test an AI: benchmark datasets catch the mechanical failures, but I ended up building a little testing website just to read the answers myself — because "is this good advice" is not a thing a regex knows.</p>
-                  </section>
-                  <section class="wx-sec">
-                    <h4 class="wx-step mono">06 · Where it's going</h4>
-                    <p>I'm talking with people at BYU about whether the university could adopt it — or at least its ideas. Whatever happens there, it keeps getting better every week, because the feedback keeps coming.</p>
+                    <h4 class="wx-step mono">05 &middot; Where it's going</h4>
+                    <p>I'm talking with people at BYU about whether the university could use it, or at least its ideas. Either way it keeps getting better, because the feedback keeps coming.</p>
                   </section>
                 </div>
               </div>
@@ -304,9 +300,9 @@
                   <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the Universe Scroller story"></button><button class="w-close" type="button" aria-label="Close the Universe Scroller story"></button></span>
                 </span>
                 <div class="wcard-body">
-                  <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>SCROLL EXPERIENCE — RUNNING</span>
+                  <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>SCROLL EXPERIENCE · RUNNING</span>
                   <h3>Universe Scroller</h3>
-                  <p class="wcard-blurb">I've been building 3D worlds since a Blender tutorial at age ten. This one runs from a chromosome to the Milky Way — 27 orders of magnitude of AI footage I directed, scrubbed frame-by-frame to your scroll.</p>
+                  <p class="wcard-blurb">I've been building 3D worlds since a Blender tutorial at age ten. This one runs from a chromosome out to the Milky Way: 27 orders of magnitude of AI footage I directed, scrubbed frame by frame to your scroll.</p>
                   <ul class="wcard-stats mono" aria-label="Quick stats">
                     <li>27 orders of magnitude</li><li>1,445 frames</li><li>ai-directed footage</li>
                   </ul>
@@ -331,28 +327,28 @@
                            muted playsinline loop preload="metadata"></video>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">01 · The Blender kid</h4>
-                    <p>When I was ten I found a Blender tutorial, and that was more or less that. I've been making 3D things ever since — it's the hobby that never wore off. What I always actually wanted was to build worlds, and this is the closest I've gotten: a single continuous shot from a chromosome inside a leaf cell out to the Milky Way. Twenty-seven orders of magnitude, and you're holding the camera.</p>
+                    <h4 class="wx-step mono">01 &middot; The Blender kid</h4>
+                    <p>I found a Blender tutorial when I was ten and never really stopped. What I always wanted was to build worlds, and this is the closest I've come: one continuous shot from a chromosome inside a leaf cell out to the Milky Way.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">02 · What it is</h4>
-                    <p>A powers-of-ten journey driven entirely by scroll. It opens on a leaf at human scale — something you recognize — and travels both directions: scroll down and you're inside the cell; scroll up and the forest becomes a coastline becomes a planet. A readout in the corner tracks the scale, from micrometers to light-years. Stopping halfway to stare is a legitimate use of it.</p>
+                    <h4 class="wx-step mono">02 &middot; What it is</h4>
+                    <p>A powers-of-ten journey driven entirely by scroll. It opens on a leaf at human scale and travels both ways: down into the cell, or up until the forest becomes a coastline and then a planet. Stopping halfway to stare is a perfectly good use of it.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">03 · I directed the footage — AI rendered it</h4>
-                    <p>The zoom clips are AI-generated video, and I'm saying that plainly because directing them was the artistic education. I decided what each scale should look like, where each cut lands, how a canopy should give way to coastline — then color-matched and stitched the clips into one continuous journey, 1,445 frames long. Video models are a strange film crew: unlimited budget, no memory. You learn fast that the skill is knowing what to ask for and what to throw away.</p>
+                    <h4 class="wx-step mono">03 &middot; I directed the footage, AI rendered it</h4>
+                    <p>The zoom clips are AI-generated video. I'm saying that plainly, because directing them was the actual education: deciding what each scale should look like, where each cut lands, then color-matching and stitching 1,445 frames into one continuous shot. Most of the skill turned out to be knowing what to ask for and what to throw away.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">04 · The engineering no AI did</h4>
-                    <p>Those 1,445 frames would decode to about five gigabytes of bitmap — phones give up long before that. So only a sliding window of roughly 135 frames exists in memory at once, weighted toward the direction you're traveling. Scroll maps to orders of magnitude rather than to frames, so an inch of scroll always means the same amount of zoom whether you're crossing a forest or the solar system. And the ambient starfield knows where the planets are — brightness masks baked ahead of time, 72 bytes per frame — so a star fades out before it would ever sit on top of the Sun.</p>
+                    <h4 class="wx-step mono">04 &middot; The engineering no AI did</h4>
+                    <p>Those frames would decode to about five gigabytes of bitmap and phones give up long before that, so only about 135 exist in memory at once. Scroll maps to orders of magnitude rather than to frames, so an inch of scrolling always means the same amount of zoom. And the starfield knows where the planets are, so a star fades out before it can sit on top of the Sun.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">05 · The test that lied</h4>
-                    <p>My first automated check reported eleven green passes on a page that had rendered zero frames. The render loop was frozen; the test's success condition could be satisfied by a dead page. That lesson was worth the whole project: a check a stopped system can pass isn't a check. The journey is now verified in real headless Chrome, chapter by chapter, from one micrometer to 105,631 light-years.</p>
+                    <h4 class="wx-step mono">05 &middot; The test that lied</h4>
+                    <p>My first automated check reported eleven passes on a page that had rendered zero frames. The render loop was frozen, and every condition it checked could be satisfied by a dead page. I think about that one a lot. It's verified in real headless Chrome now, from one micrometer out to 105,631 light-years.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">06 · The rest</h4>
-                    <p>No framework, no build step, no libraries. Plain JavaScript, one canvas, and a lot of deleting.</p>
+                    <h4 class="wx-step mono">06 &middot; The rest</h4>
+                    <p>Plain JavaScript and a single canvas, with no framework and no build step. Mostly it was a lot of deleting.</p>
                   </section>
                 </div>
               </div>
@@ -370,9 +366,9 @@
                   <span class="wwin"><b class="w-min" aria-hidden="true"></b><button class="w-max" type="button" aria-label="Read the process improvement story"></button><button class="w-close" type="button" aria-label="Close the process improvement story"></button></span>
                 </span>
                 <div class="wcard-body">
-                  <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>CASE STUDY — RUNNING</span>
+                  <span class="wcard-kind mono"><i class="wstat" aria-hidden="true"></i>CASE STUDY · RUNNING</span>
                   <h3>Process Improvement Analysis</h3>
-                  <p class="wcard-blurb">My mornings broke when I moved to London, so I fixed them like a process, not a willpower problem. Five timed trials later: 33% faster, and every improved morning beat every baseline one.</p>
+                  <p class="wcard-blurb">My mornings broke when I moved to London, so I fixed them like a process instead of a willpower problem. Five timed trials later: 33% faster, and every improved morning beat every baseline one.</p>
                   <ul class="wcard-stats mono" aria-label="Quick stats">
                     <li>33% faster</li><li>5/5 trials</li><li>no overlap</li>
                   </ul>
@@ -392,24 +388,24 @@
                     <span>process mapping</span><span>trial design</span><span>variance</span><span>data storytelling</span>
                   </div>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">01 · The problem</h4>
-                    <p>I moved to London for a study abroad, and my mornings fell apart. New flat, new routine, no rhythm — I was leaving later than I meant to every day, and never by the same amount. I could have tried to have more willpower. Instead I treated it like a process problem, because that's what it was.</p>
+                    <h4 class="wx-step mono">01 &middot; The problem</h4>
+                    <p>I moved to London for a study abroad and my mornings fell apart. New flat, new routine, and I was leaving later than I meant to every day, never by the same amount. I could have tried to have more willpower. I treated it as a process problem instead.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">02 · Baseline first</h4>
-                    <p>For a week I just measured. Wake up, shower, shave, dress, breakfast, teeth, out the door — timed every day, changing nothing. The baseline came out at 43.6 minutes on average, with a 13-minute spread between the best morning and the worst. That spread was the real finding: the routine wasn't just slow, it was unpredictable.</p>
+                    <h4 class="wx-step mono">02 &middot; Baseline first</h4>
+                    <p>For a week I only measured, changing nothing: wake up, shower, shave, dress, breakfast, teeth, out the door. The average was 43.6 minutes, with a 13-minute spread between my best morning and my worst. That spread was the real finding. The routine wasn't just slow, it was unpredictable.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">03 · Two boring changes</h4>
-                    <p>The redesign is deliberately unimpressive. A 10-minute shower timer and a 5-minute shave timer cap the bathroom at fifteen minutes. Clothes get laid out the night before; breakfast becomes grab-and-go. That's it — the decisions moved to the evening, when there's time to make them, and vanished from the morning, when there isn't.</p>
+                    <h4 class="wx-step mono">03 &middot; Two boring changes</h4>
+                    <p>The redesign is deliberately unimpressive. A 10-minute shower timer and a 5-minute shave timer cap the bathroom at fifteen. Clothes come out the night before, and breakfast is grab-and-go. The decisions moved to the evening, when I have time for them.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">04 · The result</h4>
-                    <p>Five trials of each. The improved mornings averaged 29.4 minutes — 33% faster — and the spread collapsed from 13 minutes to 4. Every single improved trial beat every single baseline trial; the two sets don't overlap at all. The routine didn't just get faster. It got predictable, which is the property I actually wanted. The chart on the project page is hand-built SVG, and the range bands are drawn in on purpose — the no-overlap <em>is</em> the argument.</p>
+                    <h4 class="wx-step mono">04 &middot; The result</h4>
+                    <p>Five trials of each. The improved mornings averaged 29.4 minutes, 33% faster, and the spread collapsed from 13 minutes to 4. Every improved trial beat every baseline trial, so the two sets don't overlap at all. It didn't just get faster, it got predictable, which is the property I actually wanted.</p>
                   </section>
                   <section class="wx-sec">
-                    <h4 class="wx-step mono">05 · Why it's on this page</h4>
-                    <p>Because it's the same muscle as the big projects, pointed at the smallest system I own: map the process, change one thing at a time, measure honestly, and let variance — not vibes — tell you whether it worked.</p>
+                    <h4 class="wx-step mono">05 &middot; Why it's on this page</h4>
+                    <p>Same muscle as the bigger projects, pointed at the smallest system I own: map the process, change one thing at a time, and let variance tell you whether it worked.</p>
                   </section>
                 </div>
               </div>
