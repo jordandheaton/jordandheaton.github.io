@@ -1,0 +1,297 @@
+<!DOCTYPE html><meta charset="utf-8"><title>myplanBYU showcase</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* Page-scoped fixes only -- theme.css/engine.js/fx.js/etc. are shared Task 2/4
+     components and stay untouched (this file is the only thing this task commits). */
+
+  /* Three stacked, absolutely-positioned images (one per seq() track) rather than
+     one shared <img> -- engine.js's __seek runs EVERY seq track's src/visibility
+     write on EVERY frame, unconditionally (no f0 gating like run-tracks get), so
+     three seq tracks sharing one element means whichever is LAST in the tracks
+     array always wins the final src+visibility for every single frame, regardless
+     of which beat is actually active (confirmed empirically: at f120, mid-hook,
+     the shared-element version showed src=s3/f00000.jpg, visibility:hidden --
+     s3's track, listed last, clobbering s2's own assignment on every tick). Giving
+     each sequence its own <img> sidesteps that entirely; each track's visibility
+     toggle is correct in isolation, it just can't share a target.
+     position:absolute (not normal flow) so all three land in the exact same box;
+     #appframe gets an explicit height below since absolutely-positioned children
+     no longer contribute to its auto height. (top:45px, not 44: the bar's 44px
+     CSS height plus its own 1px border-bottom puts its rendered bottom edge at
+     45px -- confirmed via a direct CDP getBoundingClientRect() read.)
+
+     object-fit:cover + object-position:left is the hook's crop fix: the real
+     board's 5th semester column + the "My Plans" rail don't fit the app's own
+     1920px viewport -- both are sliced mid-card at the right edge (confirmed on
+     raw/myplan/s2 and the post-solve tail of raw/myplan/s1). The hook's frame-width
+     track below narrows #appframe itself (not the image) to bias the visible crop
+     toward the LEFT while the frame is under 1440px; by f240 the frame is back to
+     its native 1440x810, where cover+matching-aspect-ratio is a strict no-op
+     (0% crop, pixel-identical to a plain width:100% img) -- which is also why this
+     is safe to share across #appS1/#appS3: they only ever render at f>=240, once
+     the frame has already settled at 1440px, so mapCur's fixed 0.75 cursor-scale
+     is never touched. */
+  .screen-frame .seq-img{position:absolute;left:0;top:45px;width:100%;height:810px;
+    object-fit:cover;object-position:left center}
+
+  /* Terminal fixes, both confirmed via direct CDP geometry reads at p=1 (16 lines):
+     (1) height -- .term's shared 640px + tl-line's inherited 1.7 line-height needs
+     729px for all 16 SCRAPER_LOG lines (measured .tbody scrollHeight 689 + 40 tbar).
+     At 640px the LAST TWO lines never appear at any p, including the single most
+     important line in this beat (the gate verdict) -- confirmed via getBoundingClientRect:
+     gate line top:871/bottom:912 vs the box's own clipped bottom:842. Fix: taller box
+     (690px) + tighter line-height (1.55, still comfortable) so all 16 fit with margin,
+     while staying clear of the caption band (~y940).
+     (2) width -- several real warn lines run 90-200 characters (verbatim sourced per
+     Task 4) and .tl-line is white-space:pre (never wraps); at the original 1200px they
+     hard-clip mid-word with no visual cue. Widened to 1320px (still centered) to show
+     more of each line, plus a right-edge fade so any remaining overflow reads as
+     intentional truncation rather than a rendering bug. */
+  .term .tl-line{line-height:1.55}
+  .term::after{content:'';position:absolute;top:40px;right:0;bottom:0;width:110px;
+    background:linear-gradient(to right, transparent, #070b18 70%);pointer-events:none}
+
+  /* Hero title sits over a bright app screenshot during the hook -- .fx-title (shared)
+     has no shadow, so add contrast insurance here rather than in the shared file. */
+  #titles .fx-title{text-shadow:0 2px 10px rgba(0,0,0,.55), 0 14px 46px rgba(3,5,12,.55)}
+</style>
+<div class="stage" id="stage">
+  <!-- beat 1+2: app in a tilted glowing frame; same frame carries s1,s2,s3, each its
+       own stacked <img> (see .seq-img above -- one shared element hits an engine.js
+       last-writer-wins collision across 3 seq() tracks). Starts at 1152px (80% of
+       1440) for the hook's left-biased crop -- see .seq-img style. -->
+  <div class="screen-frame" id="appframe" style="left:240px;top:120px;width:1152px;height:855px">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">myplan.jordanheaton.com</span></div>
+    <img id="appS2" class="seq-img" alt="">
+    <img id="appS1" class="seq-img" alt="">
+    <img id="appS3" class="seq-img" alt="">
+  </div>
+  <div id="titles"></div>
+</div>
+<script src="render-config.js"></script>
+<script>
+// Inlined per Task 7 Step 1 (fetch() is unreliable over file://). Generated via:
+//   "window.EVENTS_S1 = " + (Get-Content showcase-videos\raw\events\s1.json -Raw) + ";"
+//   "window.EVENTS_S3 = " + (Get-Content showcase-videos\raw\events\s3.json -Raw) + ";"
+//   "window.TEST_TOTALS = " + ((Get-Content showcase-videos\raw\tests\report.json -Raw |
+//      ConvertFrom-Json).totals | ConvertTo-Json -Compress) + ";"
+// Re-run those three lines and repaste here whenever the captures are redone.
+window.EVENTS_S1 = {
+ "fps": 60,
+ "events": [
+  {
+   "f": 20,
+   "kind": "hover",
+   "x": 1856,
+   "y": 197,
+   "sel": "#newPlanBtn"
+  },
+  {
+   "f": 55,
+   "kind": "click",
+   "x": 1856,
+   "y": 197,
+   "sel": "#newPlanBtn"
+  },
+  {
+   "f": 100,
+   "kind": "type",
+   "x": 904,
+   "y": 500,
+   "text": "Information Systems"
+  },
+  {
+   "f": 170,
+   "kind": "click",
+   "x": 960,
+   "y": 494,
+   "sel": "#wsMajor .ss-list .ss-item"
+  },
+  {
+   "f": 230,
+   "kind": "click",
+   "x": 1326,
+   "y": 744,
+   "sel": "#wizNext"
+  },
+  {
+   "f": 285,
+   "kind": "click",
+   "x": 1326,
+   "y": 819,
+   "sel": "#wizNext"
+  },
+  {
+   "f": 340,
+   "kind": "click",
+   "x": 1291,
+   "y": 703,
+   "sel": "#wizNext"
+  }
+ ]
+};
+window.EVENTS_S3 = {
+ "fps": 60,
+ "events": [
+  {
+   "f": 20,
+   "kind": "hover",
+   "x": 165,
+   "y": 1012,
+   "sel": "#flagList"
+  },
+  {
+   "f": 200,
+   "kind": "hover",
+   "x": 165,
+   "y": 935,
+   "sel": "#timelineSec details.tl-acc:nth-of-type(1) summary"
+  },
+  {
+   "f": 230,
+   "kind": "click",
+   "x": 165,
+   "y": 935,
+   "sel": "#timelineSec details.tl-acc:nth-of-type(1) summary"
+  },
+  {
+   "f": 330,
+   "kind": "hover",
+   "x": 165,
+   "y": 977,
+   "sel": "#timelineSec details.tl-acc:nth-of-type(2) summary"
+  },
+  {
+   "f": 370,
+   "kind": "click",
+   "x": 165,
+   "y": 977,
+   "sel": "#timelineSec details.tl-acc:nth-of-type(2) summary"
+  }
+ ]
+};
+window.TEST_TOTALS = {"cases":26,"pass":26,"fail":0,"warn":23,"known":0,"noGolden":0};
+</script>
+<script src="engine.js"></script><script src="cursor.js"></script>
+<script src="fx.js"></script><script src="terminal.js"></script>
+<script src="assets/scraper_log.js"></script>
+<script>
+const R = (window.RENDER && RENDER.framesRoot) || '../raw';   // render-config injected by render.py
+const stage = document.getElementById('stage');
+const frameEl = document.getElementById('appframe');
+const appS2 = document.getElementById('appS2');
+const appS1 = document.getElementById('appS1');
+const appS3 = document.getElementById('appS3');
+const titles = document.getElementById('titles');
+
+/* --- static mounts --- */
+const title = FX.title(titles, {lines:['170+ majors. Every prereq.', 'One optimized plan.']});
+title.style.top = '780px';
+const cap = {
+  opt:  FX.caption(stage, 'Every prereq, every credit rule, every course season — solved live in the browser.'),
+  ins:  FX.caption(stage, 'Warnings, scholarships, study abroad — all matched to this exact plan.'),
+  scr:  FX.caption(stage, 'A weekly scraper — and a gate that rejects its own bad output before it ships.'),
+  tst:  FX.caption(stage, 'Every plan property, checked automatically, before it ships.'),
+};
+const pill = FX.pill(stage, 'Plan optimized — every prereq satisfied');
+const cur = Cursor.mount(stage);
+const term = Terminal.mount(stage, {title:'weekly refresh — scraper/_pipeline.ps1'});
+// opacity:0 -- Terminal.mount() itself sets none, and the terminal's own visibility
+// track below only fires from f1140 onward (a run-track never executes before its
+// f0), so without this the terminal chrome would sit on screen from frame 0.
+term.el.style.cssText += 'left:300px;top:200px;width:1320px;height:690px;opacity:0';
+const tests = document.createElement('img');
+// opacity:0 for the same reason as the terminal above (the wipe-in track only fires
+// from f1560 onward). Src is assigned once, right here, NOT inside the run track --
+// window.__seek only awaits .decode() for seq-track images, so a static <img> whose
+// src is (re)assigned inside a per-frame run track risks showing a half-decoded/blank
+// frame; assigning it now lets it decode during the page's normal 2s render-harness
+// settle, long before frame 1560 is ever reached.
+tests.style.cssText = 'position:absolute;left:240px;top:120px;width:1440px;border-radius:18px;opacity:0';
+tests.src = R + '/tests/report.png';
+stage.appendChild(tests);
+const testsWipe = document.createElement('div');   // reveal mask over the report
+testsWipe.style.cssText = 'position:absolute;left:240px;top:120px;width:1440px;height:810px;background:linear-gradient(#05070f,#05070f);opacity:0';
+stage.appendChild(testsWipe);
+const counter = document.createElement('div');
+counter.className = 'fx-caption'; counter.style.cssText += 'left:auto;right:80px;font-size:44px;opacity:0';
+stage.appendChild(counter);
+const outro = FX.title(titles, {lines:['myplan.jordanheaton.com']});
+outro.style.top = '500px';
+
+/* --- event logs shifted onto the master timeline --- */
+const s1log = {fps:60, events: EVENTS_S1.events.map(e => ({...e, f: e.f + 240}))};
+const s3log = {fps:60, events: EVENTS_S3.events.map(e => ({...e, f: e.f + 720}))};
+/* app frames are 3840x2160 for a 1440px-wide frame: cursor coords (CSS px @1920)
+   map into the frame at scale 1440/1920 = 0.75 plus the frame's offset. This is only
+   ever used for f>=240, where the hook's width track (below) has already settled the
+   frame at its native 1440px -- i.e. the same scale the img would have with no crop
+   at all, so cursor placement here is exact, not approximate. */
+const mapCur = (s) => ({...s, x: 240 + s.x * 0.75, y: 164 + s.y * 0.75});  // 164 = frame top 120 + bar 44
+
+const seq = (el, f0, f1, name, count, srcFps=60) =>
+  ({el, f0, f1, seq: {root: R + '/myplan/' + name, count, srcFps}});
+
+TL.build({fps:60, frames:2100, tracks:[
+  /* hook: board (s2) drifting behind the title, then title clears. Frame widens
+     1152->1440px (80%->100% visible, left-biased crop -- see .seq-img style block) in
+     sync with the existing tilt/scale settle, so the crop and the reveal read as one
+     continuous motion rather than two unrelated effects. */
+  seq(appS2, 0, 240, 's2', 240),
+  {el: frameEl, f0: 0, f1: 240, ease: 'inOutQuad',
+   apply: (el, p) => {
+     el.style.transform =
+       `perspective(2200px) rotateX(${8 - p * 8}deg) rotateY(${-10 + p * 10}deg) scale(${0.92 + p * 0.08})`;
+     el.style.width = (1152 + p * 288) + 'px';
+   }},
+  {el: title, f0: 10, f1: 200, ease: 'linear', apply: (el, p) => el._fx(p < 0.75 ? p / 0.75 : 1)},
+  {el: title, f0: 200, f1: 240, ease: 'outQuad', apply: (el, p) => el.style.opacity = 1 - p},
+
+  /* optimizer: s1 frames, cursor, caption, payoff pill at solve */
+  seq(appS1, 240, 720, 's1', 600),
+  {f0: 0, run: f => { cur.layer.style.opacity = (f >= 240 && f < 1080) ? 1 : 0; }},
+  {f0: 240, run: f => { if (f >= 240 && f < 720) cur.update(mapCur(Cursor.stateAt(s1log, f))); }},
+  {el: cap.opt, f0: 270, f1: 700, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: pill, f0: 640, f1: 720, ease: 'linear', apply: (el, p) => el._fx(p < 0.85 ? p / 0.85 : 1 - (p - 0.85) / 0.15)},
+  /* Second, later crop-in: the same cut-off column/rail is visible again once the
+     wizard modal closes and the real board shows through (confirmed on frame 700 --
+     the payoff pill's own moment). f580 was the last cursor event (the Generate
+     click); +30 frames clears its ripple, so this starts well after the cursor stops
+     needing the full 1920px width and holds narrow (no reset track) straight through
+     insights, whose s3 cursor never leaves the far left (x=165 CSS) anyway. */
+  {el: frameEl, f0: 610, f1: 650, ease: 'inOutQuad', apply: (el, p) => el.style.width = (1440 - p * 288) + 'px'},
+
+  /* insights: s3 frames + punch-in AFTER the last click (a zoom while the cursor
+     is live would desync pointer coords from the transformed frame) */
+  seq(appS3, 720, 1140, 's3', 480),
+  {f0: 720, run: f => { if (f >= 720 && f < 1080) cur.update(mapCur(Cursor.stateAt(s3log, f))); }},
+  {el: frameEl, f0: 1080, f1: 1140, ease: 'inOutCubic',
+   apply: (el, p) => el.style.transform = `scale(${1 + p * 0.12}) translate(${-p * 90}px, ${-p * 45}px)`},
+  {el: cap.ins, f0: 750, f1: 1120, ease: 'linear', apply: (el, p) => el._fx(p)},
+
+  /* scraper: app frame yields to the terminal */
+  {el: frameEl, f0: 1140, f1: 1180, ease: 'inQuad', apply: (el, p) => el.style.opacity = 1 - p},
+  {f0: 1140, run: f => {
+    const p = Math.max(0, Math.min(1, (f - 1160) / 340));
+    term.el.style.opacity = f < 1140 || f >= 1570 ? 0 : 1;
+    term.update(SCRAPER_LOG, p);
+  }},
+  {el: cap.scr, f0: 1180, f1: 1540, ease: 'linear', apply: (el, p) => el._fx(p)},
+
+  /* tests: report still wipes in, counter ticks to the real totals */
+  {f0: 1560, run: f => {
+    const p = Math.max(0, Math.min(1, (f - 1560) / 200));
+    tests.style.opacity = f >= 1560 && f < 1880 ? 1 : 0;
+    testsWipe.style.opacity = tests.style.opacity;
+    testsWipe.style.transform = `translateY(${p * 810}px)`;
+    const shown = Math.round(TEST_TOTALS.pass * p);
+    counter.textContent = `${shown}/${TEST_TOTALS.cases} invariants green`;
+    counter.style.opacity = tests.style.opacity;
+  }},
+  {el: cap.tst, f0: 1590, f1: 1850, ease: 'linear', apply: (el, p) => el._fx(p)},
+
+  /* outro */
+  {el: outro, f0: 1880, f1: 2020, ease: 'linear', apply: (el, p) => el._fx(p)},
+]});
+</script>
