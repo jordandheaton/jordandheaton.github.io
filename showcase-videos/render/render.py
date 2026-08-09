@@ -59,6 +59,9 @@ def main():
             cmd += ["-i", a.music, "-filter:a",
                     "loudnorm=I=-14:TP=-1.5,afade=t=out:st=%s:d=1.5" % (n / fps - 1.5),
                     "-c:a", "aac", "-b:a", "160k", "-shortest"]
+        cmd += ["-vf", "scale=1920:1080:in_range=pc:out_range=tv:flags=lanczos",
+                "-color_range", "tv", "-colorspace", "bt709",
+                "-color_primaries", "bt709", "-color_trc", "bt709"]
         cmd += ["-c:v", "libx264", "-preset", "slow", "-crf", str(a.crf),
                 "-pix_fmt", "yuv420p", "-movflags", "+faststart", out]
         subprocess.run(cmd, check=True)

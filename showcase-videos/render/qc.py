@@ -1,11 +1,11 @@
 """Final QC: spec conformance + determinism. Usage: python qc.py [--no-audio-ok]"""
-import argparse, hashlib, json, os, subprocess, sys
+import argparse, json, os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, "..", "dist")
 
 def probe(p):
     out = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-        "format=duration,size:stream=width,height,r_frame_rate,codec_name",
+        "format=duration,size:stream=width,height,r_frame_rate,codec_name,pix_fmt,color_range",
         "-of", "json", p], capture_output=True, text=True, check=True).stdout
     return json.loads(out)
 
@@ -25,12 +25,17 @@ def main():
             fail.append(name + " missing"); continue
         j = probe(p)
         dur = float(j["format"]["duration"]); mb = int(j["format"]["size"]) / 1e6
-        v = [s for s in j["streams"] if s["codec_name"] in ("h264",)][0]
+        vlist = [s for s in j["streams"] if s["codec_name"] in ("h264",)]
+        if not vlist:
+            fail.append(f"{name}: no h264 stream"); continue
+        v = vlist[0]
         aac = [s for s in j["streams"] if s["codec_name"] == "aac"]
         if not (30 <= dur <= 40): fail.append(f"{name}: duration {dur:.1f}s outside 30-40")
         if mb > 10: fail.append(f"{name}: {mb:.1f} MB > 10")
         if (v["width"], v["height"]) != (1920, 1080): fail.append(f"{name}: {v['width']}x{v['height']}")
         if v["r_frame_rate"] != "60/1": fail.append(f"{name}: fps {v['r_frame_rate']}")
+        if v["pix_fmt"] != "yuv420p": fail.append(f"{name}: pix_fmt {v['pix_fmt']}")
+        if v.get("color_range") != "tv": fail.append(f"{name}: color_range {v.get('color_range')}")
         if not aac:
             if a.no_audio_ok:
                 notes.append(f"{name}: NOTE (interim): no audio — music pending")
