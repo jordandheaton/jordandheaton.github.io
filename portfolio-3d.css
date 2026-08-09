@@ -498,6 +498,17 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   align-items: stretch;
 }
 
+/* One wrapper holding everything except the watermark. It exists so the FLIP
+   can counter-scale: the card scales from small to large, this scales by the
+   inverse, and the type is never stretched a single frame. */
+.wcard-inner {
+  display: flex; flex-direction: column; justify-content: space-between;
+  flex: 1 1 auto; min-height: 0;
+  position: relative; z-index: 1;
+  transform-origin: top left;
+}
+.wcard.is-expanded .wcard-inner { justify-content: flex-start; }
+
 /* faint themed watermark icon peeking from the window's corner */
 .wcard-bg {
   position: absolute; right: -18px; bottom: -30px; z-index: 0;
@@ -514,7 +525,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wcard {
   position: relative;
   flex: 0 0 auto;
-  display: flex; flex-direction: column; justify-content: space-between;
+  display: flex; flex-direction: column;
   width: var(--cw, min(470px, 40vw));
   min-height: min(440px, 52vh);
   padding: 0;
@@ -736,29 +747,35 @@ body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 
    resnap. The write-up is already a child of the card; it only fades in. */
 .wmax-backdrop {
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(3, 5, 10, 0);
-  /* the blur RAMPS: going straight to blur(6px) is the snap that reads as the
-     page "going sharp to blurry" the instant a card is clicked */
-  -webkit-backdrop-filter: blur(0px); backdrop-filter: blur(0px);
-  opacity: 0;
-  transition: opacity 0.5s ease, background 0.5s ease,
-              -webkit-backdrop-filter 0.5s ease, backdrop-filter 0.5s ease;
+  background: rgba(3, 5, 10, 0.72);
+  opacity: 0; transition: opacity 0.45s ease;
+  will-change: opacity;
 }
-.wmax-backdrop.show {
-  opacity: 1; background: rgba(3, 5, 10, 0.72);
+.wmax-backdrop.show { opacity: 1; }
+/* The blur is applied ONLY while the card is at rest. A full-viewport
+   backdrop-filter costs about 12ms of every frame — measured: the expand ran at
+   29.0ms/frame with it and 16.7ms without, and ablating everything else
+   (particles, ghost title) changed nothing. So the dim fades with the morph,
+   and the blur arrives once the card has landed. Removing the class un-blurs
+   instantly, because this transition goes with it. */
+.wmax-backdrop.is-blurred {
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: opacity 0.45s ease, -webkit-backdrop-filter 0.32s ease, backdrop-filter 0.32s ease;
 }
 .wmax-backdrop[hidden] { display: none; }
 
 .wcard.is-expanded {
   z-index: 61;                       /* above the backdrop; JS owns the geometry */
   overflow-y: auto; overscroll-behavior: contain;
-  justify-content: flex-start;       /* content stacks from the top as it grows */
   cursor: default;
   border-color: var(--theme, #4d8cff);
   box-shadow: 0 60px 140px rgba(0, 0, 0, 0.7), 0 0 60px -12px var(--theme, #4d8cff);
 }
 .wcard.is-expanded:hover { transform: none; }   /* the hover lift would fight the tween */
+/* during the morph the contents are laid out at FINAL size inside a smaller
+   box, so the card must clip; both layers are promoted for the whole tween */
+.wcard.is-flipping { overflow: hidden !important; will-change: transform; }
+.wcard.is-flipping .wcard-inner { will-change: transform; }
 /* no scrollbar at all — it still scrolls with the wheel, trackpad and keys */
 .wcard.is-expanded { scrollbar-width: none; -ms-overflow-style: none; }
 .wcard.is-expanded::-webkit-scrollbar { width: 0; height: 0; display: none; }
@@ -790,8 +807,12 @@ body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 
 .wcard:hover .wwin button.w-close { color: #9aa6c2; }
 .wwin button.w-close:hover { background: #e23b4e; color: #fff; }
 
-/* scroll lock while a story is open */
-html.wmax-open, html.wmax-open body { overflow: hidden; }
+/* Scroll lock while a story is open is done in JS with lenis.stop() — NOT with
+   overflow:hidden. Hiding the document's overflow removes the scroll container
+   that `position: sticky` resolves against, so the SELECTED WORK backdrop
+   (.work-backdrop, sticky) was flung out of view the instant a card opened and
+   only came back when the lock lifted at the very end of the close. It also
+   forced a full relayout of the pinned section on both edges. */
 
 @media (prefers-reduced-motion: reduce) {
   .work-pane, .wmax-backdrop, .pane-arrow, .pane-arrow::before { transition: none; }

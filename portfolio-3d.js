@@ -778,7 +778,8 @@
      can never strand a half-open card. */
   const wmaxBackdrop = document.getElementById("wmax-backdrop");
   const WMAX_SLUGS = { myplan: "card-myplan", universe: "card-universe", process: "card-process" };
-  const CARD_GEOM = "position,margin,zIndex,left,top,width,height";
+  const CARD_GEOM = "position,margin,zIndex,left,top,width,height,transform";
+  const FLIP_D = 0.62, FLIP_E = "power2.inOut";   // open and close are mirror images
   let wmaxCard = null;       // the card whose story is open
   let wmaxSlot = null;       // placeholder holding its grid slot
   let wmaxLastFocus = null;
@@ -830,26 +831,48 @@
     lenis.stop();
     if (card.dataset.slug) history.replaceState(null, "", "#" + card.dataset.slug);
 
+    // FLIP. The card is put at its FINAL geometry immediately, so layout runs
+    // exactly once; then a transform makes it *look* like the small card again,
+    // and only that transform animates. Tweening left/top/width/height meant the
+    // browser re-laid-out the card and re-wrapped every line of its text on
+    // every frame (~34fps measured).
     const to = expandedRect();
+    gsap.set(card, { left: to.left, top: to.top, width: to.width, height: to.height });
     if (wmaxInstant()) {
-      gsap.set(card, { left: to.left, top: to.top, width: to.width, height: to.height });
-      wmaxBackdrop.classList.add("show");
+      wmaxBackdrop.classList.add("show", "is-blurred");
       wmaxFocusIn(card);
       return;
     }
-    // force a reflow between unhiding and .show, or the transition has no start
-    // value to animate from and the blur/dim land fully formed in one frame
+    const inner = card.querySelector(".wcard-inner");
+    const last = card.getBoundingClientRect();
+    const sx = from.width / last.width, sy = from.height / last.height;
+
+    card.classList.add("is-flipping");
+    gsap.set(card, { transformOrigin: "top left",
+                     x: from.left - last.left, y: from.top - last.top,
+                     scaleX: sx, scaleY: sy });
+    // the inverse on the contents keeps every glyph at its true size
+    if (inner) gsap.set(inner, { transformOrigin: "top left", scaleX: 1 / sx, scaleY: 1 / sy });
+
     void wmaxBackdrop.offsetWidth;
     wmaxBackdrop.classList.add("show");
     wmaxBusy = true;
-    gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.35, delay: 0.18 });
+
     gsap.to(card, {
-      left: to.left, top: to.top, width: to.width, height: to.height,
-      // power2 rather than power3: a gentler start, so the card eases away from
-      // the click instead of leaping off it
-      duration: 0.62, ease: "power2.inOut",
-      onComplete: () => { wmaxBusy = false; wmaxFocusIn(card); },
+      x: 0, y: 0, scaleX: 1, scaleY: 1, duration: FLIP_D, ease: FLIP_E,
+      onComplete: () => {
+        gsap.set(card, { clearProps: "transform" });
+        card.classList.remove("is-flipping");
+        // the blur only now, with nothing else moving
+        wmaxBackdrop.classList.add("is-blurred");
+        wmaxBusy = false; wmaxFocusIn(card);
+      },
     });
+    if (inner) gsap.to(inner, { scaleX: 1, scaleY: 1, duration: FLIP_D, ease: FLIP_E,
+                                onComplete: () => gsap.set(inner, { clearProps: "transform" }) });
+    // a short fade-through masks the single re-wrap at the start, where the
+    // contents switch from the card's narrow layout to the opened one
+    gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.32, delay: 0.14 });
   }
 
   function closeStory() {
@@ -867,7 +890,7 @@
       card.scrollTop = 0;
       if (content) { content.hidden = true; gsap.set(content, { clearProps: "opacity" }); }
       if (wmaxSlot) { wmaxSlot.remove(); wmaxSlot = null; }
-      wmaxBackdrop.classList.remove("show");
+      wmaxBackdrop.classList.remove("show", "is-blurred");
       // hide only AFTER the fade has run — setting hidden here is what made the
       // blur vanish in one frame on the way out while it ramped on the way in
       clearTimeout(wmaxHideTimer);
@@ -881,16 +904,31 @@
     // the slot is exactly where the card belongs again — including any scrolling
     // the reader did while it was open
     const to = (wmaxSlot || card).getBoundingClientRect();
+    const cur = card.getBoundingClientRect();
+    const inner = card.querySelector(".wcard-inner");
+    const sx = to.width / cur.width, sy = to.height / cur.height;
     wmaxBusy = true;
-    // start the dim/blur lifting NOW so the page comes back into focus as the
-    // card travels home, rather than snapping clear once it has already landed
+    // start the dim lifting NOW so the page comes back into focus as the card
+    // travels home, rather than snapping clear once it has already landed
+    wmaxBackdrop.classList.remove("is-blurred");   // off the critical path first
     wmaxBackdrop.classList.remove("show");
+    card.classList.add("is-flipping");
+    card.scrollTop = 0;
     if (content) gsap.to(content, { opacity: 0, duration: 0.22 });
-    gsap.to(card, {
-      left: to.left, top: to.top, width: to.width, height: to.height,
-      duration: 0.62, ease: "power2.inOut",   // mirrors the opening exactly
-      onComplete: () => { finish(); wmaxBusy = false; },
-    });
+    // the same transform-only morph, in reverse
+    gsap.fromTo(card,
+      { transformOrigin: "top left", x: 0, y: 0, scaleX: 1, scaleY: 1 },
+      { x: to.left - cur.left, y: to.top - cur.top, scaleX: sx, scaleY: sy,
+        duration: FLIP_D, ease: FLIP_E,
+        onComplete: () => {
+          gsap.set(card, { clearProps: "transform" });
+          card.classList.remove("is-flipping");
+          finish(); wmaxBusy = false;
+        } });
+    if (inner) gsap.fromTo(inner,
+      { transformOrigin: "top left", scaleX: 1, scaleY: 1 },
+      { scaleX: 1 / sx, scaleY: 1 / sy, duration: FLIP_D, ease: FLIP_E,
+        onComplete: () => gsap.set(inner, { clearProps: "transform" }) });
   }
 
   function wmaxFocusIn(card) {
