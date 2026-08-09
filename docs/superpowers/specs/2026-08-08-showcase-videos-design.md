@@ -179,6 +179,59 @@ replayed into the live chat DOM — deterministic, authentic content from
 `myplanBYU/scraper/eval/transcript_*.md`). Existing s1/s2/s3 frames are
 reused; speed changes happen in the compositor via seq srcFps.
 
+## Revision 2 — "MyMAP ad" polish pass (2026-08-09, Jordan + Gemini brief)
+
+myplanBYU video only; Scroller untouched. Direction: Linear/Raycast/WWDC
+motion language — buttery easing, snappy isometric camera moves over the flat
+UI, bold fast typography. No voiceover, no device mockups.
+
+**Runtime grows to 2700 frames (45s @60fps).** Music stays Static Rhythm.
+
+### Binding beat map + EXACT on-screen copy (no em dashes anywhere on screen)
+
+| Frames | Action | Exact copy |
+|--------|--------|-----------|
+| 0–210 | Browser address bar; URL typed with keyboard-click SFX | myplanBYU |
+| 210–480 | Import click; transcript data instantly populates (wizard History step: paste → `#tiScan`) | Your transcript. Instantly imported. |
+| 480–750 | Scrolling the massive programs list | 170+ Majors. Unlimited combinations. |
+| 750–1080 | Expand a requirement bucket, drop a class into a semester; then the generated plan SITS ~2s while GE / Religion / Major buckets highlight (emphasize Information Systems and ACC 200) | Every requirement, perfectly categorized. |
+| 1080–1380 | Warnings/scholarships/abroad UI with an animated circle-highlight ring drawn around the actual panel region | Scholarships, clubs, and study abroads: matched to your plan. |
+| 1380–1680 | Cursor clicks ACC 200; modal shows real seat availability | Live seat counts. No guessing. |
+| 1680–2010 | Cursor clicks the real "Critique my plan" quick-action chip; chat opens with a real transcript answer | Your real-time, data-driven AI Advisor. |
+| 2010–2280 | Quick flash: scraper terminal + invariant tests passing green | Scraped daily. Tested rigorously. |
+| 2280–2520 | Rapid fade-in of technical components | Constraint modeling. Vanilla JS. 12-source pipeline. |
+| 2520–2700 | Final URL types out cleanly on dark | jordanheaton.com/myplanBYU |
+
+### Motion & typography rules
+
+- **Isometric camera:** long-perspective (≥3500px) combined-rotation pans
+  that read isometric, not foreshortened; fixes the prior right-side skew.
+  Slow drifts within beats, snappy zooms between focal points.
+- **NO circle wipes** (Jordan: "random circles filling the screen") — hard
+  cuts and camera moves carry the transitions.
+- **Cursor visible through every app-UI beat** (beats 2–8), never vanishing
+  mid-beat or during zooms; absent only on the two closing card beats and
+  the opening URL bar (decision flagged to Jordan).
+- **Font: DM Sans** (Google Fonts, OFL — committed locally with its license
+  so renders are deterministic). Copy exactly as the table; larger and
+  punchier than Revision 1; no extra sentences.
+- **Dynamic border highlight/zoom** on the import demo; **animated ring
+  highlight** (Gemini-snippet style) on the insights panel.
+- Remove "Classmates text me for the link" entirely.
+
+### Fixes & audio
+
+- **Seamless tests reveal:** the reveal must mask the report image itself
+  (clip-path/inset on the image), never a colored cover rectangle — the old
+  rectangle mismatched the gradient background.
+- **Keyboard SFX:** soft key clicks synced to the URL type-in (opening) and
+  final URL type-out; premixed with Static Rhythm into ONE local-only audio
+  file fed to `render.py --music` (no render-harness changes).
+- New captures: s6 transcript-import populate, s7 majors-list scroll,
+  s8 bucket-expand + drag-a-class + plan-sit, s9 ACC 200 modal,
+  s10 critique-chip chat (real transcript answer, fetch-guarded).
+  Reused: terminal/tests assets. Retired from this cut: s1/s4/s5 usage.
+
 ## Out of scope
 
 - Voiceover (a VO pass can be layered later without redesign)

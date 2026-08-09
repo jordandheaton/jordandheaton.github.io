@@ -1623,3 +1623,43 @@ Single-writer-per-property discipline throughout. Preview + frame evidence +
 PASS both files incl. AAC + duration-sync checks; determinism spot-check;
 focused reviewer pass over R2–R4 diffs; ledger + captions check (captions
 unchanged unless beats renamed); commit final MP4.
+
+---
+
+# Revision 2 tasks (2026-08-09) — "MyMAP ad" polish pass
+
+Spec: "Revision 2" section of the design doc (binding copy table + motion rules).
+
+### Task R6: New captures s6-s10
+Extend `capture/capture_myplan.py`: s6 transcript-import (paste real-format
+transcript text into `#tiText`, click `#tiScan`, courses populate + toast; 360f),
+s7 majors-list scroll (wizard Programs step, smooth wheel; 300f), s8 bucket
+expand + CDP drag of a class card into a semester + 150f plan-sit tail (480f),
+s9 ACC 200 course modal (recapture of the s4 pattern on ACC 200; 300f),
+s10 chat via the REAL `#chatQuick` "Critique my plan" chip + real transcript
+answer replay, fetch-guarded (400f). All dsf=2 q88, events logged, validators,
+visual frame confirmations. Commit script only.
+
+### Task R7: Infra — font, browser bar, ring highlight, audio builder
+DM Sans WOFF2 + OFL license committed under `compose/assets/fonts/` (explicitly
+authorized by the brief); `FX.browserbar` (URL bar + typed text + caret);
+`FX.ring` (animated ellipse stroke drawing around a target region);
+seamless tests reveal helper (image self-mask via clip-path inset, no cover
+rects); `render/build_myplan_audio.py` synthesizing soft key clicks at given
+frame timestamps and premixing with `music/myplan.mp3` → local-only
+`music/myplan-mix.m4a` (gitignored). Selftest TDD for the two FX.
+
+### Task R8: Composition v3 (`compose/myplanbyu.html`)
+2700 frames to the Revision-2 beat map + exact copy; DM Sans everywhere;
+isometric long-perspective camera rig (single writer); NO wipes; cursor
+visible beats 2-8 incl. zooms; import border-highlight/zoom; insights ring;
+plan-sit bucket highlights (GE/Religion/Major-IS emphasis); seamless tests
+reveal; no em dashes on screen; "Classmates text me" line removed. Preview +
+frame evidence + 400px legibility. Commit composition only.
+
+### Task R9: Audio premix + final master + strict QC + focused review
+Build the click-synced premix from R8's final type-in frame timings; render
+final with `--music ../music/myplan-mix.m4a`; strict `qc.py` PASS (45s is
+within a relaxed 30-50s window — qc duration bounds updated accordingly, one
+line); determinism + legibility; poster re-pick; focused reviewer over R6-R9;
+captions update if needed; ledger; ship to Jordan.
