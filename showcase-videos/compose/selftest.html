@@ -2,6 +2,9 @@
 <style>#box{position:absolute;width:100px;height:50px;background:#4da3ff}</style>
 <div id="box"></div><img id="seqimg" alt="">
 <script src="engine.js"></script>
+<script src="cursor.js"></script>
+<script src="fx.js"></script>
+<script src="terminal.js"></script>
 <script>
 (async () => {
   const checks = [], ok = (n, c, d) => checks.push({name:n, ok:!!c, detail:String(d||'')});
@@ -24,6 +27,24 @@
   ok('run track', window.__lastRun === 90, window.__lastRun);
   const eb = TL.eases.outBack(0.7);
   ok('outBack overshoots', eb > 1.0 && eb < 1.15, eb);
+
+  const log = {fps:60, events:[{f:0,kind:'hover',x:100,y:100},{f:60,kind:'click',x:700,y:400}]};
+  let s = Cursor.stateAt(log, 0);
+  ok('cursor start', s.x === 100 && s.y === 100 && !s.pressed, JSON.stringify(s));
+  s = Cursor.stateAt(log, 30);
+  ok('cursor between', s.x > 110 && s.x < 790, s.x);   // outBack overshoot is expected on long hops
+  s = Cursor.stateAt(log, 62);
+  ok('cursor pressed', s.pressed === true && s.ripple > 0.8, JSON.stringify(s));
+  s = Cursor.stateAt(log, 100);
+  ok('ripple decayed', s.ripple === 0, s.ripple);
+  const host = document.createElement('div'); document.body.appendChild(host);
+  const pill = FX.pill(host, 'Plan optimized');
+  pill._fx(0);  ok('pill hidden at 0', getComputedStyle(pill).opacity === '0', getComputedStyle(pill).opacity);
+  pill._fx(1);  ok('pill shown at 1', getComputedStyle(pill).opacity === '1', getComputedStyle(pill).opacity);
+  const term = Terminal.mount(host, {title:'weekly refresh'});
+  term.update([{t:'ok',s:'a'},{t:'ok',s:'b'},{t:'gate',s:'c'}], 0.67);
+  ok('terminal reveals 2 of 3', term.el.querySelectorAll('.tl-line').length === 2, term.el.innerHTML.length);
+
   const pass = checks.filter(c=>c.ok).length;
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify({pass, fail:checks.length-pass, checks}))));
   if (location.search.includes('emit')) {
