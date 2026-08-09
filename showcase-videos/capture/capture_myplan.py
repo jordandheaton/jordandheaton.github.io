@@ -306,7 +306,7 @@ class Scene:
             f = f0 + round(span * i / n)
             if f <= f0 or f >= f1:
                 continue
-            def moved(i=i):
+            def moved(i=i, f=f):
                 sx, sy = self._drag_from
                 d = self.c.eval(dst_js)
                 x = round(sx + (d["x"] - sx) * i / n)
