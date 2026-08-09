@@ -624,6 +624,8 @@
         // changes ever fixed the arrival.
         cards.forEach((el) => el.classList.add("is-entering"));
         gsap.set(cards, { x: () => window.innerWidth * 0.85, opacity: 0 });
+        // holds the edge arrow and the sunset band dark until the trio lands
+        workGrid.classList.add("cards-moving");
 
         // Arriving TRIGGERS the entrance; the entrance then plays at its own
         // pace. Scrubbing it to scroll meant a fast flick had to be honoured
@@ -644,11 +646,15 @@
             clearProps: "transform",
             onComplete: () => {
               cards.forEach((el) => el.classList.remove("is-entering"));
+              workGrid.classList.remove("cards-moving");   // now the light comes up
               release();
             },
           });
           // a page that never scrolls again is far worse than a missed beat
-          gsap.delayedCall(3.4, release);
+          gsap.delayedCall(3.4, () => {
+            release();
+            workGrid.classList.remove("cards-moving");
+          });
         };
 
         const st = ScrollTrigger.create({
@@ -673,7 +679,11 @@
           onEnter: play,
         });
         // refresh mid-page can land past the trigger; show them, don't lock
-        if (st.progress > 0) { played = true; gsap.set(cards, { x: 0, opacity: 1 }); }
+        if (st.progress > 0) {
+          played = true;
+          gsap.set(cards, { x: 0, opacity: 1 });
+          workGrid.classList.remove("cards-moving");
+        }
         // A deep-link (#myplan etc.) opens its story over the desk, BEFORE this
         // trigger's start — and openStory() stops Lenis, so the entrance could
         // never fire and the cards (the opened one included) sat at opacity:0.
@@ -684,7 +694,11 @@
           played = true;
           gsap.set(cards, { opacity: 1, clearProps: "transform" });
           cards.forEach((el) => el.classList.remove("is-entering"));
+          workGrid.classList.remove("cards-moving");
         }
+        // resizing across the breakpoint reverts this context; a stale
+        // .cards-moving would leave the arrow dark for good
+        return () => workGrid.classList.remove("cards-moving");
       });
 
       mm.add("(max-width: 900px)", () => {
@@ -1117,8 +1131,9 @@
     let paneBusy = false;
     let othersShown = false;
 
-    // Everything that is not the movement itself: chrome, focus, the sunset
-    // band's side. Fires up front so the click reads as answered immediately.
+    // Everything that is not the movement itself: which arrow exists, which
+    // edge the sunset band hangs off. All of it snaps, so it happens midway
+    // through the swap, while .cards-moving is holding both at opacity 0.
     function setPaneChrome(others) {
       workGridEl.classList.toggle("others-active", others);
       paneFeat.setAttribute("aria-hidden", others ? "true" : "false");
@@ -1144,9 +1159,8 @@
       const outCards = others ? featCards : otherCards;
       const inCards = others ? otherCards : featCards;
 
-      setPaneChrome(others);
-
       if (reduced || !window.gsap) {
+        setPaneChrome(others);
         outPane.classList.remove("is-active");
         inPane.classList.add("is-active");
         (others ? paneBack : paneNext).focus();
@@ -1154,6 +1168,9 @@
       }
 
       paneBusy = true;
+      // takes the arrow and the band down first, so the click reads as the
+      // light going out rather than the arrow being yanked away
+      workGridEl.classList.add("cards-moving");
       // .wcard carries `transition: transform 0.3s` for the hover lift, which
       // would fight every frame of this — same bug that made the entrance
       // refuse to follow its curve.
@@ -1186,6 +1203,9 @@
           // next measurement, since getBoundingClientRect includes transforms
           gsap.set(outCards, { x: 0 });
           outCards.concat(inCards).forEach((el) => el.classList.remove("is-entering"));
+          // last of all: the arrow and the band come back up over 0.6s, on the
+          // other side of the screen, with nothing left moving behind them
+          workGridEl.classList.remove("cards-moving");
           paneBusy = false;
         },
       });
@@ -1201,7 +1221,14 @@
         clearProps: "transform",     // give the hover lift its transform back
       }, outEnd + GAP);
 
-      (others ? paneBack : paneNext).focus();
+      /* The arrow swap and the band's change of edge are both instant, so they
+         happen here, at the darkest point of the 0.6s fade — after the old
+         arrow has faded out, before the new one starts coming back. Focus moves
+         with it: focusing a still-`hidden` element does nothing. */
+      tl.add(() => {
+        setPaneChrome(others);
+        (others ? paneBack : paneNext).focus({ preventScroll: true });
+      }, 0.62);
     }
     paneNext.addEventListener("click", () => showPane(true));
     paneBack.addEventListener("click", () => showPane(false));
