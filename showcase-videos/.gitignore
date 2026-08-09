@@ -1,3 +1,4 @@
 raw/
 compose/render-config.js
 __pycache__/
+music/*.mp3
