@@ -140,6 +140,45 @@ unchanged.
 - Embedded playback verified with the hidden-pane verification recipe
   (manual tick + screenshot), since the browser pane throttles rAF.
 
+## Revision 1 — ad-style myplanBYU cut (2026-08-09, Jordan's review)
+
+Jordan approved the first cuts and requested a myplanBYU redesign; the
+Scroller video is unchanged apart from its music. Direction: **Apple-ad
+energy** — pop-ins instead of drifts, faster text, hard cuts, zoom-ins onto
+real UI, two new feature beats, and a movie-credits skills ending. New
+references (local, never committed): *Website Design Presentation Video —
+Indra Ibrahim* (site slams in at an angle, circle/shape wipes between
+sections, callout labels pointing at UI details, stat chips) plus the
+existing Zelios demo.
+
+Music (picked by Jordan from the shortlist): myplanBYU → "Static Rhythm (The
+Tech House)" by 9JackJack8; Scroller → "Ambient Space Cinematic Music"
+(build-up scenes). Pixabay Content License; files + license note in
+`showcase-videos/music/`.
+
+### Revised myplanBYU beat sheet (still 2100 frames / 35s @60fps — dense)
+
+| Frames | Beat | On screen |
+|--------|------|-----------|
+| 0–150 | Hook slam | Title pops word-by-word FAST; site frame POPS in (outBack scale, ~10 frames), settles to resting tilt |
+| 150–450 | Optimizer speedrun | s1 excerpt at ~2× (seq srcFps trick), zoom-callout on the completed-coursework wizard step: "import your classes"; solve → board slams full + payoff pill |
+| 450–690 | Insights punch-zoom | Camera punches INTO the panel region while accordions open; caption pops: warnings, scholarships, study abroad — matched to this plan |
+| 690–930 | Course modal (NEW) | Cursor clicks a course card → `#courseModal` pops → zoom onto the "Fall 2026 sections · live seat counts" region (new capture s4) |
+| 930–1170 | AI advisor (NEW) | Chat opens, question types fast, a REAL answer from the saved eval transcripts streams into the real chat UI (new capture s5); callout: grounded AI advisor |
+| 1170–1440 | Scraper gate | Terminal replay, faster type-on; rejection gate line |
+| 1440–1650 | Tests | Report wipe + 26/26 counter, faster |
+| 1650–1950 | Skills credits | Movie-credits roll: ~8 real skills pop one after another (constraint modeling & heuristic search · vanilla JS zero deps · 12-source data pipeline + health gates · LLM grounding + injection evals · in-browser test harness · headless-Chrome automation · …) |
+| 1950–2100 | Outro pop | URL + tagline slam in |
+
+Motion language: outBack pop-ins (8–12 frames), accent-color circle wipes
+between beats, callout labels (line + chip pointing at the UI element),
+hard cuts on beat boundaries. Cursor still visibly drives all app beats.
+
+New captures: **s4** course-modal scene, **s5** advisor scene (transcript
+replayed into the live chat DOM — deterministic, authentic content from
+`myplanBYU/scraper/eval/transcript_*.md`). Existing s1/s2/s3 frames are
+reused; speed changes happen in the compositor via seq srcFps.
+
 ## Out of scope
 
 - Voiceover (a VO pass can be layered later without redesign)

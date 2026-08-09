@@ -1581,3 +1581,45 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - **Spec coverage:** deliverables/specs → Tasks 3/9; factory (capture/compose/render, temp-dir rule) → Tasks 1–6; cursor requirement + Zelios style → Tasks 4/5/7; six myplanBYU beats → Task 7; five Scroller beats → Task 8; music + license → Task 9; verification bullets → Tasks 5 (validators), 9 (qc.py, determinism, legibility), 10 (embed checks); portfolio integration → Task 10; captions → Task 11. Out-of-scope items have no tasks — correct.
 - **Known judgment points (not placeholders):** wizard selector tuning (Task 5) and scrub-range tuning (Task 6) are explicit discovery loops with concrete debug commands; music choice is a designed user gate.
 - **Type consistency:** event schema (`{fps,events:[{f,kind,x,y,sel,text}]}`) matches between Task 5 producer and Task 4/7 consumers; `seq` config keys match engine (Task 2) usage in Tasks 7/8; `validate_frames.py` defaults match dsf=2 capture and are overridden for dsf=1 scenes.
+
+---
+
+# Revision 1 tasks (2026-08-09) — ad-style myplanBYU cut
+
+Spec: see "Revision 1" section of the design doc. Scroller video unchanged
+apart from music. Full detail lives in the SDD dispatches; per-task contracts:
+
+### Task R1: Music intake + scroller audio master
+Controller-inline: download Jordan's two picked Pixabay tracks (approved),
+`music/myplan.mp3` + `music/scroller.mp3` + `music/LICENSE.md`; verify both
+≥35s; re-render scroller with `--music ../music/scroller.mp3 --crf 27`;
+`qc.py --no-audio-ok` (myplan still silent). Commit music/ + scroller MP4.
+
+### Task R2: Captures s4 (course modal) + s5 (advisor replay)
+Extend `capture/capture_myplan.py`: **s4** (300 frames) — click a course card
+on the solved board, `#courseModal` opens showing "Fall 2026 sections · live
+seat counts"; pick a course whose modal actually shows section/seat data
+(discovery loop). **s5** (360 frames) — open `#chatFab` → `#chatPanel`, type a
+real question, stream a REAL answer from `myplanBYU/scraper/eval/
+transcript_*.md` into the live chat DOM (inject via the page's own bubble
+markup; deterministic reveal). Events logged for both (cursor replay).
+Validators for both scenes; commit script only.
+
+### Task R3: FX additions — callout, credits, circle wipe
+`compose/fx.js` gains: `FX.callout(container,{x,y,text,side})` (pointer line +
+chip, pop-in), `FX.credits(container,{lines})` (movie-credits roll, one line
+popping after another), `FX.wipe(container,{color})` (accent circle wipe for
+beat transitions). Selftest additions first (TDD), keep 15 existing green.
+
+### Task R4: myplanbyu.html ad-cut rework
+Rebuild timeline to the Revision-1 beat sheet: 9 segments, outBack pop-ins,
+srcFps-retimed s1 (~2×), punch-zooms (coursework step, insights panel, modal
+seat-count region), s4/s5 beats with cursor, credits roll, outro slam.
+Single-writer-per-property discipline throughout. Preview + frame evidence +
+400px legibility. Commit composition only.
+
+### Task R5: Audio master + strict QC + focused final re-review
+`render.py --music ../music/myplan.mp3` final; STRICT `qc.py` (no flag) must
+PASS both files incl. AAC + duration-sync checks; determinism spot-check;
+focused reviewer pass over R2–R4 diffs; ledger + captions check (captions
+unchanged unless beats renamed); commit final MP4.
