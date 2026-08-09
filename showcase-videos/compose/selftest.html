@@ -42,8 +42,15 @@
   pill._fx(0);  ok('pill hidden at 0', getComputedStyle(pill).opacity === '0', getComputedStyle(pill).opacity);
   pill._fx(1);  ok('pill shown at 1', getComputedStyle(pill).opacity === '1', getComputedStyle(pill).opacity);
   const term = Terminal.mount(host, {title:'weekly refresh'});
-  term.update([{t:'ok',s:'a'},{t:'ok',s:'b'},{t:'gate',s:'c'}], 0.67);
-  ok('terminal reveals 2 of 3', term.el.querySelectorAll('.tl-line').length === 2, term.el.innerHTML.length);
+  const tl3 = [{t:'ok',s:'aaaa'},{t:'ok',s:'bbbb'},{t:'gate',s:'cccc'}];
+  term.update(tl3, 0.67);
+  const rows = term.el.querySelectorAll('.tl-line');
+  ok('terminal 2 full + 1 typing', rows.length === 3 && rows[0].textContent === 'aaaa'
+     && rows[1].textContent === 'bbbb' && rows[2].textContent.length < 4, term.el.querySelector('.tbody').innerHTML);
+  term.update(tl3, 1);
+  const rows1 = term.el.querySelectorAll('.tl-line');
+  ok('terminal full at p=1', rows1.length === 3 && rows1[2].textContent === 'cccc',
+     term.el.querySelector('.tbody').innerHTML);
 
   const pass = checks.filter(c=>c.ok).length;
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify({pass, fail:checks.length-pass, checks}))));

@@ -4,15 +4,15 @@
 // HH:MM:SS; one absolute local path redacted to a relative one -- see task-4-report.md).
 window.SCRAPER_LOG = [
   // -- run starts -----------------------------------------------------------
-  {t:'run',  s:'19:02:13  INFO  Fetching master course list ...'},
+  {t:'run',  s:'19:02:13  INFO     Fetching master course list ...'},
   // -- per-source, real counts -----------------------------------------------
-  {t:'ok',   s:'19:02:15  INFO  courses: fetched 100 (total 100)'},
-  {t:'ok',   s:'19:02:33  INFO  courses: fetched 100 (total 3300)'},
-  {t:'ok',   s:'19:02:59  INFO  courses: fetched 94 (total 7894)'},
-  {t:'ok',   s:'19:02:59  INFO  Normalized 7894 courses.'},
-  {t:'run',  s:'19:02:59  INFO  Fetching program list ...'},
-  {t:'ok',   s:'19:07:09  INFO  [626/626] Military Science'},
-  {t:'ok',   s:'19:07:11  INFO  Wrote data/catalog.json (71722.7 KB)'},
+  {t:'ok',   s:'19:02:15  INFO       courses: fetched 100 (total 100)'},
+  {t:'ok',   s:'19:02:33  INFO       courses: fetched 100 (total 3300)'},
+  {t:'ok',   s:'19:02:59  INFO       courses: fetched 94 (total 7894)'},
+  {t:'ok',   s:'19:02:59  INFO     Normalized 7894 courses.'},
+  {t:'run',  s:'19:02:59  INFO     Fetching program list ...'},
+  {t:'ok',   s:'19:07:09  INFO       [626/626] Military Science'},
+  {t:'ok',   s:'19:07:11  INFO     Wrote data/catalog.json (71722.7 KB)'},
   // -- health checks (requirement-parser findings, real lines) ---------------
   {t:'run',  s:'gate: checking data sanity ...'},
   {t:'warn', s:"Acting (BFA): MAP row y2W lists 15 credits of items against a printed total of 14 (+1) — the ITEMS look wrong, likely a line duplicated from another year; solver.js pins only up to the printed total"},

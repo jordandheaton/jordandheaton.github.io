@@ -7,12 +7,11 @@
       `<div class="tbody"></div>`;
     container.appendChild(el);
     function update(lines, p) {
-      const shown = Math.floor(Math.max(0, Math.min(1, p)) * lines.length);
+      const q = Math.max(0, Math.min(1, p)) * lines.length;
+      const full = Math.floor(q);
       const body = el.querySelector('.tbody');
-      const frac = p * lines.length - shown;      // type-on for the newest line
-      body.innerHTML = lines.slice(0, shown).map((l, i) => {
-        const s = (i === shown - 1 && frac < 0.5)
-          ? l.s.slice(0, Math.ceil(l.s.length * frac * 2)) : l.s;
+      body.innerHTML = lines.slice(0, Math.min(lines.length, full + 1)).map((l, i) => {
+        const s = (i === full) ? l.s.slice(0, Math.ceil(l.s.length * (q - full))) : l.s;
         return `<div class="tl-line ${l.t}">${s}</div>`;
       }).join('');
     }
