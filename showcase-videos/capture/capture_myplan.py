@@ -117,8 +117,9 @@ def main():
     ap.add_argument("--debug", action="store_true")
     a = ap.parse_args()
     server = ensure_server()
-    c = Chrome(port=9422, width=1920, height=1080)
+    c = None
     try:
+        c = Chrome(port=9422, width=1920, height=1080)
         c.metrics(1920, 1080, dsf=2)
         c.goto(URL, settle=4.0)
         c.wait_expr("document.readyState==='complete' && !!document.querySelector('#board')")
@@ -184,7 +185,8 @@ def main():
         if a.debug:
             c.shot(os.path.join(OUT, "debug-final.png"))
     finally:
-        c.close()
+        if c:
+            c.close()
         if server:
             server.terminate()
 

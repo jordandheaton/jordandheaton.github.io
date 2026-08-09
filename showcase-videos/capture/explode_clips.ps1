@@ -10,7 +10,9 @@ $jobs = @(
 foreach ($j in $jobs) {
   $d = Join-Path $out $j.dir
   New-Item -ItemType Directory -Force $d | Out-Null
+  Remove-Item (Join-Path $d "f*.jpg") -ErrorAction SilentlyContinue
   ffmpeg -v error -y -i (Join-Path $src $j.in) -start_number 0 (Join-Path $d "f%05d.jpg")
+  if ($LASTEXITCODE -ne 0) { throw ("ffmpeg failed on " + $j.in) }
   Write-Host ("{0}: {1} frames" -f $j.dir, (Get-ChildItem "$d\f*.jpg").Count)
 }
 $anchors = Join-Path $out "anchors"
