@@ -37,3 +37,18 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;background:
 .tl-line{white-space:pre}
 .tl-line.ok{color:#7ee2a8}.tl-line.run{color:var(--ink)}
 .tl-line.warn{color:#ffd479}.tl-line.gate{color:var(--accent2);font-weight:700}
+
+/* ---- Revision-1: callout / credits-roll / circle-wipe FX (Task R3) ---- */
+.fx-callout{position:absolute;inset:0;pointer-events:none;z-index:30}
+.fx-callout-svg{position:absolute;inset:0;width:1920px;height:1080px;overflow:visible}
+.fx-callout-line{stroke:var(--accent);stroke-width:3px;fill:none;stroke-linecap:round}
+.fx-callout-dot{fill:var(--accent)}
+.fx-callout-chip{position:absolute;transform:translate(-50%,-50%) scale(0);
+  font:600 26px var(--mono);color:var(--ink);white-space:nowrap;
+  background:rgba(7,11,24,.92);border:1px solid var(--accent);border-radius:10px;
+  padding:12px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.fx-credits{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:22px}
+.fx-credits-line{font:800 44px var(--sans);color:var(--ink);will-change:transform,opacity}
+.fx-wipe{position:absolute;inset:0;width:1920px;height:1080px;background:var(--accent);
+  z-index:60;will-change:opacity,clip-path}

@@ -52,6 +52,64 @@
   ok('terminal full at p=1', rows1.length === 3 && rows1[2].textContent === 'cccc',
      term.el.querySelector('.tbody').innerHTML);
 
+  // ---- Revision-1: callout / credits-roll / circle-wipe FX (Task R3) ----
+  // safeRun guarantees each named check gets exactly one ok() entry even if the
+  // primitive under test doesn't exist yet (RED phase) or throws mid-block.
+  function safeRun(names, fn) {
+    try { fn(); }
+    catch (e) {
+      for (const n of names) if (!checks.some(c => c.name === n)) ok(n, false, 'threw: ' + e.message);
+    }
+  }
+
+  safeRun(['callout hidden at 0', 'callout shown at 1'], () => {
+    const co = FX.callout(host, {x: 500, y: 300, text: 'New in v2', side: 'right'});
+    const chip = co.querySelector('.fx-callout-chip');
+    const line = co.querySelector('.fx-callout-line');
+    co._fx(0);
+    ok('callout hidden at 0', chip.style.opacity === '0' && line.style.opacity === '0',
+       `chip=${chip.style.opacity} line=${line.style.opacity}`);
+    co._fx(1);
+    const dashoff = parseFloat(line.style.strokeDashoffset);
+    ok('callout shown at 1', chip.style.opacity === '1' && dashoff < 0.01,
+       `chip=${chip.style.opacity} dashoffset=${line.style.strokeDashoffset}`);
+  });
+
+  safeRun(['callout side offset'], () => {
+    const bx = 400, by = 400;
+    const cR = FX.callout(host, {x: bx, y: by, text: 'r', side: 'right'});
+    const cL = FX.callout(host, {x: bx, y: by, text: 'l', side: 'left'});
+    const cA = FX.callout(host, {x: bx, y: by, text: 'a', side: 'above'});
+    const xR = parseFloat(cR.querySelector('.fx-callout-chip').style.left);
+    const xL = parseFloat(cL.querySelector('.fx-callout-chip').style.left);
+    const yA = parseFloat(cA.querySelector('.fx-callout-chip').style.top);
+    ok('callout side offset', xR > bx + 150 && xL < bx - 150 && yA < by - 150,
+       `xR=${xR} xL=${xL} yA=${yA} (base ${bx},${by})`);
+  });
+
+  safeRun(['credits mid mix', 'credits final stack'], () => {
+    const cr = FX.credits(host, {lines: ['Design', 'Build', 'Ship']});
+    const rows = cr.querySelectorAll('.fx-credits-line');
+    cr._fx(0.5);
+    const ops5 = [...rows].map(r => parseFloat(r.style.opacity));
+    ok('credits mid mix', ops5.some(o => o > 0.9) && ops5.some(o => o < 0.95), JSON.stringify(ops5));
+    cr._fx(1);
+    const ops1 = [...rows].map(r => parseFloat(r.style.opacity));
+    ok('credits final stack', rows.length === 3 && ops1[2] > 0.95 && ops1[0] < 0.7, JSON.stringify(ops1));
+  });
+
+  safeRun(['wipe covers at 0.5', 'wipe clean at 1', 'wipe clean at 0'], () => {
+    const w = FX.wipe(host, {});
+    w._fx(0.5);
+    const m = /circle\(([\d.]+)%/.exec(w.style.clipPath);
+    const r = m ? parseFloat(m[1]) : -1;
+    ok('wipe covers at 0.5', r >= 130, w.style.clipPath);
+    w._fx(1);
+    ok('wipe clean at 1', parseFloat(w.style.opacity) === 0, w.style.opacity);
+    w._fx(0);
+    ok('wipe clean at 0', parseFloat(w.style.opacity) === 0, w.style.opacity);
+  });
+
   const pass = checks.filter(c=>c.ok).length;
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify({pass, fail:checks.length-pass, checks}))));
   if (location.search.includes('emit')) {
