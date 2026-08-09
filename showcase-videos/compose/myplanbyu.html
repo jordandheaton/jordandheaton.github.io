@@ -239,35 +239,41 @@ TL.build({fps:60, frames:2100, tracks:[
      sync with the existing tilt/scale settle, so the crop and the reveal read as one
      continuous motion rather than two unrelated effects. */
   seq(appS2, 0, 240, 's2', 240),
-  {el: frameEl, f0: 0, f1: 240, ease: 'inOutQuad',
-   apply: (el, p) => {
-     el.style.transform =
-       `perspective(2200px) rotateX(${8 - p * 8}deg) rotateY(${-10 + p * 10}deg) scale(${0.92 + p * 0.08})`;
-     el.style.width = (1152 + p * 288) + 'px';
-   }},
+  {f0: 0, run: f => {
+    /* frameEl geometry: exactly one writer per property, piecewise over the master timeline. */
+    const E = TL.eases;
+    const p01 = (a, b) => Math.max(0, Math.min(1, (f - a) / (b - a)));
+    /* width: hook crop-in hides the board's cut right edge, then full, then insights re-crop */
+    let w;
+    if (f < 240) w = 1152 + E.inOutQuad(p01(0, 240)) * 288;
+    else if (f < 1104) w = 1440;
+    else w = 1440 - E.inOutCubic(p01(1104, 1140)) * 288;
+    frameEl.style.width = w + 'px';
+    /* transform: perspective tilt settles through the hook, HOLDS its settled pose
+       (the Zelios tilt must stay visible through optimizer + insights), then punch-in */
+    if (f < 1104) {
+      const q = E.inOutQuad(p01(0, 240));
+      frameEl.style.transform =
+        `perspective(2200px) rotateX(${8 - q * 5}deg) rotateY(${-10 + q * 6}deg) scale(${0.92 + q * 0.08})`;
+    } else {
+      const q = E.inOutCubic(p01(1104, 1140));
+      frameEl.style.transform = `scale(${1 + q * 0.12}) translate(${-q * 90}px, ${-q * 45}px)`;
+    }
+  }},
   {el: title, f0: 10, f1: 200, ease: 'linear', apply: (el, p) => el._fx(p < 0.75 ? p / 0.75 : 1)},
   {el: title, f0: 200, f1: 240, ease: 'outQuad', apply: (el, p) => el.style.opacity = 1 - p},
 
   /* optimizer: s1 frames, cursor, caption, payoff pill at solve */
   seq(appS1, 240, 720, 's1', 600),
-  {f0: 0, run: f => { cur.layer.style.opacity = (f >= 240 && f < 1080) ? 1 : 0; }},
+  {f0: 0, run: f => { cur.layer.style.opacity = (f >= 240 && f < 1104) ? 1 : 0; }},
   {f0: 240, run: f => { if (f >= 240 && f < 720) cur.update(mapCur(Cursor.stateAt(s1log, f))); }},
   {el: cap.opt, f0: 270, f1: 700, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: pill, f0: 640, f1: 720, ease: 'linear', apply: (el, p) => el._fx(p < 0.85 ? p / 0.85 : 1 - (p - 0.85) / 0.15)},
-  /* Second, later crop-in: the same cut-off column/rail is visible again once the
-     wizard modal closes and the real board shows through (confirmed on frame 700 --
-     the payoff pill's own moment). f580 was the last cursor event (the Generate
-     click); +30 frames clears its ripple, so this starts well after the cursor stops
-     needing the full 1920px width and holds narrow (no reset track) straight through
-     insights, whose s3 cursor never leaves the far left (x=165 CSS) anyway. */
-  {el: frameEl, f0: 610, f1: 650, ease: 'inOutQuad', apply: (el, p) => el.style.width = (1440 - p * 288) + 'px'},
 
   /* insights: s3 frames + punch-in AFTER the last click (a zoom while the cursor
      is live would desync pointer coords from the transformed frame) */
   seq(appS3, 720, 1140, 's3', 480),
-  {f0: 720, run: f => { if (f >= 720 && f < 1080) cur.update(mapCur(Cursor.stateAt(s3log, f))); }},
-  {el: frameEl, f0: 1080, f1: 1140, ease: 'inOutCubic',
-   apply: (el, p) => el.style.transform = `scale(${1 + p * 0.12}) translate(${-p * 90}px, ${-p * 45}px)`},
+  {f0: 720, run: f => { if (f >= 720 && f < 1104) cur.update(mapCur(Cursor.stateAt(s3log, f))); }},
   {el: cap.ins, f0: 750, f1: 1120, ease: 'linear', apply: (el, p) => el._fx(p)},
 
   /* scraper: app frame yields to the terminal */
