@@ -237,6 +237,31 @@
     });
   }
 
+  /* A REAL scroll lock. lenis.stop() alone does NOT hold the page: it stops
+     Lenis's own smoothing but never calls preventDefault, so the browser keeps
+     scrolling natively — the entrance played while the page slid out from under
+     it, which is what made the cards seem to rush the last stretch. Blocking the
+     input events instead leaves layout untouched, so `position: sticky` (the
+     SELECTED WORK backdrop) keeps working, unlike overflow:hidden. */
+  let scrollBlocker = null;
+  function lockScroll(allowInside) {
+    if (scrollBlocker) return;
+    scrollBlocker = (e) => {
+      if (allowInside && allowInside.contains(e.target)) return;  // let the open card scroll
+      e.preventDefault();
+    };
+    window.addEventListener("wheel", scrollBlocker, { passive: false, capture: true });
+    window.addEventListener("touchmove", scrollBlocker, { passive: false, capture: true });
+    lenis.stop();
+  }
+  function unlockScroll() {
+    if (!scrollBlocker) return;
+    window.removeEventListener("wheel", scrollBlocker, { capture: true });
+    window.removeEventListener("touchmove", scrollBlocker, { capture: true });
+    scrollBlocker = null;
+    lenis.start();
+  }
+
   /* ---------------- WORK: laptop-dive intro + horizontal cards ----------------
      Phase 1 (VIDEO_PX): scroll scrubs the laptop video — it spins in, opens,
        and the camera dives into the screen, ending on black.
@@ -599,8 +624,8 @@
         const play = () => {
           if (played) return;
           played = true;
-          lenis.stop();
-          const release = () => lenis.start();
+          lockScroll();
+          const release = () => unlockScroll();
           gsap.to(cards, {
             x: 0, opacity: 1, duration: 1.15, ease: "power3.out", stagger: 0.24,
             onComplete: release,
@@ -815,6 +840,9 @@
 
     content.hidden = false;
     card.classList.add("is-expanded");
+    // Lenis swallows wheel events globally (and it is stopped while a story is
+    // open), so without this the card cannot be scrolled at all.
+    card.setAttribute("data-lenis-prevent", "");
     const readLabel = card.querySelector(".wcard-read")?.lastChild;
     if (readLabel && readLabel.nodeType === 3) readLabel.textContent = "\n                  close_story\n                ";
     gsap.set(card, { position: "fixed", margin: 0, zIndex: 61,
@@ -828,7 +856,7 @@
     clearTimeout(wmaxHideTimer);   // a pending hide from a just-closed story
     wmaxBackdrop.hidden = false;
     document.documentElement.classList.add("wmax-open");
-    lenis.stop();
+    lockScroll(card);
     if (card.dataset.slug) history.replaceState(null, "", "#" + card.dataset.slug);
 
     // FLIP. The card is put at its FINAL geometry immediately, so layout runs
@@ -885,6 +913,8 @@
       if (wmaxSlot && wmaxSlot.parentNode) wmaxSlot.parentNode.insertBefore(card, wmaxSlot);
       gsap.set(card, { clearProps: CARD_GEOM });
       card.classList.remove("is-expanded");
+      gsap.set(card, { clearProps: "borderColor,boxShadow" });
+      card.removeAttribute("data-lenis-prevent");
       const readLabel = card.querySelector(".wcard-read")?.lastChild;
       if (readLabel && readLabel.nodeType === 3) readLabel.textContent = "\n                  read_the_story\n                ";
       card.scrollTop = 0;
@@ -896,7 +926,7 @@
       clearTimeout(wmaxHideTimer);
       wmaxHideTimer = setTimeout(() => { if (!wmaxCard) wmaxBackdrop.hidden = true; }, 560);
       document.documentElement.classList.remove("wmax-open");
-      lenis.start();
+      unlockScroll();
       history.replaceState(null, "", location.pathname + location.search);
       if (wmaxLastFocus && wmaxLastFocus.focus) wmaxLastFocus.focus();
     };
@@ -913,6 +943,13 @@
     wmaxBackdrop.classList.remove("is-blurred");   // off the critical path first
     wmaxBackdrop.classList.remove("show");
     card.classList.add("is-flipping");
+    // the themed border and glow ease back to the resting card as it shrinks,
+    // instead of staying lit until the class comes off at the very end
+    gsap.to(card, {
+      borderColor: "rgba(120, 150, 220, 0.20)",
+      boxShadow: "0 30px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.4)",
+      duration: FLIP_D * 0.85, ease: "power2.out",
+    });
     card.scrollTop = 0;
     if (content) gsap.to(content, { opacity: 0, duration: 0.22 });
     // the same transform-only morph, in reverse

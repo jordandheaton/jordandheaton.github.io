@@ -678,17 +678,22 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
      the top of the taller featured pane's box — centre it so its cards line up
      with the arrow that sits beside them */
   display: flex; flex-direction: column; justify-content: center;
-  transform: translateX(0); opacity: 1;
-  transition: transform 0.55s cubic-bezier(.6,.05,.25,1), opacity 0.4s, visibility 0s 0s;
+  transform: translateX(0);
+  /* A GALLERY, not a cross-fade: the featured trio leaves to the right while
+     the small ones arrive from the left, both fully opaque, so it reads as one
+     strip sliding across. .work-desk clips at the viewport edge. */
+  transition: transform 0.62s cubic-bezier(.65, 0, .35, 1), visibility 0s 0s;
 }
-.work-pane:not(.is-active) { pointer-events: none; visibility: hidden; opacity: 0; transition: transform 0.55s cubic-bezier(.6,.05,.25,1), opacity 0.4s, visibility 0s 0.55s; }
-#pane-featured:not(.is-active) { transform: translateX(-8%); }
-#pane-others:not(.is-active) { transform: translateX(8%); }
+.work-pane:not(.is-active) {
+  pointer-events: none; visibility: hidden;
+  transition: transform 0.62s cubic-bezier(.65, 0, .35, 1), visibility 0s 0.62s;
+}
+#pane-featured:not(.is-active) { transform: translateX(106%); }
+#pane-others:not(.is-active) { transform: translateX(-106%); }
 
 .pane-arrow {
-  /* +20px: the panes box starts at the section label, so its midpoint sits ~half
-     a label above the card row. This lands the arrow on the tiles' own centre. */
-  position: absolute; top: calc(50% + 20px); right: calc(50% - 50vw + 4px); transform: translateY(-50%);
+  /* the featured pane has no label any more, so the panes box IS the card row */
+  position: absolute; top: 50%; right: calc(50% - 50vw + 4px); transform: translateY(-50%);
   z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 14px 4px; background: none; border: 0; cursor: pointer;
   color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
@@ -736,8 +741,6 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 
 body.js:not(.reduced) .pane-arrow { opacity: 0; transform: translateY(-50%) translateX(16px); }
 body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: translateY(-50%); }
-body.js:not(.reduced) #pane-featured .work-label { opacity: 0; transition: opacity 0.5s ease; }
-body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 1; }
 
 /* ===================== STORY: THE CARD ITSELF EXPANDS =====================
    There is no separate window element. openStory() lifts the real card out of
@@ -772,6 +775,10 @@ body.js:not(.reduced) #work-grid.work-lit #pane-featured .work-label { opacity: 
   box-shadow: 0 60px 140px rgba(0, 0, 0, 0.7), 0 0 60px -12px var(--theme, #4d8cff);
 }
 .wcard.is-expanded:hover { transform: none; }   /* the hover lift would fight the tween */
+/* The glow fade on close is driven by GSAP (see closeStory), not a CSS
+   transition: the class change lands in the same frame GSAP takes the element
+   over, and the transition was skipped outright — the border snapped to its
+   resting colour in one frame. */
 /* during the morph the contents are laid out at FINAL size inside a smaller
    box, so the card must clip; both layers are promoted for the whole tween */
 .wcard.is-flipping { overflow: hidden !important; will-change: transform; }
