@@ -21,10 +21,14 @@ def main():
     ap.add_argument("--to", dest="f1", type=int, default=-1)
     ap.add_argument("--stride", type=int, default=1)   # stride>1 = fast preview
     a = ap.parse_args()
+    if a.stride < 1 or 60 % a.stride:
+        ap.error("--stride must be a divisor of 60 (1,2,3,4,5,6,10,12,15,20,30,60)")
     page = a.page if os.path.isabs(a.page) else os.path.join(HERE, a.page)
     out = a.out if os.path.isabs(a.out) else os.path.join(HERE, a.out)
     if a.music and not os.path.isabs(a.music):
         a.music = os.path.join(HERE, a.music)
+
+    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
 
     cfg = os.path.join(HERE, "..", "compose", "render-config.js")
     frames_root = os.path.join(os.environ.get("TEMP", tempfile.gettempdir()), "showcase")
@@ -33,8 +37,9 @@ def main():
             {"framesRoot": file_url(frames_root), "final": True}))
 
     tmp = tempfile.mkdtemp(prefix="showcase-render-", dir=os.environ.get("TEMP"))
-    c = Chrome(port=9411, width=1920, height=1080)
+    c = None
     try:
+        c = Chrome(port=9411, width=1920, height=1080)
         c.metrics(1920, 1080, dsf=1)
         c.goto(file_url(page), settle=2.0)
         c.wait_expr("typeof window.__seek==='function'")
@@ -60,7 +65,8 @@ def main():
         mb = os.path.getsize(out) / 1e6
         print("WROTE %s %.1f MB, %.1f s" % (out, mb, n / fps))
     finally:
-        c.close()
+        if c:
+            c.close()
         shutil.rmtree(tmp, ignore_errors=True)
 
 if __name__ == "__main__":

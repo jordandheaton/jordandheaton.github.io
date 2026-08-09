@@ -100,6 +100,10 @@ class Chrome:
                 pass
             time.sleep(0.25)
         if not url:
+            try:
+                self.proc.terminate()
+            except Exception:
+                pass
             raise RuntimeError("Chrome did not expose a page target")
         self.ws = WS(url)
         self.id = 0
