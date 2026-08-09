@@ -22,8 +22,8 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;background:
   font-size:92px;letter-spacing:-.02em;line-height:1.06}
 .fx-title .w{display:inline-block;will-change:transform,opacity,filter}
 .fx-caption{position:absolute;left:80px;bottom:72px;font:600 30px var(--sans);
-  background:rgba(7,11,24,.82);border:1px solid rgba(77,163,255,.35);border-radius:14px;
-  padding:16px 26px;backdrop-filter:blur(6px)}
+  background:rgba(7,11,24,.92);border:1px solid rgba(77,163,255,.35);border-radius:14px;
+  padding:16px 26px;z-index:10}
 .fx-pill{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   font:800 54px var(--sans);color:#04131f;padding:26px 64px;border-radius:999px;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
