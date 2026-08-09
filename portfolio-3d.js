@@ -674,9 +674,11 @@
         // trigger's start — and openStory() stops Lenis, so the entrance could
         // never fire and the cards (the opened one included) sat at opacity:0.
         // That reader landed past the choreography: resolve it, don't replay it.
+        // clearProps, not x:0 — an inline transform of its own outranks the
+        // stylesheet, and the cards would never lift on hover again
         if (WMAX_SLUGS[location.hash.replace("#", "")]) {
           played = true;
-          gsap.set(cards, { x: 0, opacity: 1 });
+          gsap.set(cards, { opacity: 1, clearProps: "transform" });
           cards.forEach((el) => el.classList.remove("is-entering"));
         }
       });
@@ -706,7 +708,7 @@
         // open over cards whose batch trigger can never fire under lockScroll
         if (WMAX_SLUGS[location.hash.replace("#", "")]) {
           gsap.utils.toArray("#featured-grid .wcard").forEach((el) => {
-            gsap.set(el, { x: 0, opacity: 1 });
+            gsap.set(el, { opacity: 1, clearProps: "transform" });
             el.classList.remove("is-entering");
           });
         }
