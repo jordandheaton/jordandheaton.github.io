@@ -879,6 +879,7 @@
     gsap.set(card, { left: to.left, top: to.top, width: to.width, height: to.height });
     if (wmaxInstant()) {
       wmaxBackdrop.classList.add("show", "is-blurred");
+      wmaxPlayVideos(card);
       wmaxFocusIn(card);
       return;
     }
@@ -895,6 +896,7 @@
 
     void wmaxBackdrop.offsetWidth;
     wmaxBackdrop.classList.add("show");
+    wmaxPlayVideos(card);
     wmaxBusy = true;
 
     // ONE timeline, both at position 0. As two separate tweens they started a
@@ -945,6 +947,7 @@
       card.scrollTop = 0;
       if (content) { content.hidden = true; gsap.set(content, { clearProps: "opacity" }); }
       if (wmaxSlot) { wmaxSlot.remove(); wmaxSlot = null; }
+      wmaxPauseVideos(card);
       wmaxBackdrop.classList.remove("show", "is-blurred");
       // hide only AFTER the fade has run — setting hidden here is what made the
       // blur vanish in one frame on the way out while it ramped on the way in
@@ -967,6 +970,7 @@
     // travels home, rather than snapping clear once it has already landed
     wmaxBackdrop.classList.remove("is-blurred");   // off the critical path first
     wmaxBackdrop.classList.remove("show");
+    wmaxPauseVideos(card);
     card.classList.add("is-flipping");
     // the themed border and glow ease back to the resting card as it shrinks,
     // instead of staying lit until the class comes off at the very end
@@ -999,6 +1003,20 @@
         } }, 0);
   }
 
+  // showcase video lives inside the card itself (there is no separate story
+  // container to gate it), so these are called with the card whose story is
+  // opening/closing rather than delegated through a single shared element.
+  function wmaxPlayVideos(card) {
+    card.querySelectorAll("video.wx-showcase").forEach(v => {
+      v.currentTime = 0;
+      v.play().catch(() => {});          // muted autoplay; NotAllowedError is fine
+    });
+  }
+
+  function wmaxPauseVideos(card) {
+    card.querySelectorAll("video.wx-showcase").forEach(v => v.pause());
+  }
+
   function wmaxFocusIn(card) {
     const btn = card.querySelector(".w-close");
     if (btn) btn.focus();
@@ -1027,6 +1045,14 @@
   });
 
   if (wmaxBackdrop) wmaxBackdrop.addEventListener("click", closeStory);
+  // Clicking an open story's video toggles its sound. Delegated to document
+  // (not a single "wmax" container — the card is portalled straight to
+  // <body> while its story is open) since the video only ever exists inside
+  // an unhidden .wexp-content, i.e. only while a story is actually open.
+  document.addEventListener("click", (e) => {
+    const v = e.target.closest("video.wx-showcase");
+    if (v) v.muted = !v.muted;
+  });
   document.addEventListener("keydown", (e) => {
     if (!wmaxCard) return;
     if (e.key === "Escape") { closeStory(); return; }
