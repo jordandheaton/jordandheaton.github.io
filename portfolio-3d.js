@@ -613,6 +613,11 @@
 
       mm.add("(min-width: 901px)", () => {
         const cards = gsap.utils.toArray("#featured-grid .wcard");
+        // .wcard carries `transition: transform 0.3s` for the hover lift, which
+        // fought this tween on every frame — the cards were never actually
+        // following the curve GSAP computed. This is why no amount of easing
+        // changes ever fixed the arrival.
+        cards.forEach((el) => el.classList.add("is-entering"));
         gsap.set(cards, { x: () => window.innerWidth * 0.85, opacity: 0 });
 
         // Arriving TRIGGERS the entrance; the entrance then plays at its own
@@ -626,9 +631,13 @@
           played = true;
           lockScroll();
           const release = () => unlockScroll();
+          // straight timing: constant speed, one after the other, nothing else
           gsap.to(cards, {
-            x: 0, opacity: 1, duration: 1.15, ease: "power3.out", stagger: 0.24,
-            onComplete: release,
+            x: 0, opacity: 1, duration: 0.85, ease: "none", stagger: 0.3,
+            onComplete: () => {
+              cards.forEach((el) => el.classList.remove("is-entering"));
+              release();
+            },
           });
           // a page that never scrolls again is far worse than a missed beat
           gsap.delayedCall(3.4, release);
@@ -663,13 +672,15 @@
         // stacked, the trio runs about three screens tall — pinning that would
         // hold the reader still while two of the cards sat off-screen, so each
         // one simply arrives as it is reached
+        gsap.utils.toArray("#featured-grid .wcard").forEach((el) => el.classList.add("is-entering"));
         gsap.set("#featured-grid .wcard", { opacity: 0, x: () => window.innerWidth * 0.85 });
         ScrollTrigger.batch("#featured-grid .wcard", {
           start: "top 78%",
           once: true,
           onEnter: (els) => gsap.to(els, {
-            opacity: 1, x: 0, duration: 0.9, ease: "power2.out",
-            stagger: 0.12, overwrite: true, clearProps: "transform,opacity",
+            opacity: 1, x: 0, duration: 0.8, ease: "none",
+            stagger: 0.2, overwrite: true,
+            onComplete: () => els.forEach((el) => el.classList.remove("is-entering")),
           }),
         });
         gsap.utils.toArray("#featured-grid .wcard").forEach((el) => {
@@ -886,18 +897,32 @@
     wmaxBackdrop.classList.add("show");
     wmaxBusy = true;
 
-    gsap.to(card, {
-      x: 0, y: 0, scaleX: 1, scaleY: 1, duration: FLIP_D, ease: FLIP_E,
+    // ONE timeline, both at position 0. As two separate tweens they started a
+    // frame apart, so the card was already part-way open while the contents
+    // were still counter-scaled for the closed size — the card lurched forward,
+    // snapped back and grew again ("a little circling thing"), and the inner
+    // measured 1225px instead of its true 940px on the first frame.
+    const tl = gsap.timeline({
       onComplete: () => {
         gsap.set(card, { clearProps: "transform" });
+        if (inner) gsap.set(inner, { clearProps: "transform" });
         card.classList.remove("is-flipping");
-        // the blur only now, with nothing else moving
-        wmaxBackdrop.classList.add("is-blurred");
+        wmaxBackdrop.classList.add("is-blurred");   // blur only once nothing moves
         wmaxBusy = false; wmaxFocusIn(card);
       },
     });
-    if (inner) gsap.to(inner, { scaleX: 1, scaleY: 1, duration: FLIP_D, ease: FLIP_E,
-                                onComplete: () => gsap.set(inner, { clearProps: "transform" }) });
+    // The counter-scale is derived from the card's CURRENT scale every frame.
+    // Tweening it from 1/sx to 1 in parallel is not the same curve as the
+    // inverse of the card's scale, so the contents breathed up to 19% wide
+    // mid-flight. This keeps the product exactly 1.
+    tl.to(card, {
+      x: 0, y: 0, scaleX: 1, scaleY: 1, duration: FLIP_D, ease: FLIP_E,
+      onUpdate: () => {
+        if (!inner) return;
+        gsap.set(inner, { scaleX: 1 / gsap.getProperty(card, "scaleX"),
+                          scaleY: 1 / gsap.getProperty(card, "scaleY") });
+      },
+    }, 0);
     // a short fade-through masks the single re-wrap at the start, where the
     // contents switch from the card's narrow layout to the opened one
     gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.32, delay: 0.14 });
@@ -952,20 +977,26 @@
     });
     card.scrollTop = 0;
     if (content) gsap.to(content, { opacity: 0, duration: 0.22 });
-    // the same transform-only morph, in reverse
-    gsap.fromTo(card,
+    // the same transform-only morph, in reverse — one timeline so the card and
+    // its contents move as a single object
+    const tlc = gsap.timeline({
+      onComplete: () => {
+        gsap.set(card, { clearProps: "transform" });
+        if (inner) gsap.set(inner, { clearProps: "transform" });
+        card.classList.remove("is-flipping");
+        finish(); wmaxBusy = false;
+      },
+    });
+    if (inner) gsap.set(inner, { transformOrigin: "top left" });
+    tlc.fromTo(card,
       { transformOrigin: "top left", x: 0, y: 0, scaleX: 1, scaleY: 1 },
       { x: to.left - cur.left, y: to.top - cur.top, scaleX: sx, scaleY: sy,
         duration: FLIP_D, ease: FLIP_E,
-        onComplete: () => {
-          gsap.set(card, { clearProps: "transform" });
-          card.classList.remove("is-flipping");
-          finish(); wmaxBusy = false;
-        } });
-    if (inner) gsap.fromTo(inner,
-      { transformOrigin: "top left", scaleX: 1, scaleY: 1 },
-      { scaleX: 1 / sx, scaleY: 1 / sy, duration: FLIP_D, ease: FLIP_E,
-        onComplete: () => gsap.set(inner, { clearProps: "transform" }) });
+        onUpdate: () => {
+          if (!inner) return;
+          gsap.set(inner, { scaleX: 1 / gsap.getProperty(card, "scaleX"),
+                            scaleY: 1 / gsap.getProperty(card, "scaleY") });
+        } }, 0);
   }
 
   function wmaxFocusIn(card) {
@@ -984,12 +1015,14 @@
     if (closeBtn) closeBtn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation(); closeStory();
     });
-    // click anywhere on the card = open the story; real links (title, CTA)
-    // and the explicit buttons keep their own behavior.
+    // Clicking the card opens the PROJECT, the way the original card did.
+    // The story is behind read_the_story alone — links and buttons inside keep
+    // their own behaviour, and an open card is inert (you are reading it).
     card.addEventListener("click", (e) => {
       if (e.target.closest("a, button")) return;
-      if (card.classList.contains("is-expanded")) return;  // clicks inside an open story do nothing
-      openStory(card);
+      if (card.classList.contains("is-expanded")) return;
+      const href = card.dataset.href;
+      if (href) window.open(href, "_blank", "noopener");
     });
   });
 

@@ -484,7 +484,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   position: relative; z-index: 2;
   margin-top: -100vh;              /* overlap the sticky backdrop */
   padding: 96vh 0 30vh;            /* top: a beat of desk — title + particles — before the cards' zone · bottom: exit beat */
-  max-width: min(1760px, 92vw);   /* wider than before, but the edge arrow still needs its margin */
+  max-width: min(1760px, 90vw);   /* the edge arrow needs ~57px of margin beside card three */
   margin-left: auto; margin-right: auto;
 }
 .work-label {
@@ -494,7 +494,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 }
 #featured-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: clamp(34px, 4.6vw, 88px);   /* room to breathe between the windows */
+  gap: clamp(20px, 3.4vw, 66px);   /* room to breathe without starving the card width */
   align-items: stretch;
 }
 
@@ -618,14 +618,14 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .theme-universe { --theme: #6a5cf5; }
 
 /* ===================== FEATURED CARDS (2026-08 rework) ===================== */
-.wcard-featured { width: auto; min-height: min(600px, 68vh); }
-.wcard-featured h3 { font-size: clamp(1.45rem, 1.9vw, 2.1rem); }
+/* wider-feeling, shorter tiles: the title fits one line at this size, which is
+   also the size it keeps in the opened story, so nothing re-wraps on the way */
+.wcard-featured { width: auto; min-height: min(520px, 60vh); }
+.wcard-featured h3 { font-size: clamp(1.05rem, 1.42vw, 1.4rem); white-space: nowrap; }
 .wcard-featured .wcard-body { padding: 26px 30px 8px; }
 .wcard-featured p.wcard-blurb { font-size: 0.94rem; max-width: none; }
 
 .wcard-featured { cursor: pointer; }  /* the whole card opens the story; links inside keep their own jobs */
-.wcard-title-link { color: inherit; transition: color 0.2s; }
-.wcard-title-link:hover { color: var(--theme, #4d8cff); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
 
 .wcard-stats { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0 0 14px; }
 .wcard-stats li {
@@ -655,7 +655,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 .wexp-content[hidden] { display: none; }
 
 /* ---- other projects: compact strip ---- */
-#other-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 1.2vw, 22px); }
+#other-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(22px, 2.4vw, 46px); }
 .wcard-mini { width: auto; min-height: 0; }
 .wcard-mini .wcard-bar { padding: 9px 14px; }
 .wcard-mini .wcard-body { padding: 18px 20px 4px; }
@@ -688,19 +688,21 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   pointer-events: none; visibility: hidden;
   transition: transform 0.62s cubic-bezier(.65, 0, .35, 1), visibility 0s 0.62s;
 }
-#pane-featured:not(.is-active) { transform: translateX(106%); }
-#pane-others:not(.is-active) { transform: translateX(-106%); }
+#pane-featured:not(.is-active) { transform: translateX(-106%); }  /* exits left */
+#pane-others:not(.is-active) { transform: translateX(106%); }    /* waits off to the right */
 
 .pane-arrow {
   /* the featured pane has no label any more, so the panes box IS the card row */
-  position: absolute; top: 50%; right: calc(50% - 50vw + 4px); transform: translateY(-50%);
-  z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 14px 4px; background: none; border: 0; cursor: pointer;
-  color: #8fa2c4; font-size: 0.6rem; letter-spacing: 0.22em; line-height: 1.5;
+  position: absolute; top: 50%; right: calc(50% - 50vw + 10px); transform: translateY(-50%);
+  z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 2px; background: none; border: 0; cursor: pointer;
+  color: #8fa2c4; font-size: 0.56rem; letter-spacing: 0.14em; line-height: 1.25;
   transition: color 0.25s, transform 0.45s ease, opacity 0.45s ease;
 }
 .pane-arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pane-arrow span { writing-mode: vertical-rl; text-orientation: mixed; }  /* edge-rail label: vertical text keeps the arrow ~30px wide, clear of the cards in the 3.5vw margin */
+/* label reads normally, stacked under the chevron, narrow enough to keep the
+   arrow inside the margin beside the cards */
+.pane-arrow span { writing-mode: horizontal-tb; text-align: center; max-width: 8ch; }
 .pane-arrow::before {
   content: ""; position: absolute; inset: -12px; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(120,150,220,0.22), transparent 72%);
@@ -708,7 +710,7 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
 }
 .pane-arrow:hover { color: #eaf2ff; transform: translateY(-50%) translateX(3px); }
 .pane-arrow:hover::before { opacity: 1; }
-.arrow-back { right: auto; left: calc(50% - 50vw + 4px); }
+.arrow-back { right: auto; left: calc(50% - 50vw + 10px); }
 .arrow-back:hover { transform: translateY(-50%) translateX(-3px); }
 .pane-arrow[hidden] { display: none; }
 
@@ -781,6 +783,12 @@ body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: t
    resting colour in one frame. */
 /* during the morph the contents are laid out at FINAL size inside a smaller
    box, so the card must clip; both layers are promoted for the whole tween */
+/* .wcard carries `transition: transform 0.3s` for the hover lift. During the
+   FLIP that transition FIGHTS GSAP: every frame GSAP writes a transform and CSS
+   animates toward it from the previous one, so the card rendered full-size for
+   two frames and then drifted the wrong way — the "jump to full screen, circle,
+   then grow" — while GSAP's own values were perfectly correct the whole time. */
+.wcard.is-flipping, .wcard.is-expanded, .wcard.is-entering { transition: none !important; }
 .wcard.is-flipping { overflow: hidden !important; will-change: transform; }
 .wcard.is-flipping .wcard-inner { will-change: transform; }
 /* no scrollbar at all — it still scrolls with the wheel, trackpad and keys */
@@ -810,7 +818,7 @@ body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: t
 .wx-sec em { color: #dbe6fa; font-style: normal; font-weight: 600; }
 
 .wwin button.w-close { width: 28px; height: 20px; border-radius: 4px; display: grid; place-items: center; color: #5a6685; transition: background 0.2s, color 0.2s; }
-.wwin button.w-close::before { content: "¹5"; font-size: 0.72rem; line-height: 1; }
+.wwin button.w-close::before { content: "✕"; font-size: 0.72rem; line-height: 1; }
 .wcard:hover .wwin button.w-close { color: #9aa6c2; }
 .wwin button.w-close:hover { background: #e23b4e; color: #fff; }
 
