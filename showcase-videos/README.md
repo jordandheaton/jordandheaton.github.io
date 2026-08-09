@@ -23,15 +23,15 @@ python showcase-videos/capture/capture_tests.py
 python showcase-videos/capture/capture_scroller.py
 powershell -NoProfile -ExecutionPolicy Bypass -File showcase-videos\capture\explode_clips.ps1
 
-# component selftests (15 checks)
+# component selftests (23 checks)
 powershell -NoProfile -ExecutionPolicy Bypass -File showcase-videos\render\selftest.ps1
 
-# renders (add --music ../music/<track>.mp3 once music is chosen)
-python showcase-videos/render/render.py ../compose/myplanbyu.html --out ../dist/myplanbyu-showcase.mp4
-python showcase-videos/render/render.py ../compose/scroller.html --out ../dist/universe-scroller-process.mp4 --crf 27
+# renders (music muxed in; tracks must exist locally — see gotcha below)
+python showcase-videos/render/render.py ../compose/myplanbyu.html --out ../dist/myplanbyu-showcase.mp4 --music ../music/myplan.mp3
+python showcase-videos/render/render.py ../compose/scroller.html --out ../dist/universe-scroller-process.mp4 --crf 27 --music ../music/scroller.mp3
 
-# QC gate (drop --no-audio-ok once music is muxed)
-python showcase-videos/render/qc.py --no-audio-ok
+# QC gate (strict: requires AAC audio + duration sync in both files)
+python showcase-videos/render/qc.py
 ```
 
 ## Gotchas
@@ -42,3 +42,5 @@ python showcase-videos/render/qc.py --no-audio-ok
 - Frame intermediates must never live inside the OneDrive tree — all captured and render frames route to `%TEMP%\showcase`.
 - The scroller pipeline's source media (`Universe scroller/draft-test/` clips + anchors) is deliberately gitignored and exists only on this machine — a re-render elsewhere needs those files copied in first.
 - Posters need no regeneration after an audio-only re-render — captured frames are deterministic and unaffected by the music mux.
+- The music MP3s (`music/*.mp3`) are gitignored — the Pixabay Content License allows use in the videos but not redistributing the raw tracks, so a fresh clone must re-download them from the source URLs in `music/LICENSE.md` before rendering with `--music`.
+- After re-capturing myplanBYU, the event re-inline step covers s1/s3/s4/s5 (all four EVENTS blocks in `compose/myplanbyu.html`), not just the original two.
