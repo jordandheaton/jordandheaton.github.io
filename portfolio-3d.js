@@ -1168,7 +1168,17 @@
       outPane.classList.remove("is-active");
       inPane.classList.add("is-active");
 
-      const STEP = 0.09;                       // one card, then the next
+      /* Both groups travel the same way: leftward on the way to the others,
+         rightward on the way back. Whichever card is NEAREST the edge they are
+         heading for moves first — otherwise a card has to cross a slot that is
+         still occupied (or already refilled) and the two slide over each other.
+         Going back that means Process Improvement, the right-hand card, leads. */
+      const from = others ? "start" : "end";
+      const OUT_D = 0.48, IN_D = 0.58, STEP = 0.085;
+      const GAP = 0.12;                  // a beat of empty desk between the two
+      // the last of the outgoing set finishes here; nothing arrives before it
+      const outEnd = OUT_D + STEP * (outCards.length - 1);
+
       const tl = gsap.timeline({
         onComplete: () => {
           outPane.classList.remove("is-leaving");
@@ -1181,14 +1191,15 @@
       });
       tl.to(outCards, {
         x: (i) => (others ? offLeft(outCards[i]) : offRight(outCards[i])),
-        duration: 0.52, ease: "power2.in", stagger: STEP,
+        duration: OUT_D, ease: "power2.in", stagger: { each: STEP, from },
       }, 0);
-      // starts while the last of the outgoing three is still leaving, so the
-      // two sets read as one strip travelling past rather than two events
+      // the desk is empty before anything arrives: the two sets never share the
+      // screen, which is what made them look like they were sliding through
+      // each other
       tl.to(inCards, {
-        x: 0, duration: 0.62, ease: "power2.out", stagger: STEP,
+        x: 0, duration: IN_D, ease: "power2.out", stagger: { each: STEP, from },
         clearProps: "transform",     // give the hover lift its transform back
-      }, 0.22);
+      }, outEnd + GAP);
 
       (others ? paneBack : paneNext).focus();
     }

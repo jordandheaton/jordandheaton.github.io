@@ -487,11 +487,8 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   max-width: min(1760px, 90vw);   /* the edge arrow needs ~57px of margin beside card three */
   margin-left: auto; margin-right: auto;
 }
-.work-label {
-  display: block;
-  color: #5a6884; font-size: 0.68rem; letter-spacing: 0.34em;
-  margin: 0 0 22px 4px;
-}
+/* (no .work-label any more — neither pane is titled: SELECTED WORK behind the
+   cards is the only heading the desk needs) */
 #featured-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: clamp(20px, 3.4vw, 66px);   /* room to breathe without starving the card width */
