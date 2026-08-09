@@ -1,0 +1,102 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Universe Scroller — process</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+.full{position:absolute;inset:0;width:1920px;height:1080px;object-fit:cover}
+.anchor{position:absolute;top:330px;width:420px;border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(234,242,255,.1);opacity:0}
+.arrow{position:absolute;top:445px;font:700 64px var(--sans);color:var(--accent2);opacity:0}
+.clipbox{position:absolute;top:250px;width:864px;border-radius:14px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 90px rgba(77,163,255,.25);opacity:0}
+.clipbox img{display:block;width:100%}
+.gridwrap{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);
+  gap:6px;padding:60px;opacity:0}
+.gridwrap img{width:100%;border-radius:6px}
+.scrollbar{position:absolute;right:40px;top:140px;width:10px;height:800px;
+  border-radius:5px;background:rgba(234,242,255,.12);opacity:0}
+.scrollbar .thumb{position:absolute;left:0;width:10px;height:90px;border-radius:5px;
+  background:linear-gradient(var(--accent),var(--accent2))}
+</style>
+<div class="stage" id="stage">
+  <img class="full" id="hookseq" alt="">
+  <img class="anchor" id="a1" style="left:220px">
+  <img class="anchor" id="a2" style="left:750px">
+  <img class="anchor" id="a3" style="left:1280px">
+  <div class="arrow" id="ar1" style="left:655px">→</div>
+  <div class="arrow" id="ar2" style="left:1185px">→</div>
+  <div class="clipbox" id="c1box" style="left:170px"><img id="c1"></div>
+  <div class="clipbox" id="c2box" style="left:890px"><img id="c2"></div>
+  <div class="gridwrap" id="grid"></div>
+  <img class="full" id="stitchfull" alt="" style="opacity:0">
+  <img class="full" id="outroseq" alt="" style="opacity:0">
+  <div class="scrollbar" id="sb"><div class="thumb"></div></div>
+  <div id="titles"></div>
+</div>
+<script src="render-config.js"></script>
+<script src="engine.js"></script><script src="fx.js"></script>
+<script>
+const R = (window.RENDER && RENDER.framesRoot) || '../raw';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), titles = $('titles');
+$('a1').src = R + '/clips/anchors/anchor-A-city.png';
+$('a2').src = R + '/clips/anchors/anchor-B-earth.png';
+$('a3').src = R + '/clips/anchors/anchor-C-earthmoon.png';
+for (let i = 0; i < 24; i++) {                        // frame-grid: every 10th stitched frame
+  const im = document.createElement('img');
+  im.src = R + '/clips/stitched/f' + String(i * 10).padStart(5, '0') + '.jpg';
+  $('grid').appendChild(im);
+}
+const t1 = FX.title(titles, {lines:['One continuous zoom.', '1,445 frames.']});  t1.style.top='420px';
+const capA = FX.caption(stage, 'Step 1 — I directed a still image at every scale');
+const capG = FX.caption(stage, 'Step 2 — Higgsfield bridges each pair into video');
+const capS = FX.caption(stage, 'Step 3 — color-match, stitch, precompute. Scroll drives the film.');
+const outroT = FX.title(titles, {lines:['jordanheaton.com']});  outroT.style.top='760px';
+/* Fade-outs must not clobber earlier tracks: apply() runs for EVERY track on every
+   seek (p clamped), so a plain 1-p writes opacity 1 before its window. Min-guard
+   against the value set earlier in the same seek. Forward-render only. */
+const fadeOut = (el, f0, f1) => ({el, f0, f1, ease:'inQuad',
+  apply:(e,p)=>e.style.opacity = Math.min(parseFloat(e.style.opacity || 1), 1 - p)});
+
+TL.build({fps:60, frames:2100, tracks:[
+  /* hook: real scroller scrub full-bleed under the title */
+  {el:$('hookseq'), f0:0, f1:250, seq:{root:R+'/scroller/hook', count:300, srcFps:72}}, // 300 in 250 -> slight speedup
+  {el:t1, f0:15, f1:210, ease:'linear', apply:(el,p)=>el._fx(p<0.8?p/0.8:1)},
+  fadeOut($('hookseq'), 210, 250),
+  fadeOut(t1, 210, 245),
+
+  /* anchors slide up in sequence, arrows pop between them */
+  ...[['a1',260],['a2',310],['a3',360]].map(([id,f0]) => (
+    {el:$(id), f0, f1:f0+50, ease:'outCubic',
+     apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*70}px)`}})),
+  ...[['ar1',420],['ar2',450]].map(([id,f0]) => (
+    {el:$(id), f0, f1:f0+25, ease:'outBack', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`scale(${p})`}})),
+  {el:capA, f0:280, f1:640, ease:'linear', apply:(el,p)=>el._fx(p)},
+  ...['a1','a2','a3','ar1','ar2'].map(id => (
+    {el:$(id), f0:620, f1:660, ease:'inQuad', apply:(el,p)=>el.style.opacity=Math.min(parseFloat(el.style.opacity||1),1-p)})),
+
+  /* generation: the two bridge clips play side by side */
+  ...[['c1box',670],['c2box',700]].map(([id,f0]) => (
+    {el:$(id), f0, f1:f0+40, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*60}px)`}})),
+  {el:$('c1'), f0:710, f1:1010, seq:{root:R+'/clips/clip1', count:121, srcFps:24}},
+  {el:$('c2'), f0:740, f1:1040, seq:{root:R+'/clips/clip2', count:121, srcFps:24}},
+  {el:capG, f0:700, f1:1110, ease:'linear', apply:(el,p)=>el._fx(p)},
+  fadeOut($('c1box'), 1100, 1140),
+  fadeOut($('c2box'), 1100, 1140),
+
+  /* stitch & scrub: grid assembles, then the stitched film plays full-bleed with a scrollbar */
+  {el:$('grid'), f0:1150, f1:1230, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`scale(${0.94+p*0.06})`}},
+  fadeOut($('grid'), 1330, 1380),
+  {el:$('stitchfull'), f0:1380, f1:1680, seq:{root:R+'/clips/stitched', count:235, srcFps:48}}, // 235@48 clamps ~7 frames before the beat ends
+  {el:$('stitchfull'), f0:1380, f1:1420, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
+  {el:$('sb'), f0:1390, f1:1420, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
+  {f0:1390, run:f=>{ if (f>=1390 && f<1680)
+    $('sb').querySelector('.thumb').style.top = `${((f-1390)/290)*710}px`; }},
+  {el:capS, f0:1400, f1:1660, ease:'linear', apply:(el,p)=>el._fx(p)},
+  fadeOut($('stitchfull'), 1650, 1685),
+  fadeOut($('sb'), 1650, 1680),
+
+  /* outro: slow live scrub + URL */
+  {el:$('outroseq'), f0:1680, f1:2099, seq:{root:R+'/scroller/outro', count:270, srcFps:39}}, // 270 over 420 frames
+  {el:$('outroseq'), f0:1680, f1:1720, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
+  {el:outroT, f0:1760, f1:1940, ease:'linear', apply:(el,p)=>el._fx(p)},
+]});
+</script>
