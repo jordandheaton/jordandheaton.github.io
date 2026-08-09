@@ -40,3 +40,5 @@ python showcase-videos/render/qc.py --no-audio-ok
 - Scroller uses `--crf 27` to stay ≤10 MB; render times ~20 min each (~45 ms/frame virtual-time stepping).
 - `.ps1` files must stay ASCII-only; PowerShell 5.1 reads BOM-less files as ANSI.
 - Frame intermediates must never live inside the OneDrive tree — all captured and render frames route to `%TEMP%\showcase`.
+- The scroller pipeline's source media (`Universe scroller/draft-test/` clips + anchors) is deliberately gitignored and exists only on this machine — a re-render elsewhere needs those files copied in first.
+- Posters need no regeneration after an audio-only re-render — captured frames are deterministic and unaffected by the music mux.

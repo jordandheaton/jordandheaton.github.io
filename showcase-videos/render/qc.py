@@ -1,11 +1,16 @@
-"""Final QC: spec conformance + determinism. Usage: python qc.py [--no-audio-ok]"""
+"""Final QC: validates spec conformance of the rendered MP4s — duration, file
+size, resolution, fps, pix_fmt, color_range, and (in strict mode) AAC audio
+presence plus audio/video duration agreement. Does NOT check determinism;
+that's verified separately by manually rendering the same timeline twice and
+diffing frame counts + spot-check frames (see the design spec's Verification
+section). Usage: python qc.py [--no-audio-ok]"""
 import argparse, json, os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, "..", "dist")
 
 def probe(p):
     out = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-        "format=duration,size:stream=width,height,r_frame_rate,codec_name,pix_fmt,color_range",
+        "format=duration,size:stream=width,height,r_frame_rate,codec_name,pix_fmt,color_range,duration",
         "-of", "json", p], capture_output=True, text=True, check=True).stdout
     return json.loads(out)
 
@@ -24,6 +29,7 @@ def main():
         if not os.path.exists(p):
             fail.append(name + " missing"); continue
         j = probe(p)
+        pre = len(fail)
         dur = float(j["format"]["duration"]); mb = int(j["format"]["size"]) / 1e6
         vlist = [s for s in j["streams"] if s["codec_name"] in ("h264",)]
         if not vlist:
@@ -41,7 +47,15 @@ def main():
                 notes.append(f"{name}: NOTE (interim): no audio — music pending")
             else:
                 fail.append(f"{name}: no AAC audio")
-        print(f"{name}: {dur:.1f}s {mb:.1f}MB {v['width']}x{v['height']}@{v['r_frame_rate']} ok")
+        elif not a.no_audio_ok:
+            # Strict mode + audio present: catch -shortest truncating the video
+            # to a too-short music track (container vs. video-stream drift).
+            vdur = float(v.get("duration", dur))
+            if abs(dur - vdur) > 0.5:
+                fail.append(f"{name}: container duration {dur:.1f}s vs video "
+                            f"stream {vdur:.1f}s differ by >0.5s (possible -shortest truncation)")
+        if len(fail) == pre:
+            print(f"{name}: {dur:.1f}s {mb:.1f}MB {v['width']}x{v['height']}@{v['r_frame_rate']} ok")
     for note in notes:
         print(note)
     print("FAIL\n  " + "\n  ".join(fail) if fail else "QC PASS")

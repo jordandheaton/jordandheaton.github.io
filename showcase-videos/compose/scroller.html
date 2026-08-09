@@ -76,8 +76,8 @@ TL.build({fps:60, frames:2100, tracks:[
   /* generation: the two bridge clips play side by side */
   ...[['c1box',670],['c2box',700]].map(([id,f0]) => (
     {el:$(id), f0, f1:f0+40, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*60}px)`}})),
-  {el:$('c1'), f0:710, f1:1100, seq:{root:R+'/clips/clip1', count:121, srcFps:24}},
-  {el:$('c2'), f0:740, f1:1100, seq:{root:R+'/clips/clip2', count:121, srcFps:24}},
+  {el:$('c1'), f0:710, f1:1140, seq:{root:R+'/clips/clip1', count:121, srcFps:24}},
+  {el:$('c2'), f0:740, f1:1140, seq:{root:R+'/clips/clip2', count:121, srcFps:24}},
   {el:capG, f0:700, f1:1110, ease:'linear', apply:(el,p)=>el._fx(p)},
   fadeOut($('c1box'), 1100, 1140),
   fadeOut($('c2box'), 1100, 1140),
@@ -85,7 +85,7 @@ TL.build({fps:60, frames:2100, tracks:[
   /* stitch & scrub: grid assembles, then the stitched film plays full-bleed with a scrollbar */
   {el:$('grid'), f0:1150, f1:1230, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`scale(${0.94+p*0.06})`}},
   fadeOut($('grid'), 1330, 1380),
-  {el:$('stitchfull'), f0:1380, f1:1680, seq:{root:R+'/clips/stitched', count:235, srcFps:48}}, // 235@48 clamps ~7 frames before the beat ends
+  {el:$('stitchfull'), f0:1380, f1:1685, seq:{root:R+'/clips/stitched', count:235, srcFps:48}}, // 235@48 clamps ~7 frames before the beat ends
   {el:$('stitchfull'), f0:1380, f1:1420, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
   {el:$('sb'), f0:1390, f1:1420, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
   {f0:1390, run:f=>{ if (f>=1390 && f<1680)

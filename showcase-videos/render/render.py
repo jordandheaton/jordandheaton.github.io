@@ -53,15 +53,24 @@ def main():
             if n % 120 == 0:
                 print("  frame %d/%d" % (f, f1))
         fps = 60 // a.stride
+        if a.music:
+            probe = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                "format=duration", "-of", "json", a.music],
+                capture_output=True, text=True, check=True).stdout
+            music_dur = float(json.loads(probe)["format"]["duration"])
+            video_dur = n / fps
+            if music_dur < video_dur:
+                sys.exit("music track %.1fs is shorter than the video %.1fs" % (music_dur, video_dur))
         cmd = ["ffmpeg", "-y", "-v", "error", "-framerate", str(fps),
                "-i", os.path.join(tmp, "r%05d.jpg")]
         if a.music:
             cmd += ["-i", a.music, "-filter:a",
                     "loudnorm=I=-14:TP=-1.5,afade=t=out:st=%s:d=1.5" % (n / fps - 1.5),
-                    "-c:a", "aac", "-b:a", "160k", "-shortest"]
+                    "-c:a", "aac", "-b:a", "160k", "-shortest",
+                    "-map", "0:v:0", "-map", "1:a:0"]
         cmd += ["-vf", "scale=1920:1080:in_range=pc:out_range=tv:flags=lanczos",
-                "-color_range", "tv", "-colorspace", "bt709",
-                "-color_primaries", "bt709", "-color_trc", "bt709"]
+                "-color_range", "tv",
+                "-x264-params", "colorprim=bt709:transfer=bt709:colormatrix=bt709"]
         cmd += ["-c:v", "libx264", "-preset", "slow", "-crf", str(a.crf),
                 "-pix_fmt", "yuv420p", "-movflags", "+faststart", out]
         subprocess.run(cmd, check=True)
