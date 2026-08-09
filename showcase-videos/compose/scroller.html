@@ -76,8 +76,8 @@ TL.build({fps:60, frames:2100, tracks:[
   /* generation: the two bridge clips play side by side */
   ...[['c1box',670],['c2box',700]].map(([id,f0]) => (
     {el:$(id), f0, f1:f0+40, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*60}px)`}})),
-  {el:$('c1'), f0:710, f1:1010, seq:{root:R+'/clips/clip1', count:121, srcFps:24}},
-  {el:$('c2'), f0:740, f1:1040, seq:{root:R+'/clips/clip2', count:121, srcFps:24}},
+  {el:$('c1'), f0:710, f1:1100, seq:{root:R+'/clips/clip1', count:121, srcFps:24}},
+  {el:$('c2'), f0:740, f1:1100, seq:{root:R+'/clips/clip2', count:121, srcFps:24}},
   {el:capG, f0:700, f1:1110, ease:'linear', apply:(el,p)=>el._fx(p)},
   fadeOut($('c1box'), 1100, 1140),
   fadeOut($('c2box'), 1100, 1140),
