@@ -492,20 +492,55 @@ const T_WIZNEXT1     = mapPt(1326, 744);   // s12: wizard Next, Programs -> Hist
 const T_IMPORT       = mapPt(960, 486);    // s12: transcript textarea + Scan/Add buttons
 const T_WIZNEXT2     = mapPt(1326, 864);   // s12: wizard Next, History -> Constraints
 const T_WIZNEXT3     = mapPt(1291, 703);   // s12: "Generate plan" -- solves + closes modal
-const T_BOARD        = mapPt(960, 470);    // s12: solved board reveal, whole-board centroid
 const T_BUCKET       = mapPt(1106, 310);   // s13: "Civilization 1" bucket card, Fall 2027 column
 const T_PICKER       = mapPt(1114, 515);   // s13: bucket picker opens, 13-option list
-const T_PHILPICK     = mapPt(1114, 665);   // s13 (R13/R14): the real PHIL 201 option, pick moment
 const T_PHILCARD     = mapPt(1106, 306);   // s13 (R13/R14): PHIL 201 settled into the board slot
 const T_PANEL        = mapPt(172, 650);    // s14: left panel, opening framing
 const T_PANEL2       = mapPt(180, 860);    // s14: left panel, deeper as the scrub reaches clubs
-const T_ACC200CARD   = mapPt(800, 606);    // s15: ACC 200 card, Winter 2027 column
-const T_SECTIONSBTN  = mapPt(806, 510);    // s15: "See sections · live seat counts" button
-const T_SECTABLE     = mapPt(960, 552);    // s15: the real Winter 2027 sections table
-const T_MODALX       = mapPt(1243, 150);   // s16: course modal's close X
+// R15: the whole ACC 200 modal, centered. .modal (theme CSS) is `position:fixed;inset:0;
+// display:flex;align-items:center;justify-content:center` around a 620px-wide .modal-box --
+// i.e. the app itself always centers the box at the raw-viewport's exact center regardless
+// of its (content-dependent) height, confirmed live: a captured s15 frame's modal-box
+// measured ~(649,199)-(1269,878) raw (pre-sections-table) growing to ~(649,150)-(1269,960)
+// once the live sections table loads -- both bound boxes centered on raw (960,540) within
+// measurement error. One fixed anchor covers the whole beat; see RIG_KF below for why a
+// single s=1.45 rest comfortably fits the taller post-load state without cropping.
+const T_MODALCENTER  = mapPt(960, 540);    // s15/s16: ACC 200 course modal, dead-center
 const T_CHATFAB      = mapPt(1801, 1037);  // s16: chat FAB, bottom-right
 const T_CHATPANEL    = mapPt(1697, 776);   // s16: chat panel, question/answer column
 
+// R15 "smooth camera grammar": camera-path-only pass (docs/superpowers/specs/2026-08-08-
+// showcase-videos-design.md, "Revision 5"). Every REST value below (a keyframe tied to a
+// real click/hover-settle event or an FX highlight's peak) is byte-identical to its R14
+// value -- only the PATHS between rests were reshaped, and only after f900 (~t=15s, the
+// boundary Jordan called out as already good). Full analytic table + per-transition
+// velocity audit lives in task-r15-report.md; three shape classes were fixed:
+//   1. "zoom out then in" dips caused by a low-scale TRANSIT waypoint sitting between two
+//      higher-scale rests, with no real UI event of its own (old f958 PLAN-GENERATES
+//      board-reveal keyframe) -- deleted, replaced by one direct eased pan between the two
+//      flanking rests (Generate-plan click -> Civ 1 bucket click).
+//   2. a scale PUNCH landing exactly on a real click (old f1215 PHIL 201 pick, 1.8->1.9)
+//      -- removed; the picker's already-established hold frame (T_PICKER, s1.8) now simply
+//      continues, unchanged, through the click itself ("hold the steady bucket frame
+//      through the pick"), so zero camera motion happens at the pick moment.
+//   3. an adjacent-segment velocity spike (old f1290->f1345 pan-left ran >6x faster than
+//      the settle segment feeding into it, the reported "sudden jump left") -- fixed by
+//      giving the pan-left far more of the frame budget (75f settle -> 190f pan, pushing
+//      T_PANEL's own arrival from f1345 to f1480) so adjacent-segment velocity now differs
+//      by <2x everywhere in the run. (PHIL201-card's pinned scale, 1.55, sits slightly
+//      below both its neighbors -- 1.8 hold before, 1.6 panel after -- since its VALUE is a
+//      highlight-pinned rest (hlBucket's fully-drawn moment) that cannot move; this residual
+//      0.05-deep wobble is the same shape the untouched, Jordan-approved first-15s grammar
+//      already uses at real rest-to-rest cuts (e.g. f535->f580->f630) and is far smaller
+//      than the eliminated 0.35-deep pre-click punch -- see report section 2 for the full
+//      argument.)
+// Rule 4 (seat-count beat): replaces the old three-stage ACC200CARD->SECTIONSBTN->SECTABLE
+// creep-in with ONE arrival at the modal-centered pose (T_MODALCENTER, s1.45 -- fits the
+// modal at both its pre- and post-sections-load heights, see the const comment above) at
+// f1775, ten frames before the ACC 200 card click (master f1785) actually opens the course
+// modal, then a flat hold (zero velocity) all the way through the close-click at f2230 --
+// "no slow centering drift while the modal is visible" satisfied by construction: nothing
+// in RIG_KF changes between 1775 and 2230.
 const RIG_KF = [
   {f: 0,    x: 960,             y: 540,             s: 1},                       // beat 1: identity
   {f: 225,  x: 960,             y: 540,             s: 1},                       // appframe settled, centered "No plan yet" card
@@ -522,22 +557,32 @@ const RIG_KF = [
   {f: 800,  x: T_IMPORT.x,      y: T_IMPORT.y,      s: 1.7,  ease: 'linear'},    // hold through scan+add
   {f: 860,  x: T_WIZNEXT2.x,    y: T_WIZNEXT2.y,    s: 1.4,  ease: 'inOutQuad'}, // History -> Constraints
   {f: 920,  x: T_WIZNEXT3.x,    y: T_WIZNEXT3.y,    s: 1.3,  ease: 'inOutQuad'}, // Generate plan click
-  {f: 958,  x: T_BOARD.x,       y: T_BOARD.y,       s: 1.12, ease: 'inOutQuad'}, // PLAN GENERATES reveal
-  {f: 1005, x: T_BUCKET.x,      y: T_BUCKET.y,      s: 1.5,  ease: 'outCubic'},  // beat 4: bucket card click
+  // R15 (was: 958,T_BOARD,s1.12 -- a separate low-scale "board reveal" waypoint with no
+  // click/hover of its own, sitting BELOW both flanking rests -- "zooms out then in", the
+  // first named instance): deleted; one direct eased pan straight from the Generate-plan
+  // click to the Civ 1 bucket click, scale rising gently and monotonically the whole way.
+  {f: 1005, x: T_BUCKET.x,      y: T_BUCKET.y,      s: 1.5,  ease: 'inOutQuad'}, // beat 4: direct pan onto the bucket card (plan-generated -> Civ 1, R15: no more zoom-out/in)
   {f: 1050, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'inOutQuad'}, // picker opens, 13 options
   {f: 1180, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'linear'},    // hold through the internal scrub
-  // R14 (was: pan far to close via the topbar wordmark -- retired, s13 now ends on a
-  // real class pick instead): punch onto the real PHIL 201 option, then settle on the
-  // card once it lands in the board slot -- this IS the "plan-sit bucket emphasis"
-  // moment hlBucket's arcs frame.
-  {f: 1215, x: T_PHILPICK.x,    y: T_PHILPICK.y,    s: 1.9,  ease: 'outCubic'},  // punch onto the real PHIL 201 pick
-  {f: 1290, x: T_PHILCARD.x,    y: T_PHILCARD.y,    s: 1.55, ease: 'inOutQuad'}, // pick lands and settles
-  {f: 1345, x: T_PANEL.x,       y: T_PANEL.y,       s: 1.6,  ease: 'inOutQuad'}, // beat 5: settle on the panel
-  {f: 1720, x: T_PANEL2.x,      y: T_PANEL2.y,      s: 1.85, ease: 'linear'},    // drift deeper through the scrub
-  {f: 1785, x: T_ACC200CARD.x,  y: T_ACC200CARD.y,  s: 1.4,  ease: 'inOutQuad'}, // beat 6: ACC 200 card
-  {f: 1860, x: T_SECTIONSBTN.x, y: T_SECTIONSBTN.y, s: 1.7,  ease: 'outCubic'},  // punch to the sections button
-  {f: 2180, x: T_SECTABLE.x,    y: T_SECTABLE.y,    s: 1.95, ease: 'inOutQuad'}, // the real seat-count table
-  {f: 2230, x: T_MODALX.x,      y: T_MODALX.y,      s: 1.55, ease: 'inOutQuad'}, // beat 7: close the modal
+  // R15 (was: 1215,T_PHILPICK,s1.9,outCubic -- a punch-in landing exactly on the click,
+  // "pre-click zoom-in"): removed. Same (x,y,s) as the row above, so literally nothing
+  // moves from f1180 to f1215 -- the picker's steady frame holds straight through the pick.
+  {f: 1215, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'linear'},    // hold the steady bucket frame through the PHIL 201 pick (R15: no pre-click zoom)
+  {f: 1290, x: T_PHILCARD.x,    y: T_PHILCARD.y,    s: 1.55, ease: 'inOutQuad'}, // pick lands and settles (hlBucket's fully-drawn moment -- pinned rest, unchanged from R14)
+  // R15 (was: T_PANEL at 1345, 55f after the settle -- the pan covered 700+px in 55 frames,
+  // >6x the settle segment's own pace, "sudden jump left"): T_PANEL's arrival pushed to
+  // 1480 so the SAME pan-left now has 190 frames to unfold, bringing adjacent-segment
+  // velocity within 2x of the settle segment feeding into it -- "one smooth pan-left".
+  {f: 1480, x: T_PANEL.x,       y: T_PANEL.y,       s: 1.6,  ease: 'inOutQuad'}, // beat 5: settle on the panel (R15: one smooth pan-left, no more sudden jump)
+  {f: 1690, x: T_PANEL2.x,      y: T_PANEL2.y,      s: 1.85, ease: 'linear'},    // drift deeper through the scrub (R15: arrival nudged 1720->1690 to leave room for the beat-6 pan below)
+  // R15 (was: three stacked keyframes -- ACC200CARD@1785 s1.4 -> SECTIONSBTN@1860 s1.7 ->
+  // SECTABLE@2180 s1.95 -- a slow zoom-in creep spanning the whole time the course modal is
+  // open): replaced by ONE arrival at the modal-centered pose, ten frames before the ACC 200
+  // card click (master 1785) actually opens the modal, then a dead-flat hold (identical
+  // x/y/s at f2230) all the way to the close-click -- "no slow centering drift while the
+  // modal is visible", satisfied because nothing in RIG_KF changes across [1775,2230].
+  {f: 1775, x: T_MODALCENTER.x, y: T_MODALCENTER.y, s: 1.45, ease: 'inOutQuad'}, // beat 6: arrive at the modal-centered pose BEFORE the ACC 200 modal opens
+  {f: 2230, x: T_MODALCENTER.x, y: T_MODALCENTER.y, s: 1.45, ease: 'linear'},    // beat 7: static hold ends exactly as the close-X click fires -- zero drift while the modal was visible
   {f: 2305, x: T_CHATFAB.x,     y: T_CHATFAB.y,     s: 1.3,  ease: 'inOutQuad'}, // pan far to the chat FAB
   {f: 2461, x: T_CHATPANEL.x,   y: T_CHATPANEL.y,   s: 1.7,  ease: 'inOutQuad'}, // question sends
   {f: 2690, x: T_CHATPANEL.x,   y: T_CHATPANEL.y,   s: 1.9,  ease: 'linear'},    // tighten on the real answer
