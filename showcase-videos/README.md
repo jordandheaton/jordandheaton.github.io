@@ -50,7 +50,7 @@ python showcase-videos/render/qc.py
 - Scroller uses `--crf 27` to stay ≤10 MB; render times ~20 min each (~45 ms/frame virtual-time stepping).
 - `.ps1` files must stay ASCII-only; PowerShell 5.1 reads BOM-less files as ANSI.
 - Frame intermediates must never live inside the OneDrive tree — all captured and render frames route to `%TEMP%\showcase`.
-- The scroller pipeline's source media (`Universe scroller/draft-test/` clips + anchors) is deliberately gitignored and exists only on this machine — a re-render elsewhere needs those files copied in first.
+- The scroller pipeline's source media (`Universe scroller/draft-test/` clips + anchors, and since Revision 7 `Universe scroller/media/` — the real project clips/anchors used in the generation, stitch, and outro beats) is deliberately gitignored and exists only on this machine — a re-render elsewhere needs those files copied in first.
 - Posters need no regeneration after an audio-only re-render — captured frames are deterministic and unaffected by the music mux.
 - The music MP3s (`music/*.mp3`) are gitignored — the Pixabay Content License allows use in the videos but not redistributing the raw tracks, so a fresh clone must re-download them from the source URLs in `music/LICENSE.md` before rendering with `--music`.
 - After re-capturing myplanBYU, the event re-inline step covers the SIX blocks the current composition uses: s11-s16 (plus TEST_TOTALS).

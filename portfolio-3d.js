@@ -894,8 +894,6 @@
     // Lenis swallows wheel events globally (and it is stopped while a story is
     // open), so without this the card cannot be scrolled at all.
     card.setAttribute("data-lenis-prevent", "");
-    const readLabel = card.querySelector(".wcard-read")?.lastChild;
-    if (readLabel && readLabel.nodeType === 3) readLabel.textContent = "\n                  close_story\n                ";
     gsap.set(card, { position: "fixed", margin: 0, zIndex: 61,
                      left: from.left, top: from.top, width: from.width, height: from.height });
     // Portal it to <body>. The card lives inside .work-pane, which carries a
@@ -982,8 +980,6 @@
       card.classList.remove("is-expanded");
       gsap.set(card, { clearProps: "borderColor,boxShadow" });
       card.removeAttribute("data-lenis-prevent");
-      const readLabel = card.querySelector(".wcard-read")?.lastChild;
-      if (readLabel && readLabel.nodeType === 3) readLabel.textContent = "\n                  read_the_story\n                ";
       card.scrollTop = 0;
       if (content) { content.hidden = true; gsap.set(content, { clearProps: "opacity" }); }
       if (wmaxSlot) { wmaxSlot.remove(); wmaxSlot = null; }
@@ -1049,7 +1045,10 @@
   function wmaxPlayVideos(card) {
     card.querySelectorAll("video.wx-showcase").forEach(v => {
       v.currentTime = 0;
-      v.play().catch(() => {});          // muted autoplay; NotAllowedError is fine
+      // Opening a story is a click gesture, so unmuted playback is allowed;
+      // fall back to muted only if the browser still refuses.
+      v.muted = false;
+      v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
     });
   }
 
@@ -1063,7 +1062,7 @@
   }
 
   document.querySelectorAll(".wcard-featured").forEach((card) => {
-    card.querySelectorAll(".w-max, .wcard-read").forEach((btn) => {
+    card.querySelectorAll(".w-max").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault(); e.stopPropagation();
         if (card.classList.contains("is-expanded")) closeStory(); else openStory(card);
@@ -1073,12 +1072,15 @@
     if (closeBtn) closeBtn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation(); closeStory();
     });
-    // Clicking the card opens the PROJECT, the way the original card did.
-    // The story is behind read_the_story alone — links and buttons inside keep
-    // their own behaviour, and an open card is inert (you are reading it).
+    // Clicking anywhere on a collapsed card opens its story — links and
+    // buttons inside (the open_project anchor, the window buttons) keep
+    // their own behaviour, and an expanded card is inert (you are reading
+    // it). A card with no story (e.g. the process card, whose own page IS
+    // the write-up) falls back to its original whole-card-opens-project.
     card.addEventListener("click", (e) => {
       if (e.target.closest("a, button")) return;
       if (card.classList.contains("is-expanded")) return;
+      if (card.querySelector(".wexp-content")) { openStory(card); return; }
       const href = card.dataset.href;
       if (href) window.open(href, "_blank", "noopener");
     });

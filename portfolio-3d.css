@@ -632,18 +632,9 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   padding: 4px 11px; font-size: 0.62rem; letter-spacing: 0.08em; color: #8fa2c4;
 }
 
-/* footer: launch link + read-the-story button side by side */
+/* footer: launch link (the whole card opens the story now) */
 .wcard-foot { display: flex; align-items: stretch; margin-top: 22px; border-top: 1px solid rgba(120, 150, 220, 0.12); position: relative; z-index: 1; }
 .wcard-foot .wcard-cta { flex: 1; margin: 0; border-top: 0; }
-.wcard-read {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 0 20px; background: none; border: 0;
-  border-left: 1px solid rgba(120, 150, 220, 0.12);
-  color: #8fa2c4; font-size: 0.66rem; letter-spacing: 0.12em;
-  cursor: pointer; transition: color 0.2s, background 0.2s;
-}
-.wcard-read svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
-.wcard-read:hover { color: #eaf2ff; background: rgba(120, 150, 220, 0.06); }
 .wwin button { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
 .wwin button.w-max { width: 28px; height: 20px; border-radius: 4px; display: grid; place-items: center; color: #5a6685; transition: background 0.2s, color 0.2s; }
 .wwin button.w-max::before { content: "\25A1"; font-size: 0.6rem; line-height: 1; }
