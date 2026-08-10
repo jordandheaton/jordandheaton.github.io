@@ -1,7 +1,8 @@
 """Captures myplanBYU scenes as deterministic 60fps frame sequences + event logs.
-Usage: python capture_myplan.py [--scene s1|s2|...|s10|all] [--debug]
+Usage: python capture_myplan.py [--scene s1|s2|...|s16|all|rev3] [--debug]
 `--scene` also accepts a comma-separated list (e.g. `--scene s1,s8`) so a
 single scene can be iterated on without re-running the whole session.
+`--scene rev3` is shorthand for `s11,s12,s13,s14,s15,s16` (below).
 Requires the serve.ps1 server (the script starts it if port 8130 is closed).
 
 s4/s9 (course modals), s5/s10 (AI advisor) and s8 (drag) all need a solved
@@ -17,7 +18,19 @@ isolation, or reordered, may find the wizard/course-modal/chat-panel left
 open (or the chat transcript non-empty) by whatever scene ran before it in
 THIS session -- each sensitive scene resets that state itself at frame 0
 rather than relying on the scene before it to have cleaned up, so ordering
-in the `all` block is a narrative choice, not a correctness dependency."""
+in the `all` block is a narrative choice, not a correctness dependency.
+
+s11-s16 (Revision 3, task R10) are a SEPARATE, stricter chain: one
+continuous take, narrative order, where the whole point is that the LAST
+frame of scene N and the FIRST frame of scene N+1 show identical app state
+(board/panel/modal) -- a video composited from these has to read as one
+uninterrupted sitting, with no hidden jump between captures. That rules out
+the CLOSE_OVERLAYS_JS defensive-reset convention above: resetting state at
+frame 0 of s12-s16 would itself BE a visible jump relative to the scene
+before it. So there is no reset, and no reordering tolerance -- iterating on
+scene sN needs the full `--scene s11,...,sN` prefix in one run, not just any
+earlier scene. The canonical artifacts come from a single
+`--scene rev3` (or the equivalent explicit s11..s16 list) run."""
 import argparse, json, math, os, subprocess, sys, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -81,6 +94,21 @@ PICK_IS_AND_ADVANCE_JS = (
     "document.querySelector('#wizNext').click();"
 ) % json.dumps(MAJOR_FULL_NAME)
 
+# s11: a real cursor pick needs a stable CSS selector, not the text-match JS
+# finder above (which only ever runs as an uncaptured setup step). DATA.majors'
+# id for "Information Systems (BS)" is "is-bs" (data.js) -- distinct from the
+# sibling "is-bs-mism" (Integrated MISM Track) id -- and searchSelect() stamps
+# it straight onto each row as `.ss-item[data-id="..."]`, confirmed live.
+MAJOR_ID = "is-bs"
+
+# s13: the SAME requirement-bucket placeholder s8 used to drag from. Confirmed
+# live in a discovery pass (2026-08-10) that this id still resolves under the
+# current scraped GE_REAL bucket data -- it renders as "Civilization 1" in the
+# solved IS board's second column, always on-screen at board scrollLeft=0 (no
+# scroll needed to reach it, unlike s8's original univ-core sibling buckets
+# that this discovery pass found further down/right).
+S13_BUCKET_UID = "BUCKET::univ-core::ge-civilization-1"
+
 # s6: a hand-composed transcript snippet in the exact shape scanTranscript()
 # (app.js:2084) parses -- an uppercase SUBJECT then whitespace then a 3-digit
 # NUMBER (its codeRe), and somewhere later on the same line a decimal
@@ -137,20 +165,40 @@ CLOSE_OVERLAYS_JS = (
     "(() => { const m = document.querySelector('#chatMsgs'); if (m) m.innerHTML = ''; })();"
 )
 
-# SAFETY (discovered live while building this scene): index.html sets
-# window.MYPLAN_ADVISOR_API to a LIVE public endpoint
-# (https://advisor.jordanheaton.com/api), NOT the offline localhost:5000
-# default the advisor server itself defaults to -- opening the chat panel
-# for real fires a real /health request, and clicking Send for real fires a
-# real, billed, quota-metered /ask request against Jordan's production
-# advisor. Installed once for the whole session (main(), before any scene
-# runs) so no capture can ever reach it, regardless of which --scene is
-# selected or where the cursor lands.
+# SAFETY (discovered live while building this scene): index.html only sets
+# window.MYPLAN_ADVISOR_API to the LIVE public endpoint
+# (https://advisor.jordanheaton.com/api) when location.hostname is NOT
+# localhost/127.0.0.1 -- served from this capture's localhost:8130, it's left
+# unset, so chat.js's frozen `API` constant (read once at script-parse time)
+# and app.js's advisorApiBase() (read fresh on every call) both fall back to
+# the offline http://127.0.0.1:5000/api default instead. Opening the chat
+# panel for real still fires a real /health request against THAT origin, and
+# clicking Send fires a real /ask request -- both need blocking regardless of
+# which URL they'd actually resolve to. Installed once for the whole session
+# (main(), before any scene runs) so no capture can ever reach either origin,
+# regardless of which --scene is selected or where the cursor lands.
+#
+# R10 (s15) update: the app's real /sections endpoint is now let through for
+# ONE specific action -- clicking #cmSectionsBtn -- so the live-seat-count
+# reveal is genuine BYU data, not a simulated one (Jordan's own service; he
+# explicitly requires the real reveal here, see the design doc's Revision 3
+# section). Scoped as narrowly as possible: only requests to
+# advisor.jordanheaton.com whose URL contains '/sections' pass through to the
+# real network; every other path on that origin (/health, /ask, /feedback)
+# and the whole 127.0.0.1:5000 origin -- what chat.js's own frozen `API`
+# constant always resolves to from localhost, see s16 below -- stay blocked
+# exactly as before. s1-s10 never trigger the /sections path at all (s4/s9
+# deliberately never click #cmSectionsBtn -- see their comments below), so
+# for every scene but s15 this is a no-op, not a behavior change.
 FETCH_GUARD_JS = """
     window.__advOrigFetch = window.fetch.bind(window);
     window.fetch = function(url, opts) {
       const u = String(url);
-      if (u.includes('advisor.jordanheaton.com') || u.includes('127.0.0.1:5000')) {
+      if (u.includes('advisor.jordanheaton.com')) {
+        if (u.includes('/sections')) return window.__advOrigFetch(url, opts);
+        return Promise.reject(new TypeError('Failed to fetch'));
+      }
+      if (u.includes('127.0.0.1:5000')) {
         return Promise.reject(new TypeError('Failed to fetch'));
       }
       return window.__advOrigFetch(url, opts);
@@ -361,6 +409,8 @@ def main():
     # solved board (s4/s5/s8/s9/s10) or an open wizard (s6/s7) must be listed
     # together with whatever earlier scene builds that state.
     scenes = set(a.scene.split(","))
+    if "rev3" in scenes:      # convenience alias for the s11-s16 continuous chain
+        scenes |= {"s11", "s12", "s13", "s14", "s15", "s16"}
     def want(name):
         return name in scenes or "all" in scenes
     server = ensure_server()
@@ -660,6 +710,289 @@ def main():
             total_chars = sum(len(t) for _, t in S10_ANSWER_SEGMENTS)
             reveal_start = bubble_f + 8
             step_chars, cadence = 4, 3          # same cadence as s5
+            n_steps = -(-total_chars // step_chars)  # ceil
+            for i in range(n_steps + 1):
+                f = reveal_start + i * cadence
+                n = min(total_chars, i * step_chars)
+                sc.js(f, "window.__advReveal(%d)" % n)
+            sc.run()
+
+        # ============== Revision 3: continuous chain s11-s16 ===============
+        # ONE Chrome session, narrative order, NO defensive resets between
+        # scenes (see module docstring) -- board/panel/modal state carries
+        # forward exactly as the previous scene left it. Frame 0 of every
+        # scene below except s11 (session-opening) is a deliberate no-op: the
+        # first real interaction lands a few frames in, so frame 0's own
+        # screenshot is pixel-equivalent to the previous scene's last frame
+        # (task-r10 report has the seam-by-seam frame comparison).
+        if want("s11"):
+            sc = Scene(c, "s11", 330)
+            # Fresh session -- opening the wizard IS the captured beat here,
+            # unlike the "second wizard pass" setup above (s6/s7), which was
+            # deliberately left OUT of frames because s1 already showed this
+            # same open earlier in that older, separate flow.
+            sc.hover(10, "#newPlanBtn")
+            sc.click(35, "#newPlanBtn")
+            sc.hover(85, "#wsMajor .ss-browse")
+            sc.click(105, "#wsMajor .ss-browse")
+            # searchSelect()'s .ss-browse handler (app.js) renders the ~190-row
+            # list SYNCHRONOUSLY, so this read (scheduled right after the
+            # click above, same frame) sees it already populated. Computed
+            # live rather than hardcoded so it survives the catalog changing
+            # beneath it -- confirmed live (discovery pass) IS-BS's row sits
+            # at offsetTop 8701 of an 8730 scrollHeight (i.e. essentially the
+            # last row in the whole list -- "Marriott School of Business"
+            # sorts near the end of BYU's college list).
+            is_item_sel = json.dumps('.ss-item[data-id="%s"]' % MAJOR_ID)
+            mstate = {}
+            def _measure_majors_scroll():
+                d = c.eval(
+                    "(() => { const l = document.querySelector('#wsMajor .ss-list');"
+                    " const it = l.querySelector(%s);"
+                    " const max = l.scrollHeight - l.clientHeight;"
+                    " const t = it ? (it.offsetTop - l.clientHeight / 2 + it.offsetHeight / 2) : max;"
+                    " return {max: max, t: Math.max(0, Math.min(max, t))}; })()" % is_item_sel)
+                mstate["target"] = d["t"]
+            sc.at(105, _measure_majors_scroll)
+            sc.hover(115, "#wsMajor .ss-list")
+            f0, f1 = 125, 295
+            span = f1 - f0
+            for i in range(span + 1):
+                f = f0 + i
+                def _scroll_majors(i=i):
+                    ease = (1 - math.cos(math.pi * (i / span))) / 2
+                    c.eval("document.querySelector('#wsMajor .ss-list').scrollTop = %d"
+                           % round(mstate["target"] * ease))
+                sc.at(f, _scroll_majors)
+                # periodic waypoints so the composited cursor rides the real
+                # scroll, not a straight line from the last hover to the pick
+                if f in (145, 185, 225, 265):
+                    def _waypoint(f=f):
+                        r = c.rect("#wsMajor .ss-list")
+                        c.mouse("mouseMoved", r["x"], r["y"])
+                        sc.pos = (r["x"], r["y"])
+                        sc.events.append({"f": f, "kind": "hover", "x": r["x"], "y": r["y"], "sel": "#wsMajor .ss-list"})
+                    sc.at(f, _waypoint)
+            is_sel = '.ss-item[data-id="%s"]' % MAJOR_ID
+            sc.hover(305, is_sel)
+            sc.click(325, is_sel)     # real pick -- wiz.majorId = "is-bs"
+            sc.run()
+
+        if want("s12"):
+            sc = Scene(c, "s12", 420)
+            # frame 0: no action -- seam with s11 (IS-BS chosen, list closed)
+            sc.hover(15, "#wizNext")
+            sc.click(40, "#wizNext")        # Programs -> History
+            sc.hover(65, "#tiText")
+            sc.click(90, "#tiText")
+            # JS-set for speed (same convention as s6 above: the paste itself
+            # doesn't need to be a real keystroke sequence); the SCAN click
+            # below is the real cursor interaction that matters.
+            sc.js(95, "document.querySelector('#tiText').value = %s" % json.dumps(S6_TRANSCRIPT_TEXT))
+            sc.hover(155, "#tiScan")
+            sc.click(185, "#tiScan")        # renderScanResult() populates #tiResult
+            sc.hover(230, "#tiAdd")
+            sc.click(260, "#tiAdd")         # wiz.completed += 3; toast; renderWizard() redraws step 1
+            sc.hover(300, "#wizNext")
+            sc.click(320, "#wizNext")       # History -> Constraints
+            sc.hover(350, "#wizNext")
+            sc.click(380, "#wizNext")       # Generate plan -- solves (~60ms) + closes modal
+            sc.run()                        # 39-frame hold on the solved board before scene end
+
+        if want("s13"):
+            sc = Scene(c, "s13", 330)
+            bsel = '.card-bucket[data-uid="%s"]' % S13_BUCKET_UID
+            sc.hover(15, bsel)
+            sc.click(45, bsel)      # openBucketPicker() -- real click, NO drag this cut
+            sc.hover(75, ".ctx-menu.bucket-picker")
+            # Small internal scrub of the picker's own option list (its own
+            # overflow-y:auto, not a board drag) so the hold reads as
+            # browsing, not a static screenshot. Confirmed live: this
+            # bucket's picker is ~460px of content in a 338px window (13
+            # options) -- ~122px of scroll range.
+            pstate = {}
+            def _measure_picker():
+                pstate["max"] = c.eval(
+                    "(() => { const m = document.querySelector('.ctx-menu.bucket-picker');"
+                    " return m ? Math.max(0, m.scrollHeight - m.clientHeight) : 0; })()")
+            sc.at(75, _measure_picker)
+            f0, f1 = 95, 190
+            span = f1 - f0
+            for i in range(span + 1):
+                f = f0 + i
+                def _scroll_picker(i=i):
+                    ease = (1 - math.cos(math.pi * (i / span))) / 2
+                    c.eval("(() => { const m = document.querySelector('.ctx-menu.bucket-picker');"
+                           " if (m) m.scrollTop = %d; })()" % round(pstate["max"] * ease))
+                sc.at(f, _scroll_picker)
+            # Hold on the expanded content, then CLOSE CLEANLY. `.ctx-menu` is
+            # position:fixed at the bucket's click-time screen position
+            # (x~970) -- well clear of #panelLeft (x 0-350, where s14 scrubs),
+            # so leaving it open would NOT occlude s14. It WOULD sit stranded
+            # over the board for s15/s16's later beats with nothing pointing
+            # at it, which reads as a mistake in a single continuous take --
+            # so the choice here is to close it. A real click on the neutral,
+            # non-interactive wordmark text (confirmed live: fires the
+            # document-level closeMenus() listener, no other side effect)
+            # gives a clean board state AND a natural cursor rest point
+            # heading into s14.
+            sc.hover(230, ".topbar-brand .app")
+            sc.click(260, ".topbar-brand .app")
+            sc.run()
+
+        if want("s14"):
+            sc = Scene(c, "s14", 450)
+            panel_js = "document.querySelector('#panelLeft .panel-scroll')"
+            acc = lambda n: "#timelineSec details.tl-acc:nth-of-type(%d) summary" % n
+
+            def scrub_ease(state, f0, f1, delta, waypoints):
+                """Eases panel_js.scrollTop from its value-at-open (captured
+                in state['start']/state['max'] by the caller) toward
+                start+delta (clamped to max), and dispatches a REAL mouseMoved
+                (logged as a hover event) at each frame in `waypoints` so the
+                composited cursor rides along with the scrub instead of
+                sitting frozen -- this is what makes it read as browsing
+                rather than an auto-open."""
+                span = f1 - f0
+                for i in range(span + 1):
+                    f = f0 + i
+                    def _fn(i=i):
+                        ease = (1 - math.cos(math.pi * (i / span))) / 2
+                        tgt = state["start"] + (min(state["max"], state["start"] + delta) - state["start"]) * ease
+                        c.eval(panel_js + ".scrollTop = %d" % round(tgt))
+                    sc.at(f, _fn)
+                for wf, wx, wy in waypoints:
+                    # wf must ALSO be a default arg, not just wx/wy: it's read
+                    # inside the closure body (the logged event's "f"), and a
+                    # bare loop-variable reference there resolves at CALL time
+                    # (during sc.run(), long after this loop has finished and
+                    # wf already holds its last value) -- caught live via a
+                    # canonical run: every waypoint in a group logged the
+                    # group's LAST frame instead of its own (dispatch timing
+                    # via sc.at(wf, ...) was still correct; only the JSON log
+                    # was wrong). Same class of bug the file's other loops
+                    # avoid with the i=i / f=f default-arg pattern.
+                    def _wp(wf=wf, wx=wx, wy=wy):
+                        c.mouse("mouseMoved", wx, wy)
+                        sc.pos = (wx, wy)
+                        sc.events.append({"f": wf, "kind": "hover", "x": wx, "y": wy, "sel": "#panelLeft .panel-scroll"})
+                    sc.at(wf, _wp)
+
+            sc.hover(10, "#panelLeft .panel-scroll")
+            sc.js(30, "document.querySelector('#timelineSec').scrollIntoView({behavior:'smooth',block:'start'})")
+
+            # --- accordion 1: scholarships -- real click, then scrub through it.
+            sc.hover(95, acc(1))
+            sc.click(120, acc(1))
+            st1 = {}
+            def _measure1():
+                st1["start"] = c.eval(panel_js + ".scrollTop")
+                st1["max"] = c.eval(panel_js + ".scrollHeight - " + panel_js + ".clientHeight")
+            sc.at(120, _measure1)
+            scrub_ease(st1, 130, 205, 1250, [(140, 190, 540), (165, 195, 560), (190, 185, 580)])
+
+            # --- accordion 2: study abroad -- opening #1 pushed this summary
+            # well below the fold (same reason s3 above has to re-scroll
+            # between its two accordions), so bring it back into view first.
+            sc.js(215, "document.querySelector(%s).scrollIntoView({behavior:'smooth',block:'center'})" % json.dumps(acc(2)))
+            sc.hover(260, acc(2))
+            sc.click(285, acc(2))
+            st2 = {}
+            def _measure2():
+                st2["start"] = c.eval(panel_js + ".scrollTop")
+                st2["max"] = c.eval(panel_js + ".scrollHeight - " + panel_js + ".clientHeight")
+            sc.at(285, _measure2)
+            scrub_ease(st2, 295, 350, 700, [(305, 190, 550), (325, 200, 570), (345, 190, 590)])
+
+            # --- accordion 3: clubs -- same pattern, shorter tail (scene budget).
+            sc.js(360, "document.querySelector(%s).scrollIntoView({behavior:'smooth',block:'center'})" % json.dumps(acc(3)))
+            sc.hover(400, acc(3))
+            sc.click(420, acc(3))
+            st3 = {}
+            def _measure3():
+                st3["start"] = c.eval(panel_js + ".scrollTop")
+                st3["max"] = c.eval(panel_js + ".scrollHeight - " + panel_js + ".clientHeight")
+            sc.at(420, _measure3)
+            scrub_ease(st3, 430, 448, 300, [(440, 190, 560)])
+            sc.run()
+
+        if want("s15"):
+            sc = Scene(c, "s15", 450)
+            sel = '.card[data-uid="%s"]' % S9_COURSE_UID   # ACC 200 -- reuses s9's discovery
+            sc.hover(15, sel)
+            sc.click(45, sel)                  # openCourseModal() -- instant (.modal display toggle)
+            # LIVE DATA (explicitly authorized -- see FETCH_GUARD_JS comment
+            # above). Served from localhost, window.MYPLAN_ADVISOR_API is
+            # never set by index.html's own hostname guard, so
+            # advisorApiBase() would otherwise fall back to the blocked
+            # 127.0.0.1:5000 default and the click below would only ever show
+            # a fetch-blocked error. This one-line override points THIS
+            # session's loadSections() call at the real, deployed advisor
+            # API, matching what the live site itself does. advisorApiBase()
+            # re-reads window.MYPLAN_ADVISOR_API fresh on every call (it's a
+            # function, not a frozen module-load constant like chat.js's
+            # `API`), so setting it here -- well after page load -- still
+            # takes effect for this click.
+            sc.js(70, "window.MYPLAN_ADVISOR_API = 'https://advisor.jordanheaton.com/api';")
+            sc.hover(90, "#cmSectionsBtn")
+
+            def _click_sections_and_verify():
+                r = c.rect("#cmSectionsBtn")
+                assert r, "selector not found: #cmSectionsBtn"
+                c.click(r["x"], r["y"])
+                sc.pos = (r["x"], r["y"])
+                sc.events.append({"f": 120, "kind": "click", "x": r["x"], "y": r["y"], "sel": "#cmSectionsBtn"})
+                # vt_step()'s virtual-time policy (pauseIfNetworkFetchesPending)
+                # already holds frame advancement open for a pending fetch, but
+                # this is the load-bearing check: the spec requires stopping
+                # and reporting rather than faking data if the real endpoint
+                # errors or comes back empty, so verify the actual DOM result.
+                c.wait_expr(
+                    "document.querySelector('#cmSections') && "
+                    "!document.querySelector('#cmSections').innerHTML.includes('cm-sec-loading')",
+                    timeout=20)
+                if not c.eval("!!document.querySelector('#cmSections .cm-sec-table')"):
+                    err_html = c.eval("(document.querySelector('#cmSections')||{}).innerHTML || ''")
+                    raise RuntimeError("s15: live /sections fetch did not render a table -- got: " + err_html[:800])
+            sc.at(120, _click_sections_and_verify)
+            # Hold on the revealed table for the rest of the scene (well over
+            # the ~2s spec minimum) so the real seat counts read on screen.
+            sc.run()
+
+        if want("s16"):
+            sc = Scene(c, "s16", 510)
+            # frame 0: no action -- seam with s15 (courseModal open, real
+            # sections table showing)
+            sc.hover(15, "#courseModal .modal-x")
+            sc.click(40, "#courseModal .modal-x")   # closeModal() -- instant
+            sc.hover(90, "#chatFab")
+            sc.click(115, "#chatFab")               # toggle(true) -- fires the one-time health probe
+            # Same defensive story as s5/s10 above: this is the first chat
+            # open of the s11-s16 session too, so checkHealth()'s offline
+            # bubble can land a handful of frames after open -- strip it
+            # before typing starts (chat.js's frozen `API` const still
+            # resolves to the blocked 127.0.0.1:5000 origin here regardless
+            # of s15's window.MYPLAN_ADVISOR_API override -- see FETCH_GUARD_JS
+            # comment above).
+            clean = ("document.querySelectorAll('#chatMsgs .chat-msg.err')"
+                     ".forEach(el => el.remove());"
+                     "document.querySelector('#chatSend').disabled = false;")
+            sc.js(145, clean)
+            sc.js(175, clean)
+            sc.hover(190, "#chatInput")
+            type_start = 205
+            sc.type(type_start, "#chatInput", S5_QUESTION, step=1)
+            send_f = type_start + len(S5_QUESTION) + 15
+            sc.click(send_f, "#chatSend")           # offline early-return branch -- real user bubble, no network call
+            bubble_f = send_f + 8
+            segs_json = json.dumps([{"b": b, "t": t} for b, t in S5_ANSWER_SEGMENTS])
+            srcs_json = json.dumps(S5_ANSWER_SOURCES)
+            adv_js = ADV_BUBBLE_JS_TMPL.replace("__SEGMENTS__", segs_json).replace("__SOURCES__", srcs_json)
+            sc.js(bubble_f, adv_js)
+
+            total_chars = sum(len(t) for _, t in S5_ANSWER_SEGMENTS)
+            reveal_start = bubble_f + 8
+            step_chars, cadence = 4, 3
             n_steps = -(-total_chars // step_chars)  # ceil
             for i in range(n_steps + 1):
                 f = reveal_start + i * cadence
