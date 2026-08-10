@@ -166,6 +166,33 @@ CLOSE_OVERLAYS_JS = (
     "(() => { const m = document.querySelector('#chatMsgs'); if (m) m.innerHTML = ''; })();"
 )
 
+# Task R12: dash-clean at capture time. The real app's own markup bakes real
+# em dashes into plenty of user-facing copy (chat.js's chat-panel greeting;
+# app.js's board-tip, timeline accordion hints, bucket-picker "taught another
+# term" line, transcript-scan "Completed" heading, live-sections table
+# header) -- none of it composition-authored, so the ONLY place to scrub it
+# is the capture itself, before the pixels are ever screenshotted. Same
+# convention as capture_tests.py's prior-commit fix (see task-r12 report):
+# a TreeWalker over SHOW_TEXT text nodes, em dash -> middot, cosmetic only
+# (never touches attributes/selectors/form values, so nothing downstream --
+# offsetTop measurements, data-id selectors, textarea.value scans -- can
+# observe the substitution). Two variants: one scoped to #chatPanel (s16,
+# per spec), one body-wide for every other scene's assorted containers
+# (#wizardModal, .ctx-menu.bucket-picker, #timelineSec, #courseModal, plus
+# the ever-present #board board-tip) so no single scene needs its own
+# special-cased selector list.
+DASH_CLEAN_CHATPANEL_JS = (
+    "(()=>{const p=document.querySelector('#chatPanel');if(!p)return;"
+    "const w=document.createTreeWalker(p,NodeFilter.SHOW_TEXT,null);"
+    "let n;while((n=w.nextNode())){if(n.nodeValue.indexOf('\\u2014')!==-1){"
+    "n.nodeValue=n.nodeValue.split('\\u2014').join('\\u00b7');}}})()"
+)
+DASH_CLEAN_BODY_JS = (
+    "(()=>{const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null);"
+    "let n;while((n=w.nextNode())){if(n.nodeValue.indexOf('\\u2014')!==-1){"
+    "n.nodeValue=n.nodeValue.split('\\u2014').join('\\u00b7');}}})()"
+)
+
 # SAFETY (discovered live while building this scene): index.html only sets
 # window.MYPLAN_ADVISOR_API to the LIVE public endpoint
 # (https://advisor.jordanheaton.com/api) when location.hostname is NOT
@@ -740,6 +767,13 @@ def main():
             sc.click(35, "#newPlanBtn")
             sc.hover(85, "#wsMajor .ss-browse")
             sc.click(105, "#wsMajor .ss-browse")
+            # Dash-clean immediately: the full browse-all list includes
+            # "Information Systems (BS) — Integrated MISM Track" (data.js),
+            # which sorts immediately adjacent to the plain "Information
+            # Systems (BS)" row this scene scrolls to and picks -- so it sits
+            # on screen right next to the settle point. Runs before the
+            # measurement below reads offsetTop (safe: 1-char swap, no reflow).
+            sc.js(105, DASH_CLEAN_BODY_JS)
             # searchSelect()'s .ss-browse handler (app.js) renders the ~190-row
             # list SYNCHRONOUSLY, so this read (scheduled right after the
             # click above, same frame) sees it already populated. Computed
@@ -796,12 +830,23 @@ def main():
             sc.js(95, "document.querySelector('#tiText').value = %s" % json.dumps(S6_TRANSCRIPT_TEXT))
             sc.hover(155, "#tiScan")
             sc.click(185, "#tiScan")        # renderScanResult() populates #tiResult
+            # renderScanResult()'s own template reads "Completed — graded /
+            # transfer / AP (3)" for this transcript's 3 recognized courses --
+            # dash-clean right after it renders, before frame 185's shot.
+            sc.js(185, DASH_CLEAN_BODY_JS)
             sc.hover(230, "#tiAdd")
             sc.click(260, "#tiAdd")         # wiz.completed += 3; toast; renderWizard() redraws step 1
             sc.hover(300, "#wizNext")
             sc.click(320, "#wizNext")       # History -> Constraints
             sc.hover(350, "#wizNext")
             sc.click(380, "#wizNext")       # Generate plan -- solves (~60ms) + closes modal
+            # The solved board's board-head carries a static "Tip: drag a
+            # class card..." string (index.html) with its own baked em dash --
+            # first appears here and, once cleaned, stays clean through every
+            # later scene in the chain (nothing ever rewrites it back). Placed
+            # mid-hold (well after the synchronous solve) rather than at 380
+            # itself for margin.
+            sc.js(400, DASH_CLEAN_BODY_JS)
             sc.run()                        # 39-frame hold on the solved board before scene end
 
         if want("s13"):
@@ -809,6 +854,12 @@ def main():
             bsel = '.card-bucket[data-uid="%s"]' % S13_BUCKET_UID
             sc.hover(15, bsel)
             sc.click(45, bsel)      # openBucketPicker() -- real click, NO drag this cut
+            # openBucketPicker()'s own template (app.js) can render a "taught
+            # another term — picking moves this slot" divider whenever any
+            # option isn't offered this term -- dash-clean right after the
+            # picker (a document.body-level .ctx-menu, not board-nested)
+            # renders, before frame 45's shot.
+            sc.js(45, DASH_CLEAN_BODY_JS)
             sc.hover(75, ".ctx-menu.bucket-picker")
             # Small internal scrub of the picker's own option list (its own
             # overflow-y:auto, not a board drag) so the hold reads as
@@ -889,6 +940,7 @@ def main():
             # --- accordion 1: scholarships -- real click, then scrub through it.
             sc.hover(95, acc(1))
             sc.click(120, acc(1))
+            sc.js(120, DASH_CLEAN_BODY_JS)   # scholarship name/note fields can carry a scraped em dash
             st1 = {}
             def _measure1():
                 st1["start"] = c.eval(panel_js + ".scrollTop")
@@ -902,6 +954,10 @@ def main():
             sc.js(215, "document.querySelector(%s).scrollIntoView({behavior:'smooth',block:'center'})" % json.dumps(acc(2)))
             sc.hover(260, acc(2))
             sc.click(285, acc(2))
+            # renderTimeline()'s static abroad hint reads "...Most run
+            # Spring/Summer — they fit between your semesters." -- always
+            # rendered once this accordion opens.
+            sc.js(285, DASH_CLEAN_BODY_JS)
             st2 = {}
             def _measure2():
                 st2["start"] = c.eval(panel_js + ".scrollTop")
@@ -913,6 +969,10 @@ def main():
             sc.js(360, "document.querySelector(%s).scrollIntoView({behavior:'smooth',block:'center'})" % json.dumps(acc(3)))
             sc.hover(400, acc(3))
             sc.click(420, acc(3))
+            # renderTimeline()'s static clubs hint reads "...Free to join,
+            # great for networking — full directory at clubs.byu.edu." --
+            # always rendered once this accordion opens.
+            sc.js(420, DASH_CLEAN_BODY_JS)
             st3 = {}
             def _measure3():
                 st3["start"] = c.eval(panel_js + ".scrollTop")
@@ -926,6 +986,10 @@ def main():
             sel = '.card[data-uid="%s"]' % S9_COURSE_UID   # ACC 200 -- reuses s9's discovery
             sc.hover(15, sel)
             sc.click(45, sel)                  # openCourseModal() -- instant (.modal display toggle)
+            # whoTeaches()'s "different posted term" / "history" branches can
+            # carry an em dash in their note line; harmless no-op for ACC 200's
+            # actual "confirmed" branch, but cheap insurance regardless.
+            sc.js(45, DASH_CLEAN_BODY_JS)
             # LIVE DATA (explicitly authorized -- see FETCH_GUARD_JS comment
             # above). Served from localhost, window.MYPLAN_ADVISOR_API is
             # never set by index.html's own hostname guard, so
@@ -959,6 +1023,14 @@ def main():
                 if not c.eval("!!document.querySelector('#cmSections .cm-sec-table')"):
                     err_html = c.eval("(document.querySelector('#cmSections')||{}).innerHTML || ''")
                     raise RuntimeError("s15: live /sections fetch did not render a table -- got: " + err_html[:800])
+                # loadSections()'s success template always headers the table
+                # "<label> sections — live from BYU" -- a baked em dash on
+                # every load, independent of the live data's own content
+                # (which may separately carry an em dash as its empty-seat/
+                # empty-time placeholder glyph -- also swept by the same
+                # walk). Runs after the table is confirmed present, before
+                # frame 120's shot.
+                c.eval(DASH_CLEAN_BODY_JS)
             sc.at(120, _click_sections_and_verify)
             # Hold on the revealed table for the rest of the scene (well over
             # the ~2s spec minimum) so the real seat counts read on screen.
@@ -972,18 +1044,38 @@ def main():
             sc.click(40, "#courseModal .modal-x")   # closeModal() -- instant
             sc.hover(90, "#chatFab")
             sc.click(115, "#chatFab")               # toggle(true) -- fires the one-time health probe
+            # chat.js's init() unconditionally seeds #chatMsgs with a static
+            # greeting bubble at page load ("Hi! I'm the myplanBYU AI Advisor
+            # — grounded in live BYU data ... Ask me anything — ...") -- two
+            # real em dashes, sitting in the DOM (just not visible) from
+            # DOMContentLoaded onward since this s11-s16 chain never wipes
+            # #chatMsgs before now (no CLOSE_OVERLAYS_JS reset -- see module
+            # docstring). toggle(true) above only flips a CSS class, so the
+            # greeting is already showing by the time THIS SAME frame's
+            # (115) screenshot is taken -- dash-clean must run in the same
+            # frame, after the click, which is exactly what appending it
+            # here (same call-order as Scene.run()'s per-frame action list)
+            # guarantees. Scoped to #chatPanel per spec (not body-wide like
+            # the other rev3 scenes): everything else in this scene's visible
+            # area is composition-controlled text confirmed dash-free
+            # (S5_QUESTION/S5_ANSWER_SEGMENTS/S5_ANSWER_SOURCES above), so a
+            # narrower walk is enough here.
+            sc.js(115, DASH_CLEAN_CHATPANEL_JS)
             # Same defensive story as s5/s10 above: this is the first chat
             # open of the s11-s16 session too, so checkHealth()'s offline
             # bubble can land a handful of frames after open -- strip it
             # before typing starts (chat.js's frozen `API` const still
             # resolves to the blocked 127.0.0.1:5000 origin here regardless
             # of s15's window.MYPLAN_ADVISOR_API override -- see FETCH_GUARD_JS
-            # comment above).
+            # comment above). Bundled with a repeat dash-clean pass for the
+            # same margin reason this cleanup already runs twice.
             clean = ("document.querySelectorAll('#chatMsgs .chat-msg.err')"
                      ".forEach(el => el.remove());"
                      "document.querySelector('#chatSend').disabled = false;")
             sc.js(145, clean)
+            sc.js(145, DASH_CLEAN_CHATPANEL_JS)
             sc.js(175, clean)
+            sc.js(175, DASH_CLEAN_CHATPANEL_JS)
             sc.hover(190, "#chatInput")
             type_start = 205
             sc.type(type_start, "#chatInput", S5_QUESTION, step=1)
