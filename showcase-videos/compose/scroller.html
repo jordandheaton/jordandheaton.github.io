@@ -5,7 +5,7 @@
 .anchor{position:absolute;top:330px;width:420px;border-radius:14px;
   box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(234,242,255,.1);opacity:0}
 .arrow{position:absolute;top:445px;font:700 64px var(--sans);color:var(--accent2);opacity:0}
-.clipbox{position:absolute;top:250px;width:864px;border-radius:14px;overflow:hidden;
+.clipbox{position:absolute;left:384px;top:216px;width:1152px;border-radius:14px;overflow:hidden;
   box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 90px rgba(77,163,255,.25);opacity:0}
 .clipbox img{display:block;width:100%}
 .gridwrap{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);
@@ -23,10 +23,9 @@
   <img class="anchor" id="a3" style="left:1280px">
   <div class="arrow" id="ar1" style="left:655px">→</div>
   <div class="arrow" id="ar2" style="left:1185px">→</div>
-  <div class="clipbox" id="c1box" style="left:170px"><img id="c1"></div>
-  <div class="clipbox" id="c2box" style="left:890px"><img id="c2"></div>
+  <div class="clipbox" id="genbox"><img id="genclip"></div>
   <div class="gridwrap" id="grid"></div>
-  <img class="full" id="stitchfull" alt="" style="opacity:0">
+  <img class="full" id="journeyfull" alt="" style="opacity:0">
   <img class="full" id="outroseq" alt="" style="opacity:0">
   <div class="scrollbar" id="sb"><div class="thumb"></div></div>
   <div id="titles"></div>
@@ -37,12 +36,22 @@
 const R = (window.RENDER && RENDER.framesRoot) || '../raw';
 const $ = id => document.getElementById(id);
 const stage = $('stage'), titles = $('titles');
-$('a1').src = R + '/clips/anchors/anchor-A-city.png';
-$('a2').src = R + '/clips/anchors/anchor-B-earth.png';
-$('a3').src = R + '/clips/anchors/anchor-C-earthmoon.png';
-for (let i = 0; i < 24; i++) {                        // frame-grid: every 10th stitched frame
+/* Revision 7: real project media replaces the draft-test "earth teleports out"
+   clips throughout. a1 is leaf-treetop.png rather than a1-leaf.png -- per the
+   R16 asset-prep report it is a near-exact pixel match to the leafmoon clip's
+   own frame 0, so the anchors beat hands off into the generation beat on a
+   near-identical frame instead of a visual jump. */
+$('a1').src = R + '/clips/anchors-real/leaf-treetop.png';
+$('a2').src = R + '/clips/anchors-real/a3-tree.png';
+$('a3').src = R + '/clips/anchors-real/b1-earthmoon.png';
+/* frame-grid: 24 cells sampling the REAL journey (chromosome -> galaxy)
+   evenly across its full 0..1444 range (round(i*1444/23), stride ~63 --
+   "every ~60th frame" per the task) so the grid's last cell is the actual
+   terminal galaxy frame, not an early cutoff. */
+for (let i = 0; i < 24; i++) {
+  const idx = Math.round(i * 1444 / 23);
   const im = document.createElement('img');
-  im.src = R + '/clips/stitched/f' + String(i * 10).padStart(5, '0') + '.jpg';
+  im.src = R + '/clips/journey/f' + String(idx).padStart(5, '0') + '.jpg';
   $('grid').appendChild(im);
 }
 const t1 = FX.title(titles, {lines:['One continuous zoom.', '1,445 frames.']});  t1.style.top='420px';
@@ -56,14 +65,18 @@ const outroT = FX.title(titles, {lines:['jordanheaton.com']});  outroT.style.top
 const fadeOut = (el, f0, f1) => ({el, f0, f1, ease:'inQuad',
   apply:(e,p)=>e.style.opacity = Math.min(parseFloat(e.style.opacity || 1), 1 - p)});
 
-TL.build({fps:60, frames:2100, tracks:[
-  /* hook: real scroller scrub full-bleed under the title */
+TL.build({fps:60, frames:2760, tracks:[
+  /* hook: real scroller scrub full-bleed under the title (UNCHANGED beat) */
   {el:$('hookseq'), f0:0, f1:250, seq:{root:R+'/scroller/hook', count:300, srcFps:72}}, // 300 in 250 -> slight speedup
   {el:t1, f0:15, f1:210, ease:'linear', apply:(el,p)=>el._fx(p<0.8?p/0.8:1)},
   fadeOut($('hookseq'), 210, 250),
   fadeOut(t1, 210, 245),
 
-  /* anchors slide up in sequence, arrows pop between them */
+  /* anchors: real triad slides up in sequence, arrows pop between them.
+     leaf-treetop -> a3-tree -> b1-earthmoon, the bracketing stills for the
+     leafmoon clip that plays next. No spatial overlap: three 420px-wide
+     boxes at left 220/750/1280 (right edges 640/1170/1700) leave 110px
+     gaps that the arrows sit in -- unchanged geometry, verified again below. */
   ...[['a1',260],['a2',310],['a3',360]].map(([id,f0]) => (
     {el:$(id), f0, f1:f0+50, ease:'outCubic',
      apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*70}px)`}})),
@@ -73,30 +86,49 @@ TL.build({fps:60, frames:2100, tracks:[
   ...['a1','a2','a3','ar1','ar2'].map(id => (
     {el:$(id), f0:620, f1:660, ease:'inQuad', apply:(el,p)=>el.style.opacity=Math.min(parseFloat(el.style.opacity||1),1-p)})),
 
-  /* generation: the two bridge clips play side by side */
-  ...[['c1box',670],['c2box',700]].map(([id,f0]) => (
-    {el:$(id), f0, f1:f0+40, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*60}px)`}})),
-  {el:$('c1'), f0:710, f1:1140, seq:{root:R+'/clips/clip1', count:121, srcFps:24}},
-  {el:$('c2'), f0:740, f1:1140, seq:{root:R+'/clips/clip2', count:121, srcFps:24}},
-  {el:capG, f0:700, f1:1110, ease:'linear', apply:(el,p)=>el._fx(p)},
-  fadeOut($('c1box'), 1100, 1140),
-  fadeOut($('c2box'), 1100, 1140),
+  /* generation: ONE clean framed box plays the real leaf-treetop->earth+moon
+     clip (193 frames, native 24fps). This replaces the old two-box
+     side-by-side layout outright -- that was the ~13s spatial overlap bug
+     (c1box [170,1034] x c2box [890,1754] overlapped on [890,1034]). The
+     single box here is centered at left:384 width:1152 (right edge 1536),
+     the ONLY media element visible in this beat, so it is trivially
+     disjoint from every other media element on the stage (overlap audit,
+     beat 3). srcFps:24 (native, no speedup) plays the clip at its own
+     authored pace -- 480 render-frames (8.0s) to walk all 193 frames, then
+     a further 100-frame hold (1.67s) on the final earth+moon frame before
+     fading, so the clip gets room to breathe rather than being chopped. */
+  {el:$('genbox'), f0:670, f1:710, ease:'outCubic',
+   apply:(el,p)=>{el.style.opacity=p; el.style.transform=`translateY(${(1-p)*60}px)`}},
+  {el:$('genclip'), f0:710, f1:1290, seq:{root:R+'/clips/leafmoon', count:193, srcFps:24}}, // reaches idx192 at f=1190, holds to 1290
+  {el:capG, f0:700, f1:1290, ease:'linear', apply:(el,p)=>el._fx(p)},
+  fadeOut($('genbox'), 1290, 1330),
 
-  /* stitch & scrub: grid assembles, then the stitched film plays full-bleed with a scrollbar */
-  {el:$('grid'), f0:1150, f1:1230, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`scale(${0.94+p*0.06})`}},
-  fadeOut($('grid'), 1330, 1380),
-  {el:$('stitchfull'), f0:1380, f1:1685, seq:{root:R+'/clips/stitched', count:235, srcFps:48}}, // 235@48 clamps ~7 frames before the beat ends
-  {el:$('stitchfull'), f0:1380, f1:1420, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
-  {el:$('sb'), f0:1390, f1:1420, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
-  {f0:1390, run:f=>{ if (f>=1390 && f<1680)
-    $('sb').querySelector('.thumb').style.top = `${((f-1390)/290)*710}px`; }},
-  {el:capS, f0:1400, f1:1660, ease:'linear', apply:(el,p)=>el._fx(p)},
-  fadeOut($('stitchfull'), 1650, 1685),
-  fadeOut($('sb'), 1650, 1680),
+  /* stitch & scrub: grid samples the real journey, then it plays full-bleed
+     with a scrollbar. srcFps:200 on the 1445-frame journey sequence is a
+     deliberate ~8x fast-forward (not real-time) -- "brief motion-heavy
+     payoff" per spec, condensing the whole chromosome->galaxy assembly into
+     ~7.2s of screen time instead of the 60s the source runs at native
+     speed; the outro beat below is where the FULL ride plays at 1:1.
+     1280->1920 full-bleed display is a 1.5x upscale (object-fit:cover,
+     browser bilinear scaling) -- read soft-vs-crisp during frame evidence
+     and accepted for this fast, motion-blurred beat (see task report). */
+  {el:$('grid'), f0:1340, f1:1420, ease:'outCubic', apply:(el,p)=>{el.style.opacity=p; el.style.transform=`scale(${0.94+p*0.06})`}},
+  fadeOut($('grid'), 1520, 1570),
+  {el:$('journeyfull'), f0:1570, f1:2030, seq:{root:R+'/clips/journey', count:1445, srcFps:200}}, // clamps at idx1444 ~f=2004, ~26 frames before beat ends
+  {el:$('journeyfull'), f0:1570, f1:1610, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
+  {el:$('sb'), f0:1580, f1:1610, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
+  {f0:1580, run:f=>{ if (f>=1580 && f<1990)
+    $('sb').querySelector('.thumb').style.top = `${((f-1580)/410)*710}px`; }},
+  {el:capS, f0:1590, f1:1950, ease:'linear', apply:(el,p)=>el._fx(p)},
+  fadeOut($('journeyfull'), 1990, 2030),
+  fadeOut($('sb'), 1990, 2025),
 
-  /* outro: slow live scrub + URL */
-  {el:$('outroseq'), f0:1680, f1:2099, seq:{root:R+'/scroller/outro', count:270, srcFps:39}}, // 270 over 420 frames
-  {el:$('outroseq'), f0:1680, f1:1720, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
-  {el:outroT, f0:1760, f1:1940, ease:'linear', apply:(el,p)=>el._fx(p)},
+  /* outro: the FULL 720-frame cell->galaxy live-site scrub, 1:1 (srcFps:60,
+     no speedup, no skipped frames) -- 12s, the payoff after the grid/stitch
+     beat's fast preview. URL overlay arrives about 21% into the ride (after
+     the scrub has cleared the Leaf chapter) and holds through the end. */
+  {el:$('outroseq'), f0:2040, f1:2759, seq:{root:R+'/scroller/outro', count:720, srcFps:60}},
+  {el:$('outroseq'), f0:2040, f1:2080, ease:'outQuad', apply:(el,p)=>el.style.opacity=p},
+  {el:outroT, f0:2190, f1:2490, ease:'linear', apply:(el,p)=>el._fx(p)},
 ]});
 </script>
