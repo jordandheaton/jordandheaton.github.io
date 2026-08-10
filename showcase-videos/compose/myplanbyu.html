@@ -107,17 +107,6 @@
      CENTERS (capture_myplan.py's rect() = getBoundingClientRect() center), so a correct
      fix lands the crosshair on dead-center of the clicked control.
 
-     ARC HIGHLIGHTS (R14): the old mkHighlight glow-BOX (R8-era) is retired entirely --
-     every highlight in this composition is now FX.arcs (fx.js), two opposite-corner
-     quarter-ellipse strokes that draw on like a quick hand annotation instead of a
-     full box/ring. Four placements, each sized/timed to its own real on-screen region
-     (raw viewport coords read live off the app -- see task-r14-report.md for the exact
-     rect probes): hlImport (beat 3, import area, unchanged region from R8/R11), hlBucket
-     (beat 4, NEW -- frames the bucket card as the PHIL 201 pick lands and settles),
-     hlPanel (beat 5, the whole left panel's own on-screen rect, unchanged region --
-     content scrolls internally but the panel's outer box never moves, so one static
-     ellipse covers the entire scholarships/study-abroad/clubs scrub), hlSeats (beat 6,
-     NEW -- frames the real live seat-count table once it loads).
 
      BEAT 9 (12-item tech stack): a page-local mkStackRow/track-generator (NOT FX.credits
      -- credits pops+dims each line as a stack that never fully commits to the newest
@@ -334,8 +323,6 @@ zoomrig.style.transformOrigin = '0 0';
    every prior revision. */
 const mapPt  = (x, y) => ({x: 240 + x * 0.75, y: 164 + y * 0.75});
 const mapBox = (x, y, w, h) => ({x: 240 + x * 0.75, y: 164 + y * 0.75, w: w * 0.75, h: h * 0.75});
-// Center+radii variant of mapBox, for FX.arcs() (R14): (cx,cy) is the raw-viewport
-// ellipse center, (rw,rh) its raw half-extents -- same 0.75 scale + (240,164) offset.
 const mapEllipse = (cx, cy, rw, rh) => ({x: 240 + cx * 0.75, y: 164 + cy * 0.75, rx: rw * 0.75, ry: rh * 0.75});
 
 /* Cursor hotspot fix -- see the top-of-file architecture note. CUR_OX/CUR_OY are half
@@ -454,35 +441,6 @@ testsCounter.style.cssText = 'position:absolute;left:auto;right:390px;top:365px;
   'text-shadow:0 2px 10px rgba(0,0,0,.5)';
 stage.appendChild(testsCounter);
 
-/* --- overlay highlights: FX.arcs (fx.js), two opposite-corner quarter-ellipse strokes
-   per placement (R14 -- replaces the old mkHighlight glow-box entirely; see the
-   top-of-file "ARC HIGHLIGHTS" note). All four regions below are raw-viewport rects
-   confirmed live against the real app (task-r14-report.md has the rect probes),
-   converted through mapEllipse to stage space. --- */
-
-/* Import-area (beat 3): the "Import from your transcript" label through the
-   Scan/Upload buttons row and the scanned-course checklist, raw viewport coords
-   (560,370)-(1360,620) -- unchanged region from R8/R11 (s12 wasn't touched by R13). */
-const hlImport = FX.arcs(zoomrig, mapEllipse(960, 495, 400, 125));
-
-/* Bucket card (beat 4, NEW): frames the requirement-bucket card as the real PHIL 201
-   pick lands and settles -- "plan-sit bucket emphasis". Raw viewport center (1106,308)
-   and card size 272x52 read live off the app (confirmed identical before/after the
-   pick -- the mutation lands in the exact same slot), padded for a visible arc frame. */
-const hlBucket = FX.arcs(zoomrig, mapEllipse(1106, 308, 170, 55));
-
-/* Whole-panel (beat 5): #panelLeft's own on-screen rect, raw viewport
-   (15,195)-(330,1075) -- confirmed static across the entire scrub (only the panel's
-   INTERNAL scroll position moves; the panel's own box never does), read off
-   s14/f00200 and f00449 (scholarships list, then clubs list, same outer box both
-   times). One static ellipse covers scholarships -> study abroad -> clubs cleanly. */
-const hlPanel = FX.arcs(zoomrig, mapEllipse(172.5, 635, 157.5, 440));
-
-/* Seat-count table (beat 6, NEW): frames the real, live Winter 2027 sections table once
-   #cmSectionsBtn's fetch resolves. Raw viewport center (960,549), table 580x130 --
-   confirmed live via getBoundingClientRect() on #cmSections (task-r14-report.md), padded
-   for the arc frame. */
-const hlSeats = FX.arcs(zoomrig, mapEllipse(960, 549, 310, 85));
 
 /* --- zoom rig: ONE piecewise translate+scale keyframe track for the whole video --- */
 const T_NEWPLAN      = mapPt(979, 724);    // s11 (R13): "+ New plan", CENTERED empty-state control
@@ -528,8 +486,7 @@ const T_CHATPANEL    = mapPt(1697, 776);   // s16: chat panel, question/answer c
 //      giving the pan-left far more of the frame budget (75f settle -> 190f pan, pushing
 //      T_PANEL's own arrival from f1345 to f1480) so adjacent-segment velocity now differs
 //      by <2x everywhere in the run. (PHIL201-card's pinned scale, 1.55, sits slightly
-//      below both its neighbors -- 1.8 hold before, 1.6 panel after -- since its VALUE is a
-//      highlight-pinned rest (hlBucket's fully-drawn moment) that cannot move; this residual
+//      below both its neighbors -- 1.8 hold before, 1.6 panel after; this residual
 //      0.05-deep wobble is the same shape the untouched, Jordan-approved first-15s grammar
 //      already uses at real rest-to-rest cuts (e.g. f535->f580->f630) and is far smaller
 //      than the eliminated 0.35-deep pre-click punch -- see report section 2 for the full
@@ -568,7 +525,7 @@ const RIG_KF = [
   // "pre-click zoom-in"): removed. Same (x,y,s) as the row above, so literally nothing
   // moves from f1180 to f1215 -- the picker's steady frame holds straight through the pick.
   {f: 1215, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'linear'},    // hold the steady bucket frame through the PHIL 201 pick (R15: no pre-click zoom)
-  {f: 1290, x: T_PHILCARD.x,    y: T_PHILCARD.y,    s: 1.55, ease: 'inOutQuad'}, // pick lands and settles (hlBucket's fully-drawn moment -- pinned rest, unchanged from R14)
+  {f: 1290, x: T_PHILCARD.x,    y: T_PHILCARD.y,    s: 1.55, ease: 'inOutQuad'}, // pick lands and settles
   // R15 (was: T_PANEL at 1345, 55f after the settle -- the pan covered 700+px in 55 frames,
   // >6x the settle segment's own pace, "sudden jump left"): T_PANEL's arrival pushed to
   // 1480 so the SAME pan-left now has 190 frames to unfold, bringing adjacent-segment
@@ -693,9 +650,6 @@ TL.build({fps: 60, frames: 3360, tracks: [
   seq(appS12, 540, 960, 's12', 420, 60),
   {el: stmtImport, f0: 555, f1: 650, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: stmtImport, f0: 935, f1: 958, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  // arc highlight over the scan-populate window (master ~630-905) -- unchanged window.
-  {el: hlImport, f0: 630, f1: 655, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlImport, f0: 880, f1: 903, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
   // === beat 4 (960-1320): bucket dropdown expand + real PHIL 201 pick, s13 (360 src,
   // 1:1) -- R14: grew 330->360 frames (s13's own new native length) so the real pick
@@ -703,10 +657,6 @@ TL.build({fps: 60, frames: 3360, tracks: [
   seq(appS13, 960, 1320, 's13', 360, 60),
   {el: stmtBucket, f0: 975, f1: 1070, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: stmtBucket, f0: 1295, f1: 1318, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  // arc highlight ("plan-sit bucket emphasis") as the real PHIL 201 pick lands (click
-  // at master 1215) and settles into the board slot (settle hover at master 1290).
-  {el: hlBucket, f0: 1215, f1: 1238, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlBucket, f0: 1295, f1: 1318, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
   // === beat 5 (1320-1740): opportunities scrub, s14 (450 src, retimed to a 420-frame
   // window -- R14: gives back the 30 frames beat 4 grew by; S14_SRC_FPS = 60*450/420,
@@ -714,16 +664,9 @@ TL.build({fps: 60, frames: 3360, tracks: [
   seq(appS14, 1320, 1740, 's14', 450, S14_SRC_FPS),
   {el: stmtPanel, f0: 1335, f1: 1430, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: stmtPanel, f0: 1715, f1: 1738, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  {el: hlPanel, f0: 1335, f1: 1360, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlPanel, f0: 1715, f1: 1738, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 6 (1740-2190): ACC 200 modal + live seat-count click, s15 (450 src, 1:1).
-  // arc highlight frames the real live seat-count table once #cmSectionsBtn's fetch
-  // resolves (click lands at master 1860; table settle-hover waypoint at master 2130,
-  // 60f margin to beat end). ===
+  // === beat 6 (1740-2190): ACC 200 modal + live seat-count click, s15 (450 src, 1:1). ===
   seq(appS15, 1740, 2190, 's15', 450, 60),
-  {el: hlSeats, f0: 1900, f1: 1925, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlSeats, f0: 2160, f1: 2183, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
   {el: stmtModal, f0: 1755, f1: 1850, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: stmtModal, f0: 2165, f1: 2188, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
