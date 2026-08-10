@@ -193,6 +193,36 @@ DASH_CLEAN_BODY_JS = (
     "n.nodeValue=n.nodeValue.split('\\u2014').join('\\u00b7');}}})()"
 )
 
+# Task R13 (s16): suppresses the advisor's offline notice bubble AT ITS DOM
+# INSERTION POINT, installed before #chatFab is ever clicked, so it can never
+# paint a single frame -- replaces the old approach (s5/s10, left as-is) of
+# letting it render then wiping it a few frames later with `clean` below.
+#
+# chat.js's `offlineShown`/`showOffline`/`addMsg` are private closure state
+# (the module returns only `{toggle}`), so there is no external hook to
+# pre-mark offlineShown or stub the response chat.js itself reads -- and
+# making the health probe resolve "online" is a trap: chat.js's checkHealth()
+# actually sets its own module-private `online = true` in that case, which
+# would make send() skip its offline early-return branch entirely and take
+# the REAL (network) path instead, racing a visible "typing..." bubble
+# against our own scripted answer -- worse, not better. Confirmed live
+# (2026-08-10 discovery pass): patching #chatMsgs.appendChild to swallow any
+# node with the 'err' class -- installed once, before the click -- leaves the
+# real checkHealth()/showOffline() call chain completely intact (`online`
+# still ends up false, exactly what send()'s early-return offline branch
+# below relies on) while the notice itself never reaches the visible DOM:
+# after the click plus 1.5s of real settle time, `#chatMsgs .chat-msg.err`
+# stayed at 0 every time. Real (non-err) bubbles -- the greeting, the typed
+# question, our scripted answer -- all pass through unaffected (only
+# `classList.contains('err')` is intercepted).
+SUPPRESS_OFFLINE_JS = (
+    "(()=>{const m=document.querySelector('#chatMsgs');if(!m||m.__advSuppress)return;"
+    "m.__advSuppress=true;const orig=m.appendChild.bind(m);"
+    "m.appendChild=function(node){"
+    "if(node&&node.classList&&node.classList.contains('err'))return node;"
+    "return orig(node);};})()"
+)
+
 # SAFETY (discovered live while building this scene): index.html only sets
 # window.MYPLAN_ADVISOR_API to the LIVE public endpoint
 # (https://advisor.jordanheaton.com/api) when location.hostname is NOT
@@ -763,8 +793,21 @@ def main():
             # unlike the "second wizard pass" setup above (s6/s7), which was
             # deliberately left OUT of frames because s1 already showed this
             # same open earlier in that older, separate flow.
-            sc.hover(10, "#newPlanBtn")
-            sc.click(35, "#newPlanBtn")
+            #
+            # Task R13: opens via the CENTERED empty-state control, not the
+            # top-right #newPlanBtn. Confirmed live (fresh page load, no
+            # plan): renderBoard() (app.js) renders #board as
+            # `<div class="board-empty">...<button id="emptyNewPlan">+ New
+            # plan</button></div>` whenever `!result || !activePlan()` --
+            # `.board-empty{margin:auto;...}` inside #board's flex row
+            # centers it (confirmed live rect: x=979 of a 1920-wide viewport,
+            # vs #newPlanBtn's x=1856 top-right toolbar position). Its click
+            # handler (`$("#emptyNewPlan").onclick = () => openWizard()`,
+            # app.js) is the exact same openWizard() call #newPlanBtn wires
+            # to (app.js:2467) -- identical downstream wizard, only the
+            # origin point changes.
+            sc.hover(10, "#emptyNewPlan")
+            sc.click(35, "#emptyNewPlan")
             sc.hover(85, "#wsMajor .ss-browse")
             sc.click(105, "#wsMajor .ss-browse")
             # Dash-clean immediately: the full browse-all list includes
@@ -850,7 +893,11 @@ def main():
             sc.run()                        # 39-frame hold on the solved board before scene end
 
         if want("s13"):
-            sc = Scene(c, "s13", 330)
+            # Task R13: 360 frames (was 330; within the spec's 330-420
+            # allowance) -- the extra ~30f gives the real pick below room to
+            # land and settle before the scene ends, instead of the old
+            # scroll-then-close-the-menu pacing.
+            sc = Scene(c, "s13", 360)
             bsel = '.card-bucket[data-uid="%s"]' % S13_BUCKET_UID
             sc.hover(15, bsel)
             sc.click(45, bsel)      # openBucketPicker() -- real click, NO drag this cut
@@ -862,17 +909,20 @@ def main():
             sc.js(45, DASH_CLEAN_BODY_JS)
             sc.hover(75, ".ctx-menu.bucket-picker")
             # Small internal scrub of the picker's own option list (its own
-            # overflow-y:auto, not a board drag) so the hold reads as
-            # browsing, not a static screenshot. Confirmed live: this
-            # bucket's picker is ~460px of content in a 338px window (13
-            # options) -- ~122px of scroll range.
+            # overflow-y:auto, not a board drag) so the approach to the real
+            # pick below reads as browsing, not a jump-cut. Confirmed live:
+            # this bucket's picker is ~460px of content in a 338px window
+            # (13 options -- PHIL 201 is the 13th/last) -- ~122px of scroll
+            # range, and PHIL 201's row sits fully inside the picker's own
+            # clip bounds once scrollTop reaches max (confirmed live: item
+            # rect y=685 vs menu rect y=535..875).
             pstate = {}
             def _measure_picker():
                 pstate["max"] = c.eval(
                     "(() => { const m = document.querySelector('.ctx-menu.bucket-picker');"
                     " return m ? Math.max(0, m.scrollHeight - m.clientHeight) : 0; })()")
             sc.at(75, _measure_picker)
-            f0, f1 = 95, 190
+            f0, f1 = 95, 205
             span = f1 - f0
             for i in range(span + 1):
                 f = f0 + i
@@ -881,19 +931,35 @@ def main():
                     c.eval("(() => { const m = document.querySelector('.ctx-menu.bucket-picker');"
                            " if (m) m.scrollTop = %d; })()" % round(pstate["max"] * ease))
                 sc.at(f, _scroll_picker)
-            # Hold on the expanded content, then CLOSE CLEANLY. `.ctx-menu` is
-            # position:fixed at the bucket's click-time screen position
-            # (x~970) -- well clear of #panelLeft (x 0-350, where s14 scrubs),
-            # so leaving it open would NOT occlude s14. It WOULD sit stranded
-            # over the board for s15/s16's later beats with nothing pointing
-            # at it, which reads as a mistake in a single continuous take --
-            # so the choice here is to close it. A real click on the neutral,
-            # non-interactive wordmark text (confirmed live: fires the
-            # document-level closeMenus() listener, no other side effect)
-            # gives a clean board state AND a natural cursor rest point
-            # heading into s14.
-            sc.hover(230, ".topbar-brand .app")
-            sc.click(260, ".topbar-brand .app")
+            # Task R13: the real pick. PHIL 201 ("History of Philosophy", 3
+            # cr) is a genuine option this bucket offers -- confirmed live by
+            # dumping .bp-item[data-code] for this exact bucket: 13 options
+            # (ARTHC 201, CL CV 201, CMLIT 201, ENGL 201, HIST 201, IHUM 201,
+            # MUSIC 201, PHIL 210, POLI 201, TMA 201, ENGL 211, CMLIT 211,
+            # PHIL 201), so PHIL 201 (Jordan's preferred pick) is on the
+            # list -- no substitution needed. Clicking a real
+            # .bp-item[data-code] button (app.js openBucketPicker(), see the
+            # click handler ~line 572) fills the bucket (prof.fills/pins),
+            # re-solves synchronously (solveActive()), and calls
+            # closeMenus() itself -- so by the very next captured frame the
+            # picker is gone and the board shows PHIL 201 filling the slot;
+            # no separate close step is needed (this replaces the old
+            # "close via the wordmark" beat entirely). Confirmed live: the
+            # old bucket-placeholder selector stops resolving and
+            # `.card[data-uid="PHIL 201"]` appears in the exact same board
+            # position/size the placeholder held (rect x=494,y=335,w=272,
+            # h=52 before and after). This mutation is NOT undone -- it
+            # persists in the plan for the rest of the session (desired,
+            # per Revision 4's brief).
+            phil_sel = '.ctx-menu.bucket-picker .bp-item[data-code="PHIL 201"]'
+            sc.hover(225, phil_sel)
+            sc.click(255, phil_sel)
+            sc.js(255, DASH_CLEAN_BODY_JS)   # defensive sweep of the re-rendered board slot
+            # Settle on the newly filled card -- shows off the mutation and
+            # gives the cursor a real anchor point near scene end (heading
+            # into s14), rather than the old scroll's last frame leaving it
+            # idle for ~100+ frames with nothing positioned.
+            sc.hover(330, '.card[data-uid="PHIL 201"]')
             sc.run()
 
         if want("s14"):
@@ -1034,12 +1100,22 @@ def main():
             sc.at(120, _click_sections_and_verify)
             # Hold on the revealed table for the rest of the scene (well over
             # the ~2s spec minimum) so the real seat counts read on screen.
+            # Task R13: end anchor -- the click above (f=120 of 450) was the
+            # only positioned event in the scene, leaving ~330 static frames
+            # with nothing positioned. Rests on the now-real table itself
+            # (browsing the revealed seat counts) with margin before scene end.
+            sc.hover(390, "#cmSections")
             sc.run()
 
         if want("s16"):
             sc = Scene(c, "s16", 510)
-            # frame 0: no action -- seam with s15 (courseModal open, real
-            # sections table showing)
+            # Task R13: install the offline-notice suppression FIRST, well
+            # before #chatFab's click at frame 115 -- see SUPPRESS_OFFLINE_JS
+            # comment above. Purely instrumentation (patches a method, no
+            # visible DOM change), so it doesn't disturb the "frame 0: no
+            # action -- seam with s15 (courseModal open, real sections table
+            # showing)" seam-continuity this scene otherwise opens with.
+            sc.js(0, SUPPRESS_OFFLINE_JS)
             sc.hover(15, "#courseModal .modal-x")
             sc.click(40, "#courseModal .modal-x")   # closeModal() -- instant
             sc.hover(90, "#chatFab")
@@ -1061,20 +1137,18 @@ def main():
             # (S5_QUESTION/S5_ANSWER_SEGMENTS/S5_ANSWER_SOURCES above), so a
             # narrower walk is enough here.
             sc.js(115, DASH_CLEAN_CHATPANEL_JS)
-            # Same defensive story as s5/s10 above: this is the first chat
-            # open of the s11-s16 session too, so checkHealth()'s offline
-            # bubble can land a handful of frames after open -- strip it
-            # before typing starts (chat.js's frozen `API` const still
-            # resolves to the blocked 127.0.0.1:5000 origin here regardless
-            # of s15's window.MYPLAN_ADVISOR_API override -- see FETCH_GUARD_JS
-            # comment above). Bundled with a repeat dash-clean pass for the
-            # same margin reason this cleanup already runs twice.
-            clean = ("document.querySelectorAll('#chatMsgs .chat-msg.err')"
-                     ".forEach(el => el.remove());"
-                     "document.querySelector('#chatSend').disabled = false;")
-            sc.js(145, clean)
+            # Task R13: the err-bubble removal this `clean` pass used to also
+            # do is now unreachable -- SUPPRESS_OFFLINE_JS above stops the
+            # notice at its DOM insertion, before #chatFab's click even
+            # dispatches, so there is never anything here to remove. Kept
+            # only for the #chatSend defensive re-enable (chat.js never
+            # actually disables #chatInput on the offline path -- this is
+            # insurance, not undoing a real disabled state -- see the
+            # original s5 comment this pattern is copied from).
+            reenable = "document.querySelector('#chatSend').disabled = false;"
+            sc.js(145, reenable)
             sc.js(145, DASH_CLEAN_CHATPANEL_JS)
-            sc.js(175, clean)
+            sc.js(175, reenable)
             sc.js(175, DASH_CLEAN_CHATPANEL_JS)
             sc.hover(190, "#chatInput")
             type_start = 205
@@ -1095,6 +1169,13 @@ def main():
                 f = reveal_start + i * cadence
                 n = min(total_chars, i * step_chars)
                 sc.js(f, "window.__advReveal(%d)" % n)
+            # Task R13: end anchor. The reveal's own js-only steps (above)
+            # move no cursor -- the last POSITIONED event before this was the
+            # #chatSend click at send_f=271 (of 510 total), leaving ~140
+            # static frames after the text finishes at f=371 with nothing
+            # positioned. Rests back on the input (a real user's hand
+            # returning to ask a follow-up) with margin before scene end.
+            sc.hover(430, "#chatInput")
             sc.run()
 
         if a.debug:
