@@ -82,3 +82,9 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;background:
 .fx-ring-svg{position:absolute;inset:0;width:1920px;height:1080px;overflow:visible}
 .fx-ring-ellipse{fill:none;stroke:var(--accent);stroke-width:4px;stroke-linecap:round;
   will-change:stroke-dashoffset}
+
+/* ---- Revision-4: corner-arc highlight FX (Task R14) ---- */
+.fx-arcs{position:absolute;inset:0;pointer-events:none;z-index:35;will-change:opacity}
+.fx-arcs-svg{position:absolute;inset:0;width:1920px;height:1080px;overflow:visible}
+.fx-arcs-path{fill:none;stroke:var(--accent);stroke-width:5px;stroke-linecap:round;
+  will-change:stroke-dashoffset}

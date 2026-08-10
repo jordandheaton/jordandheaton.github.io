@@ -8,12 +8,12 @@
 
      10 beats, 3360 frames / 56s @60fps, replacing the whole R8 timeline. Ten beats per
      the binding sequence (see docs/superpowers/specs/2026-08-08-showcase-videos-
-     design.md, "Revision 3"):
+     design.md, "Revision 3"; beat 4/5 boundary refit by R14, see below):
        1  0-210      browser bar types the real URL; "myplanBYU" headline pops
        2  210-540    majors scroll + pick (s11)
        3  540-960    transcript import -> PLAN GENERATES (s12)
-       4  960-1290   bucket dropdown expand (s13)
-       5  1290-1740  opportunities scrub: scholarships/study abroad/clubs (s14)
+       4  960-1320   bucket dropdown expand + real PHIL 201 pick (s13, R14: +30f)
+       5  1320-1740  opportunities scrub: scholarships/study abroad/clubs (s14, R14: -30f)
        6  1740-2190  ACC 200 modal, live seat-count click, REAL data (s15)
        7  2190-2700  modal close -> pan to advisor -> real Q&A streams (s16)
        8  2700-2910  terminal + tests, one quick flash (reused assets)
@@ -42,13 +42,45 @@
      every prior revision: seq() tracks write src/visibility unconditionally every
      frame, so N tracks sharing one <img> means whichever is LAST in the tracks array
      wins for every frame regardless of which beat is active. s11-s16 are ALL captured
-     at native 60fps (srcFps=60, see task-r10-report.md) -- unlike every prior
-     revision's beats, there is NO retime here, ratio = 60/srcFps = 1 exactly. The remap
-     formula for every EVENTS_S1x log below is still written as
-     `BEAT_F0 + f_src*(60/srcFps)` in full (not simplified to `+f_src`) because a prior
-     revision (R8/s7) inverted this exact multiplier and it was only caught in review --
-     keeping the literal (60/srcFps) form here is a deliberate audit trail, even though
-     it numerically reduces to *1.
+     at native 60fps (srcFps=60, see task-r10-report.md) -- for five of the six beats
+     there is NO retime, ratio = 60/srcFps = 1 exactly. The remap formula for every
+     EVENTS_S1x log below is still written as `BEAT_F0 + f_src*(60/srcFps)` in full (not
+     simplified to `+f_src`) because a prior revision (R8/s7) inverted this exact
+     multiplier and it was only caught in review -- keeping the literal (60/srcFps) form
+     here is a deliberate audit trail, even though it numerically reduces to *1 for
+     s11/s12/s13/s15/s16.
+
+     ==== R14 "continuous mouse" pass: beat refit + merged cursor log ====
+
+     Task R13's re-capture grew s13 (bucket-pick scene) from 330 to 360 native frames
+     (the real PHIL 201 pick + settle needs the room) and retargeted s11's opening click
+     to the CENTERED empty-state control. Binding constraint: beats 1/8/9/10's windows
+     (browserbar f0=0/f1=170; beat 8 at 2700; outro TA=3260/TB=3350) must not move, and
+     the total stays 3360 -- so the extra 30 frames have to come from somewhere inside
+     beats 2-7 (frames 210-2700). Fix: beat 4 (s13) grows 960-1290 -> 960-1320 (+30,
+     still 1:1 -- s13's own new native length), and beat 5 (s14) gives the 30 frames
+     straight back, 1290-1740 -> 1320-1740 (-30). Because beat 4's start (960) and beat
+     5's end (1740) BOTH stay put, only the shared boundary between them moves --
+     beats 6/7 (s15/s16) need zero timing changes at all. Beat 5's 450 native frames now
+     play across a 420-frame window, so s14 alone gets `S14_SRC_FPS = 60*450/420`
+     (~64.29, "scrub slightly faster is fine" per the task brief) instead of the
+     literal-but-reducing-to-1 pattern every other beat uses.
+
+     ONE MERGED CURSOR LOG (masterLog, below): Cursor.stateAt() takes a full event log
+     and interpolates between whichever two POSITIONED events bracket the requested
+     frame -- previously that was called separately per scene (six six-event windows,
+     each internally smooth but jumping at every scene handoff, since frame f's
+     bracketing pair reset to a new scene's own event list the instant f crossed a beat
+     boundary). Concatenating all six remapped logs into one array and calling
+     Cursor.stateAt(masterLog, f) for the WHOLE 210-2700 span removes that reset
+     entirely: the bracketing pair at a former seam frame is simply "last event of scene
+     N, first event of scene N+1", so the interpolation glides across the handoff
+     exactly like it glides across any other gap inside a single scene. This is the
+     literal fix for "the cursor never teleports" -- see the monotonicity assertion
+     right after masterLog's definition, which proves by construction (not just by eye)
+     that every consecutive positioned-event pair across the whole video has a strictly
+     increasing frame number, i.e. Cursor.stateAt always has a well-defined forward-in-
+     time bracket to interpolate within.
 
      Adjacent scenes' boundary frames are byte-identical (confirmed in task-r10-report.md's
      seam table) except a benign 7px pulsing "live" dot between s15/s16 -- so playing
@@ -75,12 +107,17 @@
      CENTERS (capture_myplan.py's rect() = getBoundingClientRect() center), so a correct
      fix lands the crosshair on dead-center of the clicked control.
 
-     OVERLAY HIGHLIGHTS: mkHighlight (page-local, same glow-box design as R8) is reused
-     for two moments: beat 3's import-area box and beat 5's whole-left-panel box (the
-     panel's OWN on-screen rect never moves even though its content scrolls internally,
-     so one static box covers the entire scholarships/study-abroad/clubs scrub cleanly
-     -- an ellipse ring made no sense here since the real content spans a tall column,
-     not one small collapsed row group like R8's old s3 beat).
+     ARC HIGHLIGHTS (R14): the old mkHighlight glow-BOX (R8-era) is retired entirely --
+     every highlight in this composition is now FX.arcs (fx.js), two opposite-corner
+     quarter-ellipse strokes that draw on like a quick hand annotation instead of a
+     full box/ring. Four placements, each sized/timed to its own real on-screen region
+     (raw viewport coords read live off the app -- see task-r14-report.md for the exact
+     rect probes): hlImport (beat 3, import area, unchanged region from R8/R11), hlBucket
+     (beat 4, NEW -- frames the bucket card as the PHIL 201 pick lands and settles),
+     hlPanel (beat 5, the whole left panel's own on-screen rect, unchanged region --
+     content scrolls internally but the panel's outer box never moves, so one static
+     ellipse covers the entire scholarships/study-abroad/clubs scrub), hlSeats (beat 6,
+     NEW -- frames the real live seat-count table once it loads).
 
      BEAT 9 (12-item tech stack): a page-local mkStackRow/track-generator (NOT FX.credits
      -- credits pops+dims each line as a stack that never fully commits to the newest
@@ -129,11 +166,6 @@
   #titles .fx-title.sz3{font-size:76px}
   #titles .fx-title.sz4{font-size:64px}
 
-  /* Overlay highlight box -- animated glow border, page-local (not an fx.js export).
-     Used for beat 3's import-area emphasis and beat 5's whole-panel box. */
-  .hl-box{position:absolute;box-sizing:border-box;border:3px solid var(--accent);
-    border-radius:14px;pointer-events:none;z-index:36;will-change:opacity,transform,box-shadow}
-
   /* Beat 9: 12-item tech stack, single centered column, dropdown-style downward
      slide-in. 44px (top of the binding 38-44px range) for max legibility at 400px --
      verified on the legibility sheet (see task report). */
@@ -171,17 +203,19 @@
 </div>
 <script src="render-config.js"></script>
 <script>
-// Inlined per the established pattern (fetch() is unreliable over file://). Regenerated
-// fresh for R11 -- s11-s16 are the new continuous-session captures (task-r10). Regenerate
-// via (from the repo's showcase-videos/ dir):
+// Inlined per the established pattern (fetch() is unreliable over file://). Re-inlined
+// for R14 -- s11-s16 are the R13 re-capture (fresh frames/coords: s11 opens on the
+// CENTERED empty-state card, s13 is 360 frames and ends on a real PHIL 201 pick, s15/s16
+// each gained one end-anchor waypoint). Regenerate via (from the repo's showcase-videos/
+// dir):
 //   "window.EVENTS_S11 = " + (Get-Content raw\events\s11.json -Raw) + ";"  (...s12..s16)
 //   "window.TEST_TOTALS = " + ((Get-Content raw\tests\report.json -Raw |
 //      ConvertFrom-Json).totals | ConvertTo-Json -Compress) + ";"
 window.EVENTS_S11 = {
  "fps": 60,
  "events": [
-  {"f": 10, "kind": "hover", "x": 1856, "y": 197, "sel": "#newPlanBtn"},
-  {"f": 35, "kind": "click", "x": 1856, "y": 197, "sel": "#newPlanBtn"},
+  {"f": 10, "kind": "hover", "x": 979, "y": 724, "sel": "#emptyNewPlan"},
+  {"f": 35, "kind": "click", "x": 979, "y": 724, "sel": "#emptyNewPlan"},
   {"f": 85, "kind": "hover", "x": 1317, "y": 500, "sel": "#wsMajor .ss-browse"},
   {"f": 105, "kind": "click", "x": 1317, "y": 500, "sel": "#wsMajor .ss-browse"},
   {"f": 115, "kind": "hover", "x": 960, "y": 518, "sel": "#wsMajor .ss-list"},
@@ -216,8 +250,9 @@ window.EVENTS_S13 = {
   {"f": 15, "kind": "hover", "x": 1106, "y": 310, "sel": ".card-bucket[data-uid=\"BUCKET::univ-core::ge-civilization-1\"]"},
   {"f": 45, "kind": "click", "x": 1106, "y": 310, "sel": ".card-bucket[data-uid=\"BUCKET::univ-core::ge-civilization-1\"]"},
   {"f": 75, "kind": "hover", "x": 1114, "y": 515, "sel": ".ctx-menu.bucket-picker"},
-  {"f": 230, "kind": "hover", "x": 70, "y": 23, "sel": ".topbar-brand .app"},
-  {"f": 260, "kind": "click", "x": 70, "y": 23, "sel": ".topbar-brand .app"}
+  {"f": 225, "kind": "hover", "x": 1114, "y": 665, "sel": ".ctx-menu.bucket-picker .bp-item[data-code=\"PHIL 201\"]"},
+  {"f": 255, "kind": "click", "x": 1114, "y": 665, "sel": ".ctx-menu.bucket-picker .bp-item[data-code=\"PHIL 201\"]"},
+  {"f": 330, "kind": "hover", "x": 1106, "y": 306, "sel": ".card[data-uid=\"PHIL 201\"]"}
  ]
 };
 window.EVENTS_S14 = {
@@ -243,9 +278,10 @@ window.EVENTS_S15 = {
  "fps": 60,
  "events": [
   {"f": 15, "kind": "hover", "x": 800, "y": 606, "sel": ".card[data-uid=\"ACC 200\"]"},
-  {"f": 45, "kind": "click", "x": 800, "y": 605, "sel": ".card[data-uid=\"ACC 200\"]"},
+  {"f": 45, "kind": "click", "x": 800, "y": 606, "sel": ".card[data-uid=\"ACC 200\"]"},
   {"f": 90, "kind": "hover", "x": 806, "y": 510, "sel": "#cmSectionsBtn"},
-  {"f": 120, "kind": "click", "x": 806, "y": 510, "sel": "#cmSectionsBtn"}
+  {"f": 120, "kind": "click", "x": 806, "y": 510, "sel": "#cmSectionsBtn"},
+  {"f": 390, "kind": "hover", "x": 960, "y": 540, "sel": "#cmSections"}
  ]
 };
 window.EVENTS_S16 = {
@@ -257,7 +293,8 @@ window.EVENTS_S16 = {
   {"f": 115, "kind": "click", "x": 1801, "y": 1035, "sel": "#chatFab"},
   {"f": 190, "kind": "hover", "x": 1676, "y": 1027, "sel": "#chatInput"},
   {"f": 205, "kind": "type", "x": 1676, "y": 1027, "text": "How many credits is ACC 200 and when is it offered?"},
-  {"f": 271, "kind": "click", "x": 1867, "y": 1033, "sel": "#chatSend"}
+  {"f": 271, "kind": "click", "x": 1867, "y": 1033, "sel": "#chatSend"},
+  {"f": 430, "kind": "hover", "x": 1676, "y": 1027, "sel": "#chatInput"}
  ]
 };
 window.TEST_TOTALS = {"cases":26,"pass":26,"fail":0,"warn":23,"known":0,"noGolden":0};
@@ -297,6 +334,9 @@ zoomrig.style.transformOrigin = '0 0';
    every prior revision. */
 const mapPt  = (x, y) => ({x: 240 + x * 0.75, y: 164 + y * 0.75});
 const mapBox = (x, y, w, h) => ({x: 240 + x * 0.75, y: 164 + y * 0.75, w: w * 0.75, h: h * 0.75});
+// Center+radii variant of mapBox, for FX.arcs() (R14): (cx,cy) is the raw-viewport
+// ellipse center, (rw,rh) its raw half-extents -- same 0.75 scale + (240,164) offset.
+const mapEllipse = (cx, cy, rw, rh) => ({x: 240 + cx * 0.75, y: 164 + cy * 0.75, rx: rw * 0.75, ry: rh * 0.75});
 
 /* Cursor hotspot fix -- see the top-of-file architecture note. CUR_OX/CUR_OY are half
    of cursor.js's own <svg width=17 height=24>, i.e. .cursor-layer's implicit 50%/50%
@@ -316,22 +356,52 @@ const seq = (el, f0, f1, name, count, srcFps = 60, start = 0) =>
   ({el, f0, f1, seq: {root: R + '/myplan/' + name, count, srcFps, start}});
 
 /* --- cursor event logs, remapped onto the master timeline ---
-   All six scenes were captured at srcFps=60 (native, no retime -- task-r10), so every
-   ratio below is 60/srcFps = 1 exactly. Written as the literal (60/srcFps) form, not
-   simplified, as a deliberate audit trail (see architecture note: a prior revision
-   inverted this exact multiplier and it only surfaced in review).
-   s11 (majors scroll+pick):      beat_f0=210,  srcFps=60 -> master = 210  + f*(60/60)
-   s12 (import -> generate):      beat_f0=540,  srcFps=60 -> master = 540  + f*(60/60)
-   s13 (bucket expand):           beat_f0=960,  srcFps=60 -> master = 960  + f*(60/60)
-   s14 (opportunities scrub):     beat_f0=1290, srcFps=60 -> master = 1290 + f*(60/60)
-   s15 (ACC 200 modal + seats):   beat_f0=1740, srcFps=60 -> master = 1740 + f*(60/60)
-   s16 (modal close -> advisor):  beat_f0=2190, srcFps=60 -> master = 2190 + f*(60/60) */
+   R14 beat refit (see architecture note): beat 4 (s13) grew 960-1290 -> 960-1320 (+30,
+   s13's own new 360-frame native length, still 1:1) and beat 5 (s14) gave the 30 frames
+   back, 1290-1740 -> 1320-1740 (-30) -- beats 6/7 (s15/s16) keep their original offsets
+   untouched since beat 5's END (1740) never moves. Every ratio below is written as the
+   literal (60/srcFps) form, not simplified, as a deliberate audit trail (a prior
+   revision inverted this exact multiplier and it only surfaced in review) -- true for
+   five of six beats; s14 alone needs a REAL retime (450 native frames -> a 420-frame
+   window, "scrub slightly faster is fine" per the task brief).
+   s11 (majors scroll+pick):      beat_f0=210,  srcFps=60         -> master = 210  + f*(60/60)
+   s12 (import -> generate):      beat_f0=540,  srcFps=60         -> master = 540  + f*(60/60)
+   s13 (bucket expand + pick):    beat_f0=960,  srcFps=60         -> master = 960  + f*(60/60)
+   s14 (opportunities scrub):     beat_f0=1320, srcFps=60*450/420 -> master = 1320 + f*(60/S14_SRC_FPS)
+   s15 (ACC 200 modal + seats):   beat_f0=1740, srcFps=60         -> master = 1740 + f*(60/60)
+   s16 (modal close -> advisor):  beat_f0=2190, srcFps=60         -> master = 2190 + f*(60/60) */
+const S14_SRC_FPS = 60 * 450 / 420;   // ~64.2857 -- 450 native frames replayed across 420 timeline frames
 const s11log = {fps:60, events: EVENTS_S11.events.map(e => ({...e, f: Math.round(210  + e.f * (60/60))}))};
 const s12log = {fps:60, events: EVENTS_S12.events.map(e => ({...e, f: Math.round(540  + e.f * (60/60))}))};
 const s13log = {fps:60, events: EVENTS_S13.events.map(e => ({...e, f: Math.round(960  + e.f * (60/60))}))};
-const s14log = {fps:60, events: EVENTS_S14.events.map(e => ({...e, f: Math.round(1290 + e.f * (60/60))}))};
+const s14log = {fps:60, events: EVENTS_S14.events.map(e => ({...e, f: Math.round(1320 + e.f * (60/S14_SRC_FPS))}))};
 const s15log = {fps:60, events: EVENTS_S15.events.map(e => ({...e, f: Math.round(1740 + e.f * (60/60))}))};
 const s16log = {fps:60, events: EVENTS_S16.events.map(e => ({...e, f: Math.round(2190 + e.f * (60/60))}))};
+
+/* --- ONE merged master cursor log across beats 2-7 (R14) ---
+   Concatenating all six remapped logs, in narrative order, lets Cursor.stateAt() (see
+   cursor.js) bracket ANY frame in [210,2700) with the two nearest POSITIONED events
+   regardless of which scene's img is on screen -- including frames that sit exactly on
+   a former scene-boundary seam, which is what makes the cursor glide across every beat
+   handoff instead of resetting to a new per-scene event list. Built-time sanity check
+   (per the task's binding requirement): every consecutive positioned-event pair must
+   have a strictly increasing frame number, or Cursor.stateAt's "find the bracketing
+   pair" search has no well-defined forward-in-time answer. Asserted (not just eyeballed)
+   right below -- throws loudly at page-load if any future edit breaks it. */
+const masterLog = {fps: 60, events: [
+  ...s11log.events, ...s12log.events, ...s13log.events,
+  ...s14log.events, ...s15log.events, ...s16log.events,
+]};
+(function assertMasterLogMonotonic(events) {
+  const pos = events.filter(e => e.x !== undefined);
+  for (let i = 1; i < pos.length; i++) {
+    if (pos[i].f <= pos[i - 1].f) {
+      throw new Error(`masterLog frame not strictly increasing at positioned-event index ${i}: `
+        + `${pos[i - 1].f} (${pos[i - 1].sel || pos[i - 1].kind}) -> ${pos[i].f} (${pos[i].sel || pos[i].kind})`);
+    }
+  }
+  console.log(`masterLog OK: ${pos.length} positioned events, frames ${pos[0].f}..${pos[pos.length - 1].f}, strictly increasing`);
+})(masterLog.events);
 
 /* --- static mounts --- */
 const cur = Cursor.mount(zoomrig);
@@ -384,39 +454,38 @@ testsCounter.style.cssText = 'position:absolute;left:auto;right:390px;top:365px;
   'text-shadow:0 2px 10px rgba(0,0,0,.5)';
 stage.appendChild(testsCounter);
 
-/* --- overlay highlights (page-local, not fx.js exports) --- */
-function mkHighlight(box) {
-  const el = document.createElement('div');
-  el.className = 'hl-box';
-  el.style.left = box.x + 'px'; el.style.top = box.y + 'px';
-  el.style.width = box.w + 'px'; el.style.height = box.h + 'px';
-  zoomrig.appendChild(el);
-  el._fx = p => {
-    p = Math.max(0, Math.min(1, p));
-    const q = E.outBack(Math.min(1, p * 1.6));
-    el.style.opacity = p <= 0 ? 0 : 1;
-    el.style.transform = `scale(${0.86 + q * 0.14})`;
-    const glow = 0.32 + Math.sin(Math.min(1, p) * Math.PI) * 0.38;
-    el.style.boxShadow = `0 0 ${14 + Math.sin(Math.min(1, p) * Math.PI) * 20}px rgba(77,163,255,${glow})`;
-  };
-  el._fx(0);
-  return el;
-}
+/* --- overlay highlights: FX.arcs (fx.js), two opposite-corner quarter-ellipse strokes
+   per placement (R14 -- replaces the old mkHighlight glow-box entirely; see the
+   top-of-file "ARC HIGHLIGHTS" note). All four regions below are raw-viewport rects
+   confirmed live against the real app (task-r14-report.md has the rect probes),
+   converted through mapEllipse to stage space. --- */
 
-/* Import-area box (beat 3): the "Import from your transcript" label through the
+/* Import-area (beat 3): the "Import from your transcript" label through the
    Scan/Upload buttons row and the scanned-course checklist, raw viewport coords
-   (560,370)-(1360,620) -- read off s12/f00150-f00260 (see task report for the crop). */
-const hlImport = mkHighlight(mapBox(560, 370, 800, 250));
+   (560,370)-(1360,620) -- unchanged region from R8/R11 (s12 wasn't touched by R13). */
+const hlImport = FX.arcs(zoomrig, mapEllipse(960, 495, 400, 125));
 
-/* Whole-panel box (beat 5): #panelLeft's own on-screen rect, raw viewport
+/* Bucket card (beat 4, NEW): frames the requirement-bucket card as the real PHIL 201
+   pick lands and settles -- "plan-sit bucket emphasis". Raw viewport center (1106,308)
+   and card size 272x52 read live off the app (confirmed identical before/after the
+   pick -- the mutation lands in the exact same slot), padded for a visible arc frame. */
+const hlBucket = FX.arcs(zoomrig, mapEllipse(1106, 308, 170, 55));
+
+/* Whole-panel (beat 5): #panelLeft's own on-screen rect, raw viewport
    (15,195)-(330,1075) -- confirmed static across the entire scrub (only the panel's
    INTERNAL scroll position moves; the panel's own box never does), read off
    s14/f00200 and f00449 (scholarships list, then clubs list, same outer box both
-   times). One static box covers scholarships -> study abroad -> clubs cleanly. */
-const hlPanel = mkHighlight(mapBox(15, 195, 315, 880));
+   times). One static ellipse covers scholarships -> study abroad -> clubs cleanly. */
+const hlPanel = FX.arcs(zoomrig, mapEllipse(172.5, 635, 157.5, 440));
+
+/* Seat-count table (beat 6, NEW): frames the real, live Winter 2027 sections table once
+   #cmSectionsBtn's fetch resolves. Raw viewport center (960,549), table 580x130 --
+   confirmed live via getBoundingClientRect() on #cmSections (task-r14-report.md), padded
+   for the arc frame. */
+const hlSeats = FX.arcs(zoomrig, mapEllipse(960, 549, 310, 85));
 
 /* --- zoom rig: ONE piecewise translate+scale keyframe track for the whole video --- */
-const T_NEWPLAN      = mapPt(1856, 197);   // s11: "+ New plan" button
+const T_NEWPLAN      = mapPt(979, 724);    // s11 (R13): "+ New plan", CENTERED empty-state control
 const T_MAJORSCROLL  = mapPt(960, 500);    // s11: majors dropdown list (matches its fixed hover point)
 const T_ISBS         = mapPt(960, 430);    // s11: "Information Systems (BS)" item, pick moment
 const T_WIZNEXT1     = mapPt(1326, 744);   // s12: wizard Next, Programs -> History
@@ -425,8 +494,9 @@ const T_WIZNEXT2     = mapPt(1326, 864);   // s12: wizard Next, History -> Const
 const T_WIZNEXT3     = mapPt(1291, 703);   // s12: "Generate plan" -- solves + closes modal
 const T_BOARD        = mapPt(960, 470);    // s12: solved board reveal, whole-board centroid
 const T_BUCKET       = mapPt(1106, 310);   // s13: "Civilization 1" bucket card, Fall 2027 column
-const T_PICKER       = mapPt(1110, 490);   // s13: bucket picker's 13-option list
-const T_TOPBAR       = mapPt(70, 23);      // s13: wordmark click that closes the picker
+const T_PICKER       = mapPt(1114, 515);   // s13: bucket picker opens, 13-option list
+const T_PHILPICK     = mapPt(1114, 665);   // s13 (R13/R14): the real PHIL 201 option, pick moment
+const T_PHILCARD     = mapPt(1106, 306);   // s13 (R13/R14): PHIL 201 settled into the board slot
 const T_PANEL        = mapPt(172, 650);    // s14: left panel, opening framing
 const T_PANEL2       = mapPt(180, 860);    // s14: left panel, deeper as the scrub reaches clubs
 const T_ACC200CARD   = mapPt(800, 606);    // s15: ACC 200 card, Winter 2027 column
@@ -438,9 +508,12 @@ const T_CHATPANEL    = mapPt(1697, 776);   // s16: chat panel, question/answer c
 
 const RIG_KF = [
   {f: 0,    x: 960,             y: 540,             s: 1},                       // beat 1: identity
-  {f: 225,  x: 960,             y: 540,             s: 1},                       // appframe settled, "No plan yet"
-  {f: 245,  x: T_NEWPLAN.x,     y: T_NEWPLAN.y,     s: 1.2,  ease: 'outCubic'},   // click New plan
-  {f: 295,  x: 1044,            y: 347,             s: 1.3,  ease: 'inOutQuad'}, // pan toward the opening modal
+  {f: 225,  x: 960,             y: 540,             s: 1},                       // appframe settled, centered "No plan yet" card
+  // R14: the click target is now CENTERED (#emptyNewPlan, ~979,724) instead of the
+  // old top-right #newPlanBtn (~1856,197) -- the camera no longer needs to lunge
+  // toward a far corner, just a gentle settle onto a point already near screen-center.
+  {f: 245,  x: T_NEWPLAN.x,     y: T_NEWPLAN.y,     s: 1.12, ease: 'outCubic'},   // gentle settle onto the centered New-plan card
+  {f: 295,  x: 985,             y: 430,             s: 1.22, ease: 'inOutQuad'}, // ease up into the opening wizard modal
   {f: 330,  x: T_MAJORSCROLL.x, y: T_MAJORSCROLL.y, s: 1.5,  ease: 'inOutQuad'}, // settle on majors list
   {f: 480,  x: T_MAJORSCROLL.x, y: T_MAJORSCROLL.y, s: 1.58, ease: 'linear'},    // slow drift through the scroll
   {f: 535,  x: T_ISBS.x,        y: T_ISBS.y,        s: 1.78, ease: 'outCubic'},  // punch onto IS-BS pick
@@ -450,11 +523,16 @@ const RIG_KF = [
   {f: 860,  x: T_WIZNEXT2.x,    y: T_WIZNEXT2.y,    s: 1.4,  ease: 'inOutQuad'}, // History -> Constraints
   {f: 920,  x: T_WIZNEXT3.x,    y: T_WIZNEXT3.y,    s: 1.3,  ease: 'inOutQuad'}, // Generate plan click
   {f: 958,  x: T_BOARD.x,       y: T_BOARD.y,       s: 1.12, ease: 'inOutQuad'}, // PLAN GENERATES reveal
-  {f: 1005, x: T_BUCKET.x,      y: T_BUCKET.y,      s: 1.5,  ease: 'outCubic'},  // beat 4: bucket card
-  {f: 1055, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'inOutQuad'}, // picker opens, 13 options
-  {f: 1160, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'linear'},    // hold through the internal scrub
-  {f: 1220, x: T_TOPBAR.x,      y: T_TOPBAR.y,      s: 1.25, ease: 'inOutQuad'}, // pan far to close (wordmark)
-  {f: 1385, x: T_PANEL.x,       y: T_PANEL.y,       s: 1.6,  ease: 'inOutQuad'}, // beat 5: settle on the panel
+  {f: 1005, x: T_BUCKET.x,      y: T_BUCKET.y,      s: 1.5,  ease: 'outCubic'},  // beat 4: bucket card click
+  {f: 1050, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'inOutQuad'}, // picker opens, 13 options
+  {f: 1180, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'linear'},    // hold through the internal scrub
+  // R14 (was: pan far to close via the topbar wordmark -- retired, s13 now ends on a
+  // real class pick instead): punch onto the real PHIL 201 option, then settle on the
+  // card once it lands in the board slot -- this IS the "plan-sit bucket emphasis"
+  // moment hlBucket's arcs frame.
+  {f: 1215, x: T_PHILPICK.x,    y: T_PHILPICK.y,    s: 1.9,  ease: 'outCubic'},  // punch onto the real PHIL 201 pick
+  {f: 1290, x: T_PHILCARD.x,    y: T_PHILCARD.y,    s: 1.55, ease: 'inOutQuad'}, // pick lands and settles
+  {f: 1345, x: T_PANEL.x,       y: T_PANEL.y,       s: 1.6,  ease: 'inOutQuad'}, // beat 5: settle on the panel
   {f: 1720, x: T_PANEL2.x,      y: T_PANEL2.y,      s: 1.85, ease: 'linear'},    // drift deeper through the scrub
   {f: 1785, x: T_ACC200CARD.x,  y: T_ACC200CARD.y,  s: 1.4,  ease: 'inOutQuad'}, // beat 6: ACC 200 card
   {f: 1860, x: T_SECTIONSBTN.x, y: T_SECTIONSBTN.y, s: 1.7,  ease: 'outCubic'},  // punch to the sections button
@@ -548,19 +626,17 @@ TL.build({fps: 60, frames: 3360, tracks: [
   }},
 
   // === cursor: single writer for opacity + position, beats 2-7 only (fades out
-  // alongside appframe into the beat-8 hard cut rather than popping instantly). ===
+  // alongside appframe into the beat-8 hard cut rather than popping instantly).
+  // R14: ONE call into the merged masterLog for the WHOLE 210-2700 span -- no more
+  // per-scene branching, so Cursor.stateAt's bracketing pair glides straight across
+  // every former seam instead of resetting to a new scene's own event list. ===
   {f0: 0, run: f => {
     let op;
     if (f < 210 || f >= 2700) op = 0;
     else if (f < 2680) op = 1;
     else op = 1 - p01(2680, 2700, f);
     cur.layer.style.opacity = op;
-    if (f >= 210 && f < 540) cur.update(mapCur(Cursor.stateAt(s11log, f)));
-    else if (f >= 540 && f < 960) cur.update(mapCur(Cursor.stateAt(s12log, f)));
-    else if (f >= 960 && f < 1290) cur.update(mapCur(Cursor.stateAt(s13log, f)));
-    else if (f >= 1290 && f < 1740) cur.update(mapCur(Cursor.stateAt(s14log, f)));
-    else if (f >= 1740 && f < 2190) cur.update(mapCur(Cursor.stateAt(s15log, f)));
-    else if (f >= 2190 && f < 2700) cur.update(mapCur(Cursor.stateAt(s16log, f)));
+    if (f >= 210 && f < 2700) cur.update(mapCur(Cursor.stateAt(masterLog, f)));
   }},
 
   // === beat 2 (210-540): majors scroll + pick, s11 (330 src, 1:1). ===
@@ -572,24 +648,37 @@ TL.build({fps: 60, frames: 3360, tracks: [
   seq(appS12, 540, 960, 's12', 420, 60),
   {el: stmtImport, f0: 555, f1: 650, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: stmtImport, f0: 935, f1: 958, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  // dynamic border highlight over the scan-populate window (master ~630-905).
+  // arc highlight over the scan-populate window (master ~630-905) -- unchanged window.
   {el: hlImport, f0: 630, f1: 655, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: hlImport, f0: 880, f1: 903, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 4 (960-1290): bucket dropdown expand, s13 (330 src, 1:1). ===
-  seq(appS13, 960, 1290, 's13', 330, 60),
+  // === beat 4 (960-1320): bucket dropdown expand + real PHIL 201 pick, s13 (360 src,
+  // 1:1) -- R14: grew 330->360 frames (s13's own new native length) so the real pick
+  // has room to land and settle; see the beat-refit architecture note. ===
+  seq(appS13, 960, 1320, 's13', 360, 60),
   {el: stmtBucket, f0: 975, f1: 1070, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtBucket, f0: 1265, f1: 1288, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  {el: stmtBucket, f0: 1295, f1: 1318, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // arc highlight ("plan-sit bucket emphasis") as the real PHIL 201 pick lands (click
+  // at master 1215) and settles into the board slot (settle hover at master 1290).
+  {el: hlBucket, f0: 1215, f1: 1238, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: hlBucket, f0: 1295, f1: 1318, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 5 (1290-1740): opportunities scrub, s14 (450 src, 1:1). ===
-  seq(appS14, 1290, 1740, 's14', 450, 60),
-  {el: stmtPanel, f0: 1305, f1: 1400, ease: 'linear', apply: (el, p) => el._fx(p)},
+  // === beat 5 (1320-1740): opportunities scrub, s14 (450 src, retimed to a 420-frame
+  // window -- R14: gives back the 30 frames beat 4 grew by; S14_SRC_FPS = 60*450/420,
+  // "scrub slightly faster is fine" per the task brief). ===
+  seq(appS14, 1320, 1740, 's14', 450, S14_SRC_FPS),
+  {el: stmtPanel, f0: 1335, f1: 1430, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: stmtPanel, f0: 1715, f1: 1738, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  {el: hlPanel, f0: 1305, f1: 1330, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: hlPanel, f0: 1335, f1: 1360, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: hlPanel, f0: 1715, f1: 1738, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 6 (1740-2190): ACC 200 modal + live seat-count click, s15 (450 src, 1:1). ===
+  // === beat 6 (1740-2190): ACC 200 modal + live seat-count click, s15 (450 src, 1:1).
+  // arc highlight frames the real live seat-count table once #cmSectionsBtn's fetch
+  // resolves (click lands at master 1860; table settle-hover waypoint at master 2130,
+  // 60f margin to beat end). ===
   seq(appS15, 1740, 2190, 's15', 450, 60),
+  {el: hlSeats, f0: 1900, f1: 1925, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: hlSeats, f0: 2160, f1: 2183, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
   {el: stmtModal, f0: 1755, f1: 1850, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: stmtModal, f0: 2165, f1: 2188, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 

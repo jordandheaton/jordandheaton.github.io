@@ -145,6 +145,24 @@
     ok('ring fully drawn at p=0.7', off7 === 0, off7);
   });
 
+  // ---- Revision-4: corner-arc highlight FX (Task R14) ----
+  safeRun(['arcs hidden at 0', 'arcs both partially drawn at p=0.3', 'arcs fully drawn at p=0.7'], () => {
+    const ar = FX.arcs(host, {x: 700, y: 500, rx: 260, ry: 140});
+    const paths = [...ar.querySelectorAll('.fx-arcs-path')];
+    ar._fx(0);
+    ok('arcs hidden at 0', ar.style.opacity === '0' && paths.length === 2,
+       `opacity=${ar.style.opacity} paths=${paths.length}`);
+    const fulls = paths.map(p => parseFloat(p.style.strokeDasharray));
+    ar._fx(0.3);
+    const offs3 = paths.map(p => parseFloat(p.style.strokeDashoffset));
+    ok('arcs both partially drawn at p=0.3',
+       offs3.every((o, i) => o > 0.01 && o < fulls[i] - 0.01),
+       `offsets=${JSON.stringify(offs3)} fulls=${JSON.stringify(fulls)}`);
+    ar._fx(0.7);
+    const offs7 = paths.map(p => parseFloat(p.style.strokeDashoffset));
+    ok('arcs fully drawn at p=0.7', offs7.every(o => o === 0), JSON.stringify(offs7));
+  });
+
   const pass = checks.filter(c=>c.ok).length;
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify({pass, fail:checks.length-pass, checks}))));
   if (location.search.includes('emit')) {

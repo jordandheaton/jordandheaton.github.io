@@ -227,5 +227,51 @@
     return el;
   }
 
-  window.FX = { title, caption, pill, typewriter, callout, credits, wipe, browserbar, ring };
+  // ---- Revision-4: corner-arc highlight FX (Task R14) ----
+
+  // Two short curved corner-arc marks (opposite corners of an ellipse region
+  // centered at (x,y) with radii (rx,ry)), accent color, drawing on like a
+  // quick hand annotation. Replaces box/ring highlights in the myplanBYU
+  // composition (ring() itself is untouched -- other cuts may still use it).
+  //
+  // Each arc is the boundary of that SAME ellipse, but only a 90-degree
+  // quadrant of it: top-left corner = the quadrant between the ellipse's
+  // left point (x-rx,y) and top point (x,y-ry); bottom-right corner = the
+  // quadrant between its right point (x+rx,y) and bottom point (x,y+ry).
+  // Expressed as a single SVG elliptical-arc command per path. Endpoint-to-
+  // center algebra (SVG arc spec, unrotated case) confirms large-arc-flag=0
+  // (the minor/90-degree arc, not the 270-degree one) + sweep-flag=1
+  // resolves to a center of EXACTLY (x,y) for both quadrants -- so these two
+  // one-command paths are provably the ellipse's own boundary, not an
+  // approximation.
+  //
+  // DRAW_P1 -- both arcs draw on (stroke-dashoffset counting down from each
+  // path's own true length, read via getTotalLength()) over p 0->0.5, hold
+  // fully drawn for p>=0.5 ("hold >=0.5" per spec). _fx(0) is fully hidden.
+  // No built-in fade-out -- caller fades, same contract as ring().
+  function arcs(container, {x, y, rx, ry}) {
+    const DRAW_P1 = 0.5;
+    const el = document.createElement('div');
+    el.className = 'fx-arcs';
+    el.innerHTML =
+      `<svg class="fx-arcs-svg" viewBox="0 0 1920 1080">` +
+        `<path class="fx-arcs-path" d="M ${x - rx} ${y} A ${rx} ${ry} 0 0 1 ${x} ${y - ry}"></path>` +
+        `<path class="fx-arcs-path" d="M ${x + rx} ${y} A ${rx} ${ry} 0 0 1 ${x} ${y + ry}"></path>` +
+      `</svg>`;
+    container.appendChild(el);
+    const paths = [...el.querySelectorAll('.fx-arcs-path')];
+    const lens = paths.map(p => p.getTotalLength());
+    paths.forEach((p, i) => { p.style.strokeDasharray = String(lens[i]); });
+
+    el._fx = p => {
+      p = Math.max(0, Math.min(1, p));
+      el.style.opacity = p === 0 ? '0' : '1';
+      const drawQ = TL.eases.outCubic(Math.max(0, Math.min(1, p / DRAW_P1)));
+      paths.forEach((path, i) => { path.style.strokeDashoffset = String(lens[i] * (1 - drawQ)); });
+    };
+    el._fx(0);
+    return el;
+  }
+
+  window.FX = { title, caption, pill, typewriter, callout, credits, wipe, browserbar, ring, arcs };
 })();
