@@ -1663,3 +1663,37 @@ final with `--music ../music/myplan-mix.m4a`; strict `qc.py` PASS (45s is
 within a relaxed 30-50s window — qc duration bounds updated accordingly, one
 line); determinism + legibility; poster re-pick; focused reviewer over R6-R9;
 captions update if needed; ledger; ship to Jordan.
+
+---
+
+# Revision 3 tasks (2026-08-10) — one continuous session
+
+Spec: "Revision 3" section (binding sequence + global rules).
+
+### Task R10: Continuous-session capture chain (s11-s16)
+One Chrome session, narrative order, state persisting throughout: s11 majors
+scroll (330f) -> s12 import + scan + wizard-finish so the PLAN GENERATES on
+screen (420f) -> s13 bucket-expand dropdown click, NO drag (330f) -> s14
+opportunities: physical open + visible scrub through scholarships/clubs/
+abroad (450f) -> s15 ACC 200 modal + PHYSICAL click of the live-seat-count
+button with `/sections` allowed through the fetch guard, real data renders
+(450f) -> s16 modal X close + chat open + the ACC 200 question + real
+transcript answer replay (510f). All dsf=2 q88, events logged per scene,
+validators, frame confirmations at every seam (last frame of sN and first of
+sN+1 must show identical app state). Commit script only.
+
+### Task R11: Composition v4 (~3360f continuous cut)
+Rebuild to the Revision-3 sequence: single camera trajectory (one rig
+run-track; pans between focal points, zero recenters across beats 2-7);
+cursor tip-to-center hotspot fix (verify tip lands mid-button on every
+click frame); FX.credits gains (or a new FX.bullets provides) sequential
+downward slide-out for the 12 tech items; terminal statement never obscured;
+seamless reveal; DM Sans; exact copy incl. the colon substitution. Preview +
+frame evidence at every seam + cursor table + 400px legibility. Commit
+composition only.
+
+### Task R12: Premix + final master + strict QC + closing review
+New keystroke lists -> premix; qc window 30-60s (one line); final render
+(crf ladder as needed, <=10MB); strict qc both files; determinism;
+legibility; poster re-pick; caption duration update; focused closing review
+over R10-R12; ledger; ship.

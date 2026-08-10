@@ -232,6 +232,53 @@ UI, bold fast typography. No voiceover, no device mockups.
   s10 critique-chip chat (real transcript answer, fetch-guarded).
   Reused: terminal/tests assets. Retired from this cut: s1/s4/s5 usage.
 
+## Revision 3 — one continuous session (2026-08-10, Jordan's brief)
+
+myplanBYU only. Goal: the video reads as ONE seamless user sitting — no cuts
+back to a centered full view between features; the isometric camera stays in
+and SLIDES/PANS between focal points; UI state persists across the whole
+middle; the mouse physically does everything (no auto-opening UI).
+
+**Runtime ~3360 frames (56s @60fps; brief says "roughly 10 extra seconds").**
+
+### Binding sequence + EXACT copy (no em dashes on screen)
+
+| # | Beat (approx frames) | Action | Exact copy |
+|---|------|--------|-----------|
+| 1 | 0–210 | URL typed in browser bar, keyboard SFX | myplanBYU |
+| 2 | 210–540 | Scrolling the massive programs list | 170+ Majors. Unlimited combinations. |
+| 3 | 540–960 | Mouse clicks import; transcript populates; the PLAN GENERATES | Your transcript. Instantly imported. |
+| 4 | 960–1290 | Mouse physically clicks to expand a requirement bucket dropdown | Every requirement, perfectly categorized. |
+| 5 | 1290–1740 | Camera PANS; mouse opens the scholarships/clubs/abroad section and visibly scrubs through it | Scholarships, clubs, and study abroads: matched to your plan. |
+| 6 | 1740–2190 | Camera PANS; mouse clicks a class, modal opens, mouse PHYSICALLY CLICKS the live-seat-count button revealing REAL data | Live seat counts. No guessing. |
+| 7 | 2190–2700 | Still zoomed: mouse clicks the modal's X, smooth pan to the advisor; the ACC 200 question (the prior cut's real prompt) sends; real answer streams | Your real-time, data-driven AI Advisor. |
+| 8 | 2700–2910 | Quick flash: scraper terminal + tests green; statement text NEVER obscured by the terminal window; masking seamless | Scraped daily. Tested rigorously. |
+| 9 | 2910–3240 | Dynamic dropdown: 12 tech items slide out sequentially downward like animated bullets | Constraint modeling. / Vanilla JS. / 12-source pipeline. / Optimization algorithms. / RAG AI. / API design. / AI evals: benchmark + human. / Scrapers + data pipelines with quality gates. / Data modeling (7,000+ courses). / Prompt-injection testing. / Serverless / edge deployment. / Cost engineering. |
+| 10 | 3240–3360 | Final URL types on dark | jordanheaton.com/myplanBYU |
+
+(Item 7 of beat 9: Jordan's source line used an em dash; his own global rule
+bans em dashes, so it ships as "AI evals: benchmark + human" — flagged.)
+
+### Global rules (binding)
+
+- **Continuous shot illusion:** one camera trajectory across beats 2–7;
+  transitions are pans/zoom-morphs, never recenters or hard resets.
+- **Persistent state:** beats 2–7 come from ONE continuous capture session in
+  narrative order, so board/panel state is frame-consistent at every seam
+  (the prior drag beat is retired; bucket expand only).
+- **Cursor:** visible whole time in beats 2–7; every open is a physical
+  click; the cursor TIP must sit near the dead-center of what it clicks
+  (fix the current too-high offset); scrub motions are real.
+- **Live sections data:** the capture guard allows the app's real
+  `/sections` endpoint for beat 6 only (Jordan's own service; he requires
+  the genuine reveal). All other endpoints stay blocked.
+- **Terminal beat:** statement text layered above/clear of the window;
+  reveal masking invisible against the gradient background.
+- Typography: DM Sans, large/bold/punchy, exact copy only.
+- Motion refs: Linear releases, Raycast isometric pans, Vercel Ship
+  terminal sequences; buttery easing, snappy zooms.
+- qc duration window widens to 30–60s.
+
 ## Out of scope
 
 - Voiceover (a VO pass can be layered later without redesign)
