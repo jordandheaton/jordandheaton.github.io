@@ -343,6 +343,43 @@ table). No replacement — the cursor and camera carry the emphasis. FX.arcs
 stays in fx.js (tested primitive, other cuts may use it). Poster re-extracted
 arc-free. Everything else unchanged.
 
+## Revision 7 — real Scroller media, card interaction, story copy (2026-08-10, Jordan)
+
+**A. Scroller video** (first change to it since v1):
+1. The generation beat used draft-test clips ("bad versions where the earth
+   teleports out"). Replace with the REAL project media: showcase
+   `Universe scroller/media/clips/leaf-treetop-to-earthmoon-720.mp4` with its
+   respective anchors from `media/anchors*/` (the leaf->treetop->...->
+   earth+moon span). Rule: clips that are in the actual project are good;
+   drafts are not.
+2. NO overlapping clips anywhere (the ~13s spatial overlap of the two clip
+   boxes is the named bug) — audit every side-by-side layout.
+3. The grid/stitch beat also switches to real assembled journey media
+   (e.g. `media/clips/full-journey-leaf-to-galaxy.mp4` or the ASSEMBLED
+   720s), not draft-test.
+4. Outro: the live-site scrub runs the FULL journey — smallest scene (inside
+   the cell) all the way to the galaxy. Duration is flexible: add or remove
+   total runtime as needed for it to fit cleanly (stay within qc's 30-60s).
+   Music re-muxed (track is 189s; render.py's afade adapts).
+
+**B. Portfolio card interaction:**
+5. Opening a project card auto-plays its showcase video WITH sound (the open
+   click is the user gesture, so unmuted playback is permitted; fall back to
+   muted if the browser still refuses). Click-video-to-toggle-mute stays.
+6. Clicking anywhere on a card (not on a link/button) expands the story; the
+   bottom `open_project` link opens the project. The footer `read_the_story`
+   buttons are REMOVED (the title-bar window buttons stay).
+
+**C. myplanBYU story copy (index.html):**
+7. Card blurb: "Classmates text me for the link now." -> "Classmates ask me
+   for the link still."
+8. "Import your transcript and it starts where you actually are." -> drop
+   "actually".
+9. Section heading "03 · What got hard" -> "03 · Challenges".
+10. The adoption paragraph reworks to: people still ask me for the link;
+    over 2,000 recorded server requests; still evolving with feedback; KEEP
+    "Somewhere in there it stopped being a project." as the closer.
+
 ## Out of scope
 
 - Voiceover (a VO pass can be layered later without redesign)

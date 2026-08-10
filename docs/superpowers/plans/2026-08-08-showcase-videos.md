@@ -1738,3 +1738,30 @@ implement Revision-5 rules 1-4; analytic keyframe table in the report;
 frame-sequence evidence across every transition after t=15s; strict qc;
 poster re-extract if the seat framing moved; README check (no command
 changes expected). Commit composition + MP4 (+ poster if changed).
+
+
+---
+
+# Revision 7 tasks (2026-08-10) — real media, card interaction, copy
+
+### Task R16: Scroller asset prep + full-journey outro capture
+Probe + explode the real media (leaf-treetop-to-earthmoon-720 + chosen
+journey assembly) into frame sequences; identify the respective anchors from
+media/anchors*/; re-capture the outro as a FULL live-site scrub (0->max,
+generous frames, eased); validators; document clip/anchor choices + probes.
+Commit scripts only (media stays gitignored/local).
+
+### Task R17: Scroller composition rework + master
+Generation beat = real anchors + the leaf-treetop clip, zero overlaps
+(audit all layouts); grid/stitch from the real journey; outro = full
+cell->galaxy scrub, total duration retimed to fit cleanly (<=60s); music
+re-mux; strict qc; legibility; poster check; frame evidence. Commit
+composition + MP4 (+ poster if changed).
+
+### Task R18: Card interaction + copy + verification
+index.html: remove .wcard-read footer buttons; copy edits (spec C items);
+portfolio-3d.js: whole-card click opens story (a/button exclusion), unmuted
+audio on story-open with muted fallback; CSS orphan cleanup; ?v= bumps;
+README gotcha extends the local-media list to media/; verify via pane DOM
+checks + headless screenshots (both stories, sound state, card-click,
+open_project link). Commit site files + README.
