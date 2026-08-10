@@ -1,8 +1,9 @@
 """Captures myplanBYU scenes as deterministic 60fps frame sequences + event logs.
-Usage: python capture_myplan.py [--scene s1|s2|...|s16|all|rev3] [--debug]
+Usage: python capture_myplan.py [--scene s1|...|s10|rev3|all|comma-list] [--debug]
+`--scene all` runs s1-s10 (the base captures, narrative order).
+`--scene rev3` runs s11-s16 (Revision 3, continuous chain -- strict narrative order, opt-in only).
 `--scene` also accepts a comma-separated list (e.g. `--scene s1,s8`) so a
 single scene can be iterated on without re-running the whole session.
-`--scene rev3` is shorthand for `s11,s12,s13,s14,s15,s16` (below).
 Requires the serve.ps1 server (the script starts it if port 8130 is closed).
 
 s4/s9 (course modals), s5/s10 (AI advisor) and s8 (drag) all need a solved
@@ -397,6 +398,8 @@ def wizard_advance(c, sc, f):
     return f + 55
 
 
+REV3_SCENES = {"s11", "s12", "s13", "s14", "s15", "s16"}
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scene", default="all")
@@ -410,8 +413,10 @@ def main():
     # together with whatever earlier scene builds that state.
     scenes = set(a.scene.split(","))
     if "rev3" in scenes:      # convenience alias for the s11-s16 continuous chain
-        scenes |= {"s11", "s12", "s13", "s14", "s15", "s16"}
+        scenes |= REV3_SCENES
     def want(name):
+        if name in REV3_SCENES:
+            return name in scenes or "rev3" in scenes
         return name in scenes or "all" in scenes
     server = ensure_server()
     c = None
