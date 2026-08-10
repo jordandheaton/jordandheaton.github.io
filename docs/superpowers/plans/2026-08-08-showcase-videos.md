@@ -1726,3 +1726,15 @@ windows unchanged, else rebuild), render crf 28, strict qc, determinism,
 legibility, poster re-check, frame evidence at every former jump. Commit
 fx.js/selftest/theme(if needed)/composition/MP4/poster(if changed).
 Closing (controller): README refresh line, ledger, ship.
+
+
+---
+
+# Revision 5 task (2026-08-10) — smooth camera grammar
+
+### Task R15: Camera-path rework + remaster
+`compose/myplanbyu.html` RIG_KF only (plus render/qc/poster refresh):
+implement Revision-5 rules 1-4; analytic keyframe table in the report;
+frame-sequence evidence across every transition after t=15s; strict qc;
+poster re-extract if the seat framing moved; README check (no command
+changes expected). Commit composition + MP4 (+ poster if changed).

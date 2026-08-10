@@ -310,6 +310,31 @@ Everything else (sequence, copy, camera, music, SFX, durations) stays as
 Revision 3. Captures re-run as one continuous chain (dash-clean sweep
 carries over). README refresh is part of the closing task.
 
+## Revision 5 — smooth camera grammar (2026-08-10, Jordan)
+
+Camera-path-only pass on the myplanBYU composition (no recaptures, no copy,
+no FX, no timing changes to statements/arcs/audio windows). Jordan: the
+first ~15s move well; after that, transitions dip out then dive back in.
+
+Rules:
+1. **Pan, don't dip:** every transition between showcase spots is ONE
+   continuous pan at held (or gently monotonic) zoom. Within a single
+   transition the scale must never decrease then increase. Named instances:
+   plan-generated -> Civ 1 (pan over, no zoom-out/in); after PHIL 201 ->
+   opportunities panel (one smooth pan-left, no up-pan + zoom-out + jump).
+2. **No pre-click zoom on PHIL 201:** hold the steady bucket frame through
+   the pick.
+3. **Seat-count beat centered from the start:** the rig arrives at the
+   ACC-200-modal-centered pose before the modal opens and HOLDS; no slow
+   centering drift while the modal is up.
+4. **Velocity audit:** no sudden lateral jumps anywhere — segment velocities
+   eased and continuous across the whole trajectory (the reported "sudden
+   jump left" class). Fewer, longer keyframe segments preferred.
+
+Acceptance: an analytic scale/position-vs-frame table derived from the
+keyframes proving rule 1 (monotonic scale within transitions) + frame
+sequences across every transition after t=15s showing smooth motion.
+
 ## Out of scope
 
 - Voiceover (a VO pass can be layered later without redesign)
