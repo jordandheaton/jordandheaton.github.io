@@ -1697,3 +1697,32 @@ New keystroke lists -> premix; qc window 30-60s (one line); final render
 (crf ladder as needed, <=10MB); strict qc both files; determinism;
 legibility; poster re-pick; caption duration update; focused closing review
 over R10-R12; ledger; ship.
+
+---
+
+# Revision 4 tasks (2026-08-10) — continuous mouse + tweaks
+
+Spec: "Revision 4" section. Small pass; scope discipline matters.
+
+### Task R13: Capture tweaks + chain re-run
+`capture_myplan.py` rev3 chain edits: s11/s12 open the plan via the CENTERED
+empty-state new-plan control (discover it; not #newPlanBtn top-right); s13
+expands the bucket AND clicks a real class option (PHIL 201 preferred);
+s16 suppresses the advisor offline notice BEFORE the chat opens (zero
+error-bubble frames — verify by reading every frame around chat-open);
+scenes keep dash-clean sweep + dense enough waypoints that every action has
+a positioned event. Full `--scene rev3` re-run; validators; seam checks;
+events regenerated. Commit script only.
+
+### Task R14: Composition tweaks + final master
+`compose/myplanbyu.html`: ONE merged master cursor log spanning beats 2-7
+(single cursor run-track; stateAt interpolates across all former seam jumps
+— verify mid-glide frames at each reported jump point); re-inline all six
+event blocks (frames/coords changed with the re-capture); camera opening
+adjusted for the centered new-plan click; replace box/ring highlights with
+the new two-arc corner marks (`FX.arcs` in fx.js + selftest checks, TDD);
+beat-4 gains the class-pick moment. Then master: premix (verify keystroke
+windows unchanged, else rebuild), render crf 28, strict qc, determinism,
+legibility, poster re-check, frame evidence at every former jump. Commit
+fx.js/selftest/theme(if needed)/composition/MP4/poster(if changed).
+Closing (controller): README refresh line, ledger, ship.

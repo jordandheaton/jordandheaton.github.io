@@ -279,6 +279,37 @@ bans em dashes, so it ships as "AI evals: benchmark + human" — flagged.)
   terminal sequences; buttery easing, snappy zooms.
 - qc duration window widens to 30–60s.
 
+## Revision 4 — continuous mouse + targeted tweaks (2026-08-10, Jordan)
+
+Jordan approved the continuous-camera feel. Small pass; do not change more
+than listed. **Priority one: NO mouse teleporting anywhere** — the cursor
+must slide between every pair of consecutive actions like a real hand,
+including across beat/scene handoffs (the reported jumps: majors-pick → next
+button; import-done → bucket; bucket-close → panel; seat-counts → modal X).
+
+Changes:
+1. **Centered New-plan:** the opening create-a-plan click uses the middle
+   new-plan control on the empty state, not the top-right button (kills the
+   off-putting opening pan).
+2. **Unified cursor log:** merge all scene event logs into ONE master
+   cursor timeline across beats 2-7 so `Cursor.stateAt` interpolates
+   smoothly across every gap. Verify with frame reads mid-glide at each
+   former jump point.
+3. **Bucket beat picks a class:** after expanding the requirement bucket,
+   the mouse clicks one of the bucket's real class options (PHIL 201 if the
+   picker offers it; otherwise a real option, disclosed). The resulting
+   plan mutation persists through the rest of the session (authentic).
+4. **No AI-error glimpse:** suppress the advisor offline notice BEFORE the
+   chat ever opens — zero frames of the error bubble.
+5. **Highlight style:** replace box/ring highlights with TWO short curved
+   corner arcs (opposite corners, drawing on like hand annotation — per the
+   reference's closing seconds). Applies wherever a highlight appears
+   (import area, opportunities panel, seat-count region, plan-sit buckets).
+
+Everything else (sequence, copy, camera, music, SFX, durations) stays as
+Revision 3. Captures re-run as one continuous chain (dash-clean sweep
+carries over). README refresh is part of the closing task.
+
 ## Out of scope
 
 - Voiceover (a VO pass can be layered later without redesign)
