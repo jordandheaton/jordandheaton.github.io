@@ -1,114 +1,147 @@
 <!DOCTYPE html><meta charset="utf-8"><title>myplanBYU showcase</title>
 <link rel="stylesheet" href="theme.css">
 <style>
-  /* Page-scoped fixes only -- theme.css/engine.js/fx.js/etc. are shared components and
-     stay untouched (this file is the only thing Task R8 commits).
+  /* Page-scoped fixes only -- theme.css/engine.js/fx.js/cursor.js/terminal.js are shared
+     components and stay untouched (this file is the only thing Task R11 commits).
 
-     ==== R8 "MyMAP ad" rebuild: architecture notes ====
+     ==== R11 "one continuous session" rebuild: architecture notes ====
 
-     10 beats, 2700 frames / 45s @60fps, replacing the whole R4/R7 timeline. Ten beats
-     per the binding beat map (see docs/superpowers/specs/2026-08-08-showcase-videos-
-     design.md, "Revision 2"):
-       1  0-210    browser bar types the real URL; "myplanBYU" headline pops
-       2  210-480  transcript import (s6) -- dynamic border highlight + zoom on scan
-       3  480-750  majors list scroll (s7)
-       4  750-1080 bucket expand + drag + 150f sit tail (s8) -- bucket highlights
-       5  1080-1380 warnings/scholarships/abroad (s3) -- FX.ring on the real panel
-       6  1380-1680 ACC 200 modal, live seat counts (s9)
-       7  1680-2010 AI advisor critique chat (s10)
-       8  2010-2280 terminal + tests, one quick flash (reused assets)
-       9  2280-2520 three tech-component credits (FX.credits)
-       10 2520-2700 outro URL typewriter on dark
+     10 beats, 3360 frames / 56s @60fps, replacing the whole R8 timeline. Ten beats per
+     the binding sequence (see docs/superpowers/specs/2026-08-08-showcase-videos-
+     design.md, "Revision 3"):
+       1  0-210      browser bar types the real URL; "myplanBYU" headline pops
+       2  210-540    majors scroll + pick (s11)
+       3  540-960    transcript import -> PLAN GENERATES (s12)
+       4  960-1290   bucket dropdown expand (s13)
+       5  1290-1740  opportunities scrub: scholarships/study abroad/clubs (s14)
+       6  1740-2190  ACC 200 modal, live seat-count click, REAL data (s15)
+       7  2190-2700  modal close -> pan to advisor -> real Q&A streams (s16)
+       8  2700-2910  terminal + tests, one quick flash (reused assets)
+       9  2910-3240  12-item tech stack, sequential downward dropdown reveal
+       10 3240-3360  outro URL typewriter on dark
 
-     ZOOM RIG (unchanged contract from R4/R7): #zoomrig wraps #appframe AND the cursor
-     layer AND the new highlight-box/ring overlays -- ALL of it shares the same
-     (0,0)-(1920,1080) box as #stage, so rig-local px === stage px. Every camera move
-     is written by ONE piecewise run-track (rigAt() below, driven by RIG_KF) -- single
-     writer for #zoomrig's transform/transformOrigin, full stop. RIG_KF encodes an
-     isometric-feel camera: long perspective (this file's #appframe rest transform
-     below uses perspective(3800px), far longer than the old 2200px, with much milder
-     rotateY than before -- fixes the "right side too tall" skew Jordan flagged), slow
-     continuous drifts within a beat (majors scroll, insights panel) and snappy
-     eased zooms BETWEEN focal points (import box, bucket board, panel buckets, ACC
-     200 card) -- every switch between two DIFFERENT (x,y) targets is routed through
-     an instantaneous scale-1 keyframe pair first (see the repeated {f,...,s:1} /
-     {f,...(new xy),s:1} pairs in RIG_KF) so the transform-origin jump is invisible,
-     exactly the trick the R4 file used between T_WIZ/T_SLAM/T_PANEL.
+     CONTINUOUS CAMERA (the whole point of this revision): #zoomrig is driven by ONE
+     piecewise run-track (rigAt() below, RIG_KF keyframes) using **translate()+scale()**
+     instead of R8's transform-origin trick. R8 had to route every focal-point switch
+     through an instantaneous scale-1 keyframe pair, because moving transform-origin
+     while scale!=1 causes a visible jump (the origin governs where the scaled content
+     expands from). translate()+scale() with transform-origin pinned to '0 0' (set once,
+     see zoomrig.style.transformOrigin below) sidesteps that entirely: for any focal
+     stage-point (cx,cy) that should render at the fixed screen center (960,540) under
+     scale s, tx = 960 - s*cx, ty = 540 - s*cy is a closed-form, jump-free solution no
+     matter how cx/cy/s all change simultaneously. This is what makes a truly continuous
+     pan-while-zoomed possible -- RIG_KF below never needs to visit scale 1 again after
+     the opening establishing shot, and the camera glides between all 6 scenes' focal
+     points (majors list, import box, board, bucket picker, opportunities panel, ACC 200
+     modal/table, chat panel) as one take. Only two hard cuts exist in the whole page:
+     beat1->beat2 (browser bar gives way as the app rises) and beat7->beat8 (Vercel-
+     style cutaway to the terminal) -- both flagged explicitly in the spec as the only
+     sanctioned "hard visual mode changes."
 
-     NO CIRCLE WIPES anywhere in this file (Jordan: "random circles filling the
-     screen") -- FX.wipe is not imported into the tracks array at all. Every beat
-     boundary is a hard cut carried by the seq() images' own visibility window
-     (engine.js toggles visibility outside f0..f1 automatically) plus the camera
-     resetting to scale 1 at the top of the next beat.
+     SIX <img class="seq-img"> layers (appS11..appS16), one per scene, same reason as
+     every prior revision: seq() tracks write src/visibility unconditionally every
+     frame, so N tracks sharing one <img> means whichever is LAST in the tracks array
+     wins for every frame regardless of which beat is active. s11-s16 are ALL captured
+     at native 60fps (srcFps=60, see task-r10-report.md) -- unlike every prior
+     revision's beats, there is NO retime here, ratio = 60/srcFps = 1 exactly. The remap
+     formula for every EVENTS_S1x log below is still written as
+     `BEAT_F0 + f_src*(60/srcFps)` in full (not simplified to `+f_src`) because a prior
+     revision (R8/s7) inverted this exact multiplier and it was only caught in review --
+     keeping the literal (60/srcFps) form here is a deliberate audit trail, even though
+     it numerically reduces to *1.
 
-     SIX <img class="seq-img"> layers (appS6/appS7/appS8/appS3/appS9/appS10), one per
-     scene actually used in this cut -- same reason as every prior revision: seq()
-     tracks write src/visibility unconditionally every frame, so N tracks sharing one
-     <img> means whichever is LAST in the tracks array wins for every frame regardless
-     of which beat is active. One <img> per seq track sidesteps that. s1/s2/s4/s5 are
-     retired for this cut (per the design doc); s3 (insights/warnings/scholarships/
-     study-abroad panel, 480 real frames) is reused for beat 5's ring moment.
+     Adjacent scenes' boundary frames are byte-identical (confirmed in task-r10-report.md's
+     seam table) except a benign 7px pulsing "live" dot between s15/s16 -- so playing
+     seq(appS11)..seq(appS16) back-to-back through the SAME zoomrig/appframe IS a single
+     continuous recording, not six cuts.
 
-     CURSOR is visible for beats 2-8 inclusive (app-UI beats, including the terminal+
-     tests flash per the binding note) and explicitly absent on beats 1, 9, 10. ONE
-     run-track (search "single writer for the cursor" below) drives both its opacity
-     and its position for the entire 2700 frames -- no other track ever touches
-     cur.layer. Beat 8 has no captured event log (it's a terminal replay, not an app
-     interaction) so the cursor just rests at a fixed stage point near the terminal,
-     matching "visible ... never vanishing mid-beat".
+     CURSOR HOTSPOT FIX: cursor.js's .cursor-layer has no explicit transform-origin, so
+     it defaults to 50%/50% of its own border box -- which is exactly the <svg width=17
+     height=24> element (the ripple div is position:absolute and contributes nothing to
+     the layer's auto-size), i.e. origin (8.5,12). cursor.js writes
+     `transform: translate(x,y) scale(pressed?1.7:2)`; scaling about a non-zero origin
+     while translating by (x,y) renders the local-(0,0) point (~the SVG's own tip corner)
+     at `(x + 8.5*(1-s), y + 12*(1-s))` -- NOT at (x,y). At the common unpressed scale
+     (s=2) that is (x-8.5, y-12): the rendered tip sits 8.5px left and 12px ABOVE the
+     intended target, which is exactly Jordan's "cursor reads too high" report (R8's own
+     cursor-accuracy table only checked that translate(x,y) matched mapCur(event) --
+     tautological, since cursor.js is what sets that translate from those exact values --
+     and never measured where the TIP actually renders). cursor.js/theme.css are shared
+     files this task does not touch, so the fix lives in the event-to-stage mapping
+     instead (mapCur(), below): pre-add origin*(scale-1) to the coordinates passed as
+     translate(x,y), branching on the same pressed flag Cursor.stateAt() already returns,
+     which exactly cancels the origin term. Verified empirically post-render against
+     zoomed click-frame crops (see task report) -- event x/y are already true element
+     CENTERS (capture_myplan.py's rect() = getBoundingClientRect() center), so a correct
+     fix lands the crosshair on dead-center of the clicked control.
 
-     OVERLAY HIGHLIGHTS: a small page-local helper (mkHighlight, below) draws an
-     animated glowing border-box -- used for beat 2's "dynamic border highlight" over
-     the real import textarea/buttons region, and for beat 4's three bucket/course
-     emphasis boxes during the sit tail. Every highlight-box and the ring (FX.ring)
-     get an explicit fade-out track ending before their beat's cut: {el,f0,f1,apply}
-     tracks keep calling apply(el, p-clamped-to-1) on every LATER frame forever (per
-     engine.js), so without an explicit fade-out any of these would bleed into every
-     subsequent beat -- the same lesson documented in every prior revision's comments
-     for FX.callout/FX.wipe.
+     OVERLAY HIGHLIGHTS: mkHighlight (page-local, same glow-box design as R8) is reused
+     for two moments: beat 3's import-area box and beat 5's whole-left-panel box (the
+     panel's OWN on-screen rect never moves even though its content scrolls internally,
+     so one static box covers the entire scholarships/study-abroad/clubs scrub cleanly
+     -- an ellipse ring made no sense here since the real content spans a tall column,
+     not one small collapsed row group like R8's old s3 beat).
 
-     COORDINATES: every highlight box, ring center, and zoom target below was read
-     directly off the real captured frames (extracted + visually inspected) in RAW
-     APP-VIEWPORT space (0..1920 x 0..1080, the same space the event JSON x/y use),
-     then passed through mapCur() -- the same (240 + x*0.75, 164 + y*0.75) formula
-     every prior revision used for cursor placement -- to land in stage/rig space.
-     Comments beside each constant note which frame + on-screen element it came from.
+     BEAT 9 (12-item tech stack): a page-local mkStackRow/track-generator (NOT FX.credits
+     -- credits pops+dims each line as a stack that never fully commits to the newest
+     line; the brief wants a real dropdown-menu feel where every line lands and STAYS at
+     full opacity). 12 short pop-in tracks + 12 shared fade-out tracks are generated by a
+     small loop rather than hand-duplicated 24 times.
 
-     Font: this page opts into DM Sans (loaded locally by theme.css's @font-face
-     rules) via a --sans override scoped to THIS file only -- theme.css's own
-     --sans (shared with scroller.html) is untouched. Statement copy is the exact
-     copy-table text with no additions and no em dashes; DM Sans ships here at
-     weights 400/500/700 only (no 800), so the big statement classes below pin
-     font-weight:700 rather than relying on fx-title's default 800 synthetic bold. */
+     BEAT 8 zone fix: R8 nested #titles (appended after #zoomrig, so it always painted on
+     top) with a full-bleed 1440-wide tests screenshot and a statement parked at top:820 --
+     the screenshot's own box (top:120, height 810 => bottom 930) actually covered the
+     statement for its entire beat-8 window, the exact "statement overlapped by the tests
+     report" bug this task's binding text calls out. Fixed by hard-partitioning beat 8
+     into two non-overlapping zones: statement text pinned to y 130-310 (top of stage),
+     terminal+tests both pinned to y 350-1040 (bottom), with a 40px gap between -- and
+     BOTH the terminal and the tests image now reveal via clip-path self-masks (the
+     terminal previously only toggled opacity; per the binding text every reveal in this
+     beat must be a clip-path self-mask, zero cover rectangles).
+
+     Font: DM Sans (loaded locally by theme.css's @font-face rules), scoped to this file
+     only via --sans override (theme.css's own --sans, shared with scroller.html, is
+     untouched). Statement copy is the exact copy-table text, no additions, no em dashes
+     (including the "AI evals: benchmark + human" colon substitution flagged in the
+     spec's own footnote). DM Sans ships at weights 400/500/700 only (no 800), so every
+     big-statement class below pins font-weight:700 rather than fx-title's default 800
+     synthetic bold. */
   :root{--sans:'DM Sans','Segoe UI',system-ui,sans-serif}
   #zoomrig{position:absolute;left:0;top:0;width:1920px;height:1080px}
   .screen-frame .seq-img{position:absolute;left:0;top:45px;width:100%;height:810px;
     object-fit:cover;object-position:center}
 
-  /* Terminal geometry carried over unchanged from the prior revision's fix (confirmed
-     via direct CDP getBoundingClientRect() reads): 690px tall + 1.55 line-height fits
-     all 16 SCRAPER_LOG lines, 1320px wide + a right-edge fade covers long real warn
-     lines without a hard clip looking like a bug. */
+  /* Terminal geometry (beat 8, re-zoned -- see architecture note above): narrower than
+     R8 (1220 vs 1320) and pinned lower (top:350 vs 200) so it never enters the
+     statement's y 130-310 zone; still tall enough (690px + 1.55 line-height) for all
+     16 SCRAPER_LOG lines, confirmed unchanged from R8's own direct-measurement note. */
   .term .tl-line{line-height:1.55}
   .term::after{content:'';position:absolute;top:40px;right:0;bottom:0;width:110px;
     background:linear-gradient(to right, transparent, #070b18 70%);pointer-events:none}
 
   /* Big, punchy statement copy -- 60-90px scale per the binding brief, DM Sans 700,
      bold statements rather than small caption chips. Three sizes so longer lines
-     (beat 5's three-liner, beat 7's two-liner) stay comfortably under 1920px wide;
-     verified against the 400px legibility sheet during iteration (see task report). */
+     (beat 5's three-liner, beat 7's two-liner) stay comfortably under 1920px wide. */
   #titles .fx-title{font-family:'DM Sans',var(--sans);font-weight:700;
     text-shadow:0 2px 10px rgba(0,0,0,.55), 0 14px 46px rgba(3,5,12,.6)}
   #titles .fx-title.hero{font-size:132px;letter-spacing:-.01em}
   #titles .fx-title.sz2{font-size:84px}
   #titles .fx-title.sz3{font-size:76px}
   #titles .fx-title.sz4{font-size:64px}
-  #creditsWrap .fx-credits-line{font:700 60px 'DM Sans',var(--sans)}
 
   /* Overlay highlight box -- animated glow border, page-local (not an fx.js export).
-     Used for beat 2's import-area emphasis and beat 4's three bucket/course boxes. */
+     Used for beat 3's import-area emphasis and beat 5's whole-panel box. */
   .hl-box{position:absolute;box-sizing:border-box;border:3px solid var(--accent);
     border-radius:14px;pointer-events:none;z-index:36;will-change:opacity,transform,box-shadow}
+
+  /* Beat 9: 12-item tech stack, single centered column, dropdown-style downward
+     slide-in. 44px (top of the binding 38-44px range) for max legibility at 400px --
+     verified on the legibility sheet (see task report). */
+  #stackWrap{position:absolute;left:0;top:192px;width:100%}
+  .stack-line{position:absolute;left:0;width:100%;text-align:center;
+    font:700 44px 'DM Sans',var(--sans);color:var(--ink);opacity:0;
+    text-shadow:0 2px 10px rgba(0,0,0,.55), 0 10px 34px rgba(3,5,12,.55);
+    will-change:opacity,transform}
 
   /* Outro (beat 10): dark full-stage typewriter card. */
   #outroWrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0}
@@ -116,97 +149,115 @@
   #outroCaret{display:inline-block;width:7px;height:74px;margin-left:10px;background:var(--accent);
     transform:translateY(6px)}
 
-  /* Tests counter -- bumped to the page's DM Sans direction (was a small mono chip). */
-  #testsCounter{font:700 46px 'DM Sans',var(--sans)}
+  /* Tests counter -- moved into the re-zoned lower half (see beat-8 note); DM Sans. */
+  #testsCounter{font:700 40px 'DM Sans',var(--sans)}
 </style>
 <div class="stage" id="stage">
   <div id="zoomrig">
     <div class="screen-frame" id="appframe" style="left:240px;top:120px;width:1440px;height:855px">
       <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
         <span class="url">myplan.jordanheaton.com</span></div>
-      <img id="appS6" class="seq-img" alt="">
-      <img id="appS7" class="seq-img" alt="">
-      <img id="appS8" class="seq-img" alt="">
-      <img id="appS3" class="seq-img" alt="">
-      <img id="appS9" class="seq-img" alt="">
-      <img id="appS10" class="seq-img" alt="">
+      <img id="appS11" class="seq-img" alt="">
+      <img id="appS12" class="seq-img" alt="">
+      <img id="appS13" class="seq-img" alt="">
+      <img id="appS14" class="seq-img" alt="">
+      <img id="appS15" class="seq-img" alt="">
+      <img id="appS16" class="seq-img" alt="">
     </div>
   </div>
   <div id="titles"></div>
-  <div id="creditsWrap"></div>
+  <div id="stackWrap"></div>
   <div id="outroWrap"><div><span id="outroText"></span><span id="outroCaret"></span></div></div>
 </div>
 <script src="render-config.js"></script>
 <script>
 // Inlined per the established pattern (fetch() is unreliable over file://). Regenerated
-// fresh for R8 -- s6/s7/s8/s9/s10 are new captures, s3 is reused verbatim from the R4
-// capture. Regenerate via (from the repo's showcase-videos/ dir):
-//   "window.EVENTS_S6 = " + (Get-Content raw\events\s6.json -Raw) + ";"   (...s7,s8,s9,s10,s3)
+// fresh for R11 -- s11-s16 are the new continuous-session captures (task-r10). Regenerate
+// via (from the repo's showcase-videos/ dir):
+//   "window.EVENTS_S11 = " + (Get-Content raw\events\s11.json -Raw) + ";"  (...s12..s16)
 //   "window.TEST_TOTALS = " + ((Get-Content raw\tests\report.json -Raw |
 //      ConvertFrom-Json).totals | ConvertTo-Json -Compress) + ";"
-window.EVENTS_S6 = {
+window.EVENTS_S11 = {
  "fps": 60,
  "events": [
-  {"f": 20, "kind": "hover", "x": 960, "y": 478, "sel": "#tiText"},
-  {"f": 45, "kind": "click", "x": 960, "y": 478, "sel": "#tiText"},
-  {"f": 110, "kind": "hover", "x": 631, "y": 538, "sel": "#tiScan"},
-  {"f": 140, "kind": "click", "x": 631, "y": 538, "sel": "#tiScan"},
-  {"f": 280, "kind": "hover", "x": 682, "y": 599, "sel": "#tiAdd"},
-  {"f": 300, "kind": "click", "x": 682, "y": 599, "sel": "#tiAdd"}
+  {"f": 10, "kind": "hover", "x": 1856, "y": 197, "sel": "#newPlanBtn"},
+  {"f": 35, "kind": "click", "x": 1856, "y": 197, "sel": "#newPlanBtn"},
+  {"f": 85, "kind": "hover", "x": 1317, "y": 500, "sel": "#wsMajor .ss-browse"},
+  {"f": 105, "kind": "click", "x": 1317, "y": 500, "sel": "#wsMajor .ss-browse"},
+  {"f": 115, "kind": "hover", "x": 960, "y": 518, "sel": "#wsMajor .ss-list"},
+  {"f": 145, "kind": "hover", "x": 960, "y": 518, "sel": "#wsMajor .ss-list"},
+  {"f": 185, "kind": "hover", "x": 960, "y": 518, "sel": "#wsMajor .ss-list"},
+  {"f": 225, "kind": "hover", "x": 960, "y": 518, "sel": "#wsMajor .ss-list"},
+  {"f": 265, "kind": "hover", "x": 960, "y": 518, "sel": "#wsMajor .ss-list"},
+  {"f": 305, "kind": "hover", "x": 960, "y": 430, "sel": ".ss-item[data-id=\"is-bs\"]"},
+  {"f": 325, "kind": "click", "x": 960, "y": 430, "sel": ".ss-item[data-id=\"is-bs\"]"}
  ]
 };
-window.EVENTS_S7 = {
+window.EVENTS_S12 = {
  "fps": 60,
  "events": [
-  {"f": 10, "kind": "hover", "x": 960, "y": 518, "sel": "#wsMajor .ss-list"}
+  {"f": 15, "kind": "hover", "x": 1326, "y": 744, "sel": "#wizNext"},
+  {"f": 40, "kind": "click", "x": 1326, "y": 744, "sel": "#wizNext"},
+  {"f": 65, "kind": "hover", "x": 960, "y": 478, "sel": "#tiText"},
+  {"f": 90, "kind": "click", "x": 960, "y": 478, "sel": "#tiText"},
+  {"f": 155, "kind": "hover", "x": 631, "y": 538, "sel": "#tiScan"},
+  {"f": 185, "kind": "click", "x": 631, "y": 538, "sel": "#tiScan"},
+  {"f": 230, "kind": "hover", "x": 682, "y": 599, "sel": "#tiAdd"},
+  {"f": 260, "kind": "click", "x": 682, "y": 599, "sel": "#tiAdd"},
+  {"f": 300, "kind": "hover", "x": 1326, "y": 864, "sel": "#wizNext"},
+  {"f": 320, "kind": "click", "x": 1326, "y": 864, "sel": "#wizNext"},
+  {"f": 350, "kind": "hover", "x": 1291, "y": 703, "sel": "#wizNext"},
+  {"f": 380, "kind": "click", "x": 1291, "y": 703, "sel": "#wizNext"}
  ]
 };
-window.EVENTS_S8 = {
+window.EVENTS_S13 = {
  "fps": 60,
  "events": [
-  {"f": 20, "kind": "hover", "x": 494, "y": 335, "sel": ".card-bucket[data-uid=\"BUCKET::univ-core::ge-civilization-1\"]"},
-  {"f": 50, "kind": "click", "x": 494, "y": 335, "sel": ".card-bucket[data-uid=\"BUCKET::univ-core::ge-civilization-1\"]"},
-  {"f": 170, "kind": "hover", "x": 800, "y": 426, "sel": ".card[data-uid=\"MSB 180\"]"},
-  {"f": 200, "kind": "click", "x": 800, "y": 425, "sel": ".card[data-uid=\"MSB 180\"]"},
-  {"f": 208, "kind": "hover", "x": 772, "y": 446},
-  {"f": 216, "kind": "hover", "x": 744, "y": 467},
-  {"f": 225, "kind": "hover", "x": 717, "y": 488},
-  {"f": 233, "kind": "hover", "x": 689, "y": 509},
-  {"f": 241, "kind": "hover", "x": 661, "y": 530},
-  {"f": 249, "kind": "hover", "x": 633, "y": 550},
-  {"f": 257, "kind": "hover", "x": 605, "y": 571},
-  {"f": 265, "kind": "hover", "x": 577, "y": 592},
-  {"f": 274, "kind": "hover", "x": 550, "y": 613},
-  {"f": 282, "kind": "hover", "x": 522, "y": 634},
-  {"f": 290, "kind": "click", "x": 494, "y": 655},
-  {"f": 345, "kind": "hover", "x": 494, "y": 575, "sel": ".card[data-uid=\"MSB 180\"]"}
+  {"f": 15, "kind": "hover", "x": 1106, "y": 310, "sel": ".card-bucket[data-uid=\"BUCKET::univ-core::ge-civilization-1\"]"},
+  {"f": 45, "kind": "click", "x": 1106, "y": 310, "sel": ".card-bucket[data-uid=\"BUCKET::univ-core::ge-civilization-1\"]"},
+  {"f": 75, "kind": "hover", "x": 1114, "y": 515, "sel": ".ctx-menu.bucket-picker"},
+  {"f": 230, "kind": "hover", "x": 70, "y": 23, "sel": ".topbar-brand .app"},
+  {"f": 260, "kind": "click", "x": 70, "y": 23, "sel": ".topbar-brand .app"}
  ]
 };
-window.EVENTS_S9 = {
+window.EVENTS_S14 = {
  "fps": 60,
  "events": [
-  {"f": 20, "kind": "hover", "x": 800, "y": 606, "sel": ".card[data-uid=\"ACC 200\"]"},
-  {"f": 60, "kind": "click", "x": 800, "y": 606, "sel": ".card[data-uid=\"ACC 200\"]"},
-  {"f": 110, "kind": "hover", "x": 806, "y": 510, "sel": "#cmSectionsBtn"}
+  {"f": 10, "kind": "hover", "x": 165, "y": 645, "sel": "#panelLeft .panel-scroll"},
+  {"f": 95, "kind": "hover", "x": 165, "y": 935, "sel": "#timelineSec details.tl-acc:nth-of-type(1) summary"},
+  {"f": 120, "kind": "click", "x": 165, "y": 935, "sel": "#timelineSec details.tl-acc:nth-of-type(1) summary"},
+  {"f": 140, "kind": "hover", "x": 190, "y": 540, "sel": "#panelLeft .panel-scroll"},
+  {"f": 165, "kind": "hover", "x": 195, "y": 560, "sel": "#panelLeft .panel-scroll"},
+  {"f": 190, "kind": "hover", "x": 185, "y": 580, "sel": "#panelLeft .panel-scroll"},
+  {"f": 260, "kind": "hover", "x": 165, "y": 977, "sel": "#timelineSec details.tl-acc:nth-of-type(2) summary"},
+  {"f": 285, "kind": "click", "x": 165, "y": 977, "sel": "#timelineSec details.tl-acc:nth-of-type(2) summary"},
+  {"f": 305, "kind": "hover", "x": 190, "y": 550, "sel": "#panelLeft .panel-scroll"},
+  {"f": 325, "kind": "hover", "x": 200, "y": 570, "sel": "#panelLeft .panel-scroll"},
+  {"f": 345, "kind": "hover", "x": 190, "y": 590, "sel": "#panelLeft .panel-scroll"},
+  {"f": 400, "kind": "hover", "x": 165, "y": 1019, "sel": "#timelineSec details.tl-acc:nth-of-type(3) summary"},
+  {"f": 420, "kind": "click", "x": 165, "y": 1019, "sel": "#timelineSec details.tl-acc:nth-of-type(3) summary"},
+  {"f": 440, "kind": "hover", "x": 190, "y": 560, "sel": "#panelLeft .panel-scroll"}
  ]
 };
-window.EVENTS_S10 = {
+window.EVENTS_S15 = {
  "fps": 60,
  "events": [
-  {"f": 15, "kind": "hover", "x": 1801, "y": 1037, "sel": "#chatFab"},
-  {"f": 45, "kind": "click", "x": 1801, "y": 1035, "sel": "#chatFab"},
-  {"f": 75, "kind": "hover", "x": 1572, "y": 938, "sel": "#chatQuick button[data-q^=\"Critique\"]"},
-  {"f": 105, "kind": "click", "x": 1572, "y": 938, "sel": "#chatQuick button[data-q^=\"Critique\"]"}
+  {"f": 15, "kind": "hover", "x": 800, "y": 606, "sel": ".card[data-uid=\"ACC 200\"]"},
+  {"f": 45, "kind": "click", "x": 800, "y": 605, "sel": ".card[data-uid=\"ACC 200\"]"},
+  {"f": 90, "kind": "hover", "x": 806, "y": 510, "sel": "#cmSectionsBtn"},
+  {"f": 120, "kind": "click", "x": 806, "y": 510, "sel": "#cmSectionsBtn"}
  ]
 };
-window.EVENTS_S3 = {
+window.EVENTS_S16 = {
  "fps": 60,
  "events": [
-  {"f": 20, "kind": "hover", "x": 165, "y": 1012, "sel": "#flagList"},
-  {"f": 200, "kind": "hover", "x": 165, "y": 935, "sel": "#timelineSec details.tl-acc:nth-of-type(1) summary"},
-  {"f": 230, "kind": "click", "x": 165, "y": 935, "sel": "#timelineSec details.tl-acc:nth-of-type(1) summary"},
-  {"f": 330, "kind": "hover", "x": 165, "y": 977, "sel": "#timelineSec details.tl-acc:nth-of-type(2) summary"},
-  {"f": 370, "kind": "click", "x": 165, "y": 977, "sel": "#timelineSec details.tl-acc:nth-of-type(2) summary"}
+  {"f": 15, "kind": "hover", "x": 1243, "y": 150, "sel": "#courseModal .modal-x"},
+  {"f": 40, "kind": "click", "x": 1243, "y": 150, "sel": "#courseModal .modal-x"},
+  {"f": 90, "kind": "hover", "x": 1801, "y": 1037, "sel": "#chatFab"},
+  {"f": 115, "kind": "click", "x": 1801, "y": 1035, "sel": "#chatFab"},
+  {"f": 190, "kind": "hover", "x": 1676, "y": 1027, "sel": "#chatInput"},
+  {"f": 205, "kind": "type", "x": 1676, "y": 1027, "text": "How many credits is ACC 200 and when is it offered?"},
+  {"f": 271, "kind": "click", "x": 1867, "y": 1033, "sel": "#chatSend"}
  ]
 };
 window.TEST_TOTALS = {"cases":26,"pass":26,"fail":0,"warn":23,"known":0,"noGolden":0};
@@ -219,14 +270,14 @@ const R = (window.RENDER && RENDER.framesRoot) || '../raw';
 const stage = document.getElementById('stage');
 const zoomrig = document.getElementById('zoomrig');
 const appframe = document.getElementById('appframe');
-const appS6 = document.getElementById('appS6');
-const appS7 = document.getElementById('appS7');
-const appS8 = document.getElementById('appS8');
-const appS3 = document.getElementById('appS3');
-const appS9 = document.getElementById('appS9');
-const appS10 = document.getElementById('appS10');
+const appS11 = document.getElementById('appS11');
+const appS12 = document.getElementById('appS12');
+const appS13 = document.getElementById('appS13');
+const appS14 = document.getElementById('appS14');
+const appS15 = document.getElementById('appS15');
+const appS16 = document.getElementById('appS16');
 const titles = document.getElementById('titles');
-const creditsWrap = document.getElementById('creditsWrap');
+const stackWrap = document.getElementById('stackWrap');
 const outroWrap = document.getElementById('outroWrap');
 const outroText = document.getElementById('outroText');
 const outroCaret = document.getElementById('outroCaret');
@@ -234,41 +285,53 @@ const E = TL.eases;
 const p01 = (a, b, f) => Math.max(0, Math.min(1, (f - a) / (b - a)));
 const lerp = (a, b, q) => a + (b - a) * q;
 
+/* Continuous-camera contract: transform-origin pinned to (0,0) ONCE so the rig's own
+   translate()+scale() writer (below) can place any focal point at the fixed screen
+   center with a closed-form tx/ty -- no per-frame origin writes, no jump risk. See the
+   top-of-file architecture note for the full derivation. */
+zoomrig.style.transformOrigin = '0 0';
+
 /* app frames are 3840x2160 captures of a 1920x1080 CSS viewport, displayed inside a
    1440px-wide frame: RAW app coords map into stage space at scale 1440/1920 = 0.75
    plus the frame's own offset (240,120) + its 44px chrome bar. Identical formula to
-   every prior revision -- only ever evaluated for f>=210, by which point #appframe
-   has already popped to its resting 1440x855 box (see the appframe track below). */
-const mapCur = (s) => ({...s, x: 240 + s.x * 0.75, y: 164 + s.y * 0.75});
+   every prior revision. */
 const mapPt  = (x, y) => ({x: 240 + x * 0.75, y: 164 + y * 0.75});
 const mapBox = (x, y, w, h) => ({x: 240 + x * 0.75, y: 164 + y * 0.75, w: w * 0.75, h: h * 0.75});
+
+/* Cursor hotspot fix -- see the top-of-file architecture note. CUR_OX/CUR_OY are half
+   of cursor.js's own <svg width=17 height=24>, i.e. .cursor-layer's implicit 50%/50%
+   transform-origin (the only in-flow content in that layer -- the ripple div is
+   position:absolute and doesn't count toward its auto box size). cursor.js scales the
+   layer by 2 (idle) or 1.7 (pressed, first 6 frames after a click) about that origin,
+   which displaces the rendered tip by origin*(1-scale) from the (x,y) we pass as
+   translate() -- pre-adding origin*(scale-1) here exactly cancels it. */
+const CUR_OX = 8.5, CUR_OY = 12;
+const mapCur = (s) => {
+  const scale = s.pressed ? 1.7 : 2;
+  const comp = scale - 1;
+  return {...s, x: 240 + s.x * 0.75 + CUR_OX * comp, y: 164 + s.y * 0.75 + CUR_OY * comp};
+};
 
 const seq = (el, f0, f1, name, count, srcFps = 60, start = 0) =>
   ({el, f0, f1, seq: {root: R + '/myplan/' + name, count, srcFps, start}});
 
 /* --- cursor event logs, remapped onto the master timeline ---
-   s6 (import, 360 src -> 270 beat frames): srcFps 80, ratio 0.75 -> master = 210 + f*0.75.
-   s7 (majors, 300 src -> 270 beat frames): srcFps 300*60/270, ratio 0.9 -> master = 480 + f*0.9.
-   s8 (bucket+drag+sit, 480 src -> 330 beat frames): srcFps 480*60/330, ratio 0.6875
-       -> master = 750 + f*0.6875. Drag has 10 intermediate waypoints (src 208-282),
-       remapped 1:1 with the rest so the traced path lands exactly on the real drag.
-   s3 (ring panel, clamped hold): only the FIRST event (f20, hover over what becomes
-       the scholarships/study-abroad/clubs group once the panel has scrolled there)
-       falls inside the 0-180 source window this beat actually plays (see the s3 seq()
-       track below, which clamps at source frame 180 to freeze the panel for the ring)
-       -- later events (the two accordion clicks) are filtered out since the clip never
-       reaches them, so the cursor just holds its one real resting point, in sync with
-       the frozen image. srcFps 51, ratio 60/51 -> master = 1080 + f*(60/51).
-   s9 (ACC 200 modal, 300 src -> 300 beat frames): 1:1, master = 1380 + f.
-   s10 (critique chat, 400 src -> 330 beat frames): srcFps 400*60/330, ratio 0.825
-       -> master = 1680 + f*0.825. */
-const s6log  = {fps:60, events: EVENTS_S6.events.map(e => ({...e, f: Math.round(210 + e.f * 0.75)}))};
-const s7log  = {fps:60, events: EVENTS_S7.events.map(e => ({...e, f: Math.round(480 + e.f * 0.9)}))}; // 0.9 = 60/srcFps, srcFps = 300*60/270
-const s8log  = {fps:60, events: EVENTS_S8.events.map(e => ({...e, f: Math.round(750 + e.f * 0.6875)}))};
-const s3log  = {fps:60, events: EVENTS_S3.events.filter(e => e.f <= 180)
-                                .map(e => ({...e, f: Math.round(1080 + e.f * (60/51))}))};
-const s9log  = {fps:60, events: EVENTS_S9.events.map(e => ({...e, f: 1380 + e.f}))};
-const s10log = {fps:60, events: EVENTS_S10.events.map(e => ({...e, f: Math.round(1680 + e.f * 0.825)}))};
+   All six scenes were captured at srcFps=60 (native, no retime -- task-r10), so every
+   ratio below is 60/srcFps = 1 exactly. Written as the literal (60/srcFps) form, not
+   simplified, as a deliberate audit trail (see architecture note: a prior revision
+   inverted this exact multiplier and it only surfaced in review).
+   s11 (majors scroll+pick):      beat_f0=210,  srcFps=60 -> master = 210  + f*(60/60)
+   s12 (import -> generate):      beat_f0=540,  srcFps=60 -> master = 540  + f*(60/60)
+   s13 (bucket expand):           beat_f0=960,  srcFps=60 -> master = 960  + f*(60/60)
+   s14 (opportunities scrub):     beat_f0=1290, srcFps=60 -> master = 1290 + f*(60/60)
+   s15 (ACC 200 modal + seats):   beat_f0=1740, srcFps=60 -> master = 1740 + f*(60/60)
+   s16 (modal close -> advisor):  beat_f0=2190, srcFps=60 -> master = 2190 + f*(60/60) */
+const s11log = {fps:60, events: EVENTS_S11.events.map(e => ({...e, f: Math.round(210  + e.f * (60/60))}))};
+const s12log = {fps:60, events: EVENTS_S12.events.map(e => ({...e, f: Math.round(540  + e.f * (60/60))}))};
+const s13log = {fps:60, events: EVENTS_S13.events.map(e => ({...e, f: Math.round(960  + e.f * (60/60))}))};
+const s14log = {fps:60, events: EVENTS_S14.events.map(e => ({...e, f: Math.round(1290 + e.f * (60/60))}))};
+const s15log = {fps:60, events: EVENTS_S15.events.map(e => ({...e, f: Math.round(1740 + e.f * (60/60))}))};
+const s16log = {fps:60, events: EVENTS_S16.events.map(e => ({...e, f: Math.round(2190 + e.f * (60/60))}))};
 
 /* --- static mounts --- */
 const cur = Cursor.mount(zoomrig);
@@ -278,17 +341,17 @@ const browserbar = FX.browserbar(stage, {url: 'myplan.jordanheaton.com'});
 const headline = FX.title(titles, {lines: ['myplanBYU']});
 headline.classList.add('hero'); headline.style.top = '650px';
 
-const stmtImport = FX.title(titles, {lines: ['Your transcript.', 'Instantly imported.']});
-stmtImport.classList.add('sz2'); stmtImport.style.top = '820px';
-
 const stmtMajors = FX.title(titles, {lines: ['170+ Majors.', 'Unlimited combinations.']});
 stmtMajors.classList.add('sz3'); stmtMajors.style.top = '830px';
+
+const stmtImport = FX.title(titles, {lines: ['Your transcript.', 'Instantly imported.']});
+stmtImport.classList.add('sz2'); stmtImport.style.top = '820px';
 
 const stmtBucket = FX.title(titles, {lines: ['Every requirement,', 'perfectly categorized.']});
 stmtBucket.classList.add('sz3'); stmtBucket.style.top = '830px';
 
-const stmtRing = FX.title(titles, {lines: ['Scholarships, clubs,', 'and study abroads:', 'matched to your plan.']});
-stmtRing.classList.add('sz4'); stmtRing.style.top = '740px';
+const stmtPanel = FX.title(titles, {lines: ['Scholarships, clubs,', 'and study abroads:', 'matched to your plan.']});
+stmtPanel.classList.add('sz4'); stmtPanel.style.top = '740px';
 
 const stmtModal = FX.title(titles, {lines: ['Live seat counts.', 'No guessing.']});
 stmtModal.classList.add('sz2'); stmtModal.style.top = '820px';
@@ -296,11 +359,14 @@ stmtModal.classList.add('sz2'); stmtModal.style.top = '820px';
 const stmtChat = FX.title(titles, {lines: ['Your real-time,', 'data-driven AI Advisor.']});
 stmtChat.classList.add('sz4'); stmtChat.style.top = '790px';
 
+/* Beat 8 statement -- pinned to the TOP zone (y 130-310), well clear of the terminal
+   and tests report which are both pinned to y 350-1040 (see architecture note: this is
+   the fix for the R8 "statement overlapped by the tests screenshot" bug). */
 const stmtScraper = FX.title(titles, {lines: ['Scraped daily.', 'Tested rigorously.']});
-stmtScraper.classList.add('sz2'); stmtScraper.style.top = '820px';
+stmtScraper.classList.add('sz2'); stmtScraper.style.top = '130px';
 
 const term = Terminal.mount(stage, {title: 'weekly refresh · scraper/_pipeline.ps1'});
-term.el.style.cssText += 'left:300px;top:200px;width:1320px;height:690px;opacity:0';
+term.el.style.cssText += 'left:350px;top:350px;width:1220px;height:690px;opacity:0';
 // SCRAPER_LOG (assets/scraper_log.js, shared/not committed by this task) has a couple
 // of real em dashes in its verbatim-sourced warning text; "no em dashes anywhere on
 // screen" is unqualified, so swap them for a middot HERE (a local derived copy) rather
@@ -308,23 +374,17 @@ term.el.style.cssText += 'left:300px;top:200px;width:1320px;height:690px;opacity
 const SCRAPER_LOG_CLEAN = SCRAPER_LOG.map(l => ({...l, s: l.s.replace(/—/g, '·')}));
 
 const tests = document.createElement('img');
-tests.style.cssText = 'position:absolute;left:240px;top:120px;width:1440px;border-radius:18px;opacity:0';
+tests.style.cssText = 'position:absolute;left:350px;top:350px;width:1220px;border-radius:18px;opacity:0';
 tests.src = R + '/tests/report.png';
 stage.appendChild(tests);
 
 const testsCounter = document.createElement('div');
 testsCounter.id = 'testsCounter';
-testsCounter.style.cssText = 'position:absolute;left:auto;right:110px;top:150px;color:#eaf2ff;opacity:0;' +
+testsCounter.style.cssText = 'position:absolute;left:auto;right:390px;top:365px;color:#eaf2ff;opacity:0;' +
   'text-shadow:0 2px 10px rgba(0,0,0,.5)';
 stage.appendChild(testsCounter);
 
-const credits = FX.credits(creditsWrap, {lines: [
-  'Constraint modeling.',
-  'Vanilla JS.',
-  '12-source pipeline.',
-]});
-
-/* --- beat-4 overlay highlights (page-local, not an fx.js export) --- */
+/* --- overlay highlights (page-local, not fx.js exports) --- */
 function mkHighlight(box) {
   const el = document.createElement('div');
   el.className = 'hl-box';
@@ -343,99 +403,66 @@ function mkHighlight(box) {
   return el;
 }
 
-/* Import-area box (beat 2): read off s6/f00000-f00150 -- the "Import from your
-   transcript" label through the Scan/Upload buttons row, raw viewport coords
-   (560,370)-(1360,620), mapped into stage space. */
+/* Import-area box (beat 3): the "Import from your transcript" label through the
+   Scan/Upload buttons row and the scanned-course checklist, raw viewport coords
+   (560,370)-(1360,620) -- read off s12/f00150-f00260 (see task report for the crop). */
 const hlImport = mkHighlight(mapBox(560, 370, 800, 250));
 
-/* Beat-4 sit-tail boxes: read off a full-res crop of s8/f00290 (the settled Draft
-   Plan board) -- an earlier pass measured these off the downscaled full-frame
-   preview and landed ~235px too high (on the page-title/report-header row instead
-   of the actual bucket cards); re-measured off a 1320x2160 crop of the left rail.
-   Box 1: left rail "University Core (GE + Religion)" bucket card, raw (16,320)-(314,385).
-   Box 2: left rail "Information Systems (BS)" major-bucket header, raw (16,390)-(314,443).
-   Box 3: "ACC 200" course card in the Winter 2027 column, raw (674,526)-(936,566)
-   (re-confirmed against the same crop -- unchanged from the first pass). */
-const hlGeRel = mkHighlight(mapBox(16, 320, 298, 65));
-const hlMajor = mkHighlight(mapBox(16, 390, 298, 53));
-const hlAcc200 = mkHighlight(mapBox(674, 526, 262, 40));
+/* Whole-panel box (beat 5): #panelLeft's own on-screen rect, raw viewport
+   (15,195)-(330,1075) -- confirmed static across the entire scrub (only the panel's
+   INTERNAL scroll position moves; the panel's own box never does), read off
+   s14/f00200 and f00449 (scholarships list, then clubs list, same outer box both
+   times). One static box covers scholarships -> study abroad -> clubs cleanly. */
+const hlPanel = mkHighlight(mapBox(15, 195, 315, 880));
 
-/* Ring (beat 5): read off s3/f00150-f00180 -- the collapsed "Relevant scholarships /
-   Study abroad for your college / Clubs for your college" accordion group, raw
-   viewport center ~(165,1012) (matches EVENTS_S3's own flagList hover point exactly),
-   half-extents ~(151,53). rx/ry padded a bit beyond the literal text box. */
-const ringTarget = mapPt(165, 1012);
-const ring = FX.ring(zoomrig, {x: ringTarget.x, y: ringTarget.y, rx: 155, ry: 78});
-
-/* --- zoom rig: ONE piecewise keyframe track for the entire video (see rigAt below) ---
-   Every target switch routes through an instantaneous scale-1 pair so the
-   transform-origin jump is invisible (identical trick to every prior revision). */
-const T_IMPORT = mapPt(960, 495);   // s6: import textarea + buttons block, center
-const T_MAJORS = mapPt(960, 518);   // s7: majors dropdown list, matches its one fixed cursor point
-const T_BOARD  = mapPt(596, 472);   // s8: centroid of bucket-click/card/drop points
-const T_BUCKETS = mapPt(165, 385);  // s8: midpoint between the GE+Religion and Major rail rows
-const T_ACC200 = mapPt(802, 546);   // s8: ACC 200 card center (same box as hlAcc200)
-const T_RING   = ringTarget;        // s3: scholarships/abroad/clubs group (see ring above)
-const T_MODAL  = mapPt(806, 510);   // s9: "See ... sections · live seat counts" button (EVENTS_S9 hover)
-const T_CHAT   = mapPt(1650, 970);  // s10: chat panel, biased toward the input/send/quick-action corner
+/* --- zoom rig: ONE piecewise translate+scale keyframe track for the whole video --- */
+const T_NEWPLAN      = mapPt(1856, 197);   // s11: "+ New plan" button
+const T_MAJORSCROLL  = mapPt(960, 500);    // s11: majors dropdown list (matches its fixed hover point)
+const T_ISBS         = mapPt(960, 430);    // s11: "Information Systems (BS)" item, pick moment
+const T_WIZNEXT1     = mapPt(1326, 744);   // s12: wizard Next, Programs -> History
+const T_IMPORT       = mapPt(960, 486);    // s12: transcript textarea + Scan/Add buttons
+const T_WIZNEXT2     = mapPt(1326, 864);   // s12: wizard Next, History -> Constraints
+const T_WIZNEXT3     = mapPt(1291, 703);   // s12: "Generate plan" -- solves + closes modal
+const T_BOARD        = mapPt(960, 470);    // s12: solved board reveal, whole-board centroid
+const T_BUCKET       = mapPt(1106, 310);   // s13: "Civilization 1" bucket card, Fall 2027 column
+const T_PICKER       = mapPt(1110, 490);   // s13: bucket picker's 13-option list
+const T_TOPBAR       = mapPt(70, 23);      // s13: wordmark click that closes the picker
+const T_PANEL        = mapPt(172, 650);    // s14: left panel, opening framing
+const T_PANEL2       = mapPt(180, 860);    // s14: left panel, deeper as the scrub reaches clubs
+const T_ACC200CARD   = mapPt(800, 606);    // s15: ACC 200 card, Winter 2027 column
+const T_SECTIONSBTN  = mapPt(806, 510);    // s15: "See sections · live seat counts" button
+const T_SECTABLE     = mapPt(960, 552);    // s15: the real Winter 2027 sections table
+const T_MODALX       = mapPt(1243, 150);   // s16: course modal's close X
+const T_CHATFAB      = mapPt(1801, 1037);  // s16: chat FAB, bottom-right
+const T_CHATPANEL    = mapPt(1697, 776);   // s16: chat panel, question/answer column
 
 const RIG_KF = [
-  // beat 2 -- import: hold, snap in over the scan-populate window, snap out.
-  {f: 210, x: T_IMPORT.x, y: T_IMPORT.y, s: 1},
-  {f: 260, x: T_IMPORT.x, y: T_IMPORT.y, s: 1},
-  {f: 310, x: T_IMPORT.x, y: T_IMPORT.y, s: 1.5, ease: 'outCubic'},
-  {f: 430, x: T_IMPORT.x, y: T_IMPORT.y, s: 1.5},
-  {f: 460, x: T_IMPORT.x, y: T_IMPORT.y, s: 1, ease: 'inOutQuad'},
-
-  // beat 3 -- majors: one slow continuous drift-zoom, no snaps (single fixed cursor point).
-  // Lands at 749, not 750: rigAt()'s bracketing search finds the FIRST pair
-  // containing f, and f=750 is also the seq() boundary shared with beat 4 -- if the
-  // zoomed-in hold's own keyframe sat AT 750 too, that (480,750) pair would still win
-  // the search at f=750 (it's earlier in the array), so beat 4's very first visible
-  // frame would render at beat 3's 1.35x/majors zoom for one frame before snapping to
-  // scale 1 on frame 751. Landing the hold one frame early lets the (749,750) pair
-  // hand off to beat 4's own f:750 keyframe exactly at the cut. Confirmed via direct
-  // getComputedStyle(zoomrig).transform reads at 749/750/751 before and after this fix.
-  {f: 749, x: T_MAJORS.x, y: T_MAJORS.y, s: 1.35, ease: 'inOutQuad'},
-
-  // beat 4 -- board: zoom onto the interaction, punch out/in to the two rail
-  // buckets, punch out/in to ACC 200.
-  {f: 750, x: T_BOARD.x, y: T_BOARD.y, s: 1},
-  {f: 780, x: T_BOARD.x, y: T_BOARD.y, s: 1},
-  {f: 900, x: T_BOARD.x, y: T_BOARD.y, s: 1.3, ease: 'outCubic'},
-  {f: 950, x: T_BOARD.x, y: T_BOARD.y, s: 1.3},
-  {f: 962, x: T_BOARD.x, y: T_BOARD.y, s: 1, ease: 'inOutQuad'},
-  {f: 962, x: T_BUCKETS.x, y: T_BUCKETS.y, s: 1},
-  {f: 985, x: T_BUCKETS.x, y: T_BUCKETS.y, s: 1.7, ease: 'outCubic'},
-  {f: 1030, x: T_BUCKETS.x, y: T_BUCKETS.y, s: 1.7},
-  {f: 1042, x: T_BUCKETS.x, y: T_BUCKETS.y, s: 1, ease: 'inOutQuad'},
-  {f: 1042, x: T_ACC200.x, y: T_ACC200.y, s: 1},
-  {f: 1062, x: T_ACC200.x, y: T_ACC200.y, s: 1.8, ease: 'outCubic'},
-  {f: 1079, x: T_ACC200.x, y: T_ACC200.y, s: 1.8},   // 1079 not 1080 -- see beat-3/4 note above
-
-  // beat 5 -- ring: slow continuous drift-zoom onto the scholarships/abroad group.
-  {f: 1080, x: T_RING.x, y: T_RING.y, s: 1},
-  {f: 1100, x: T_RING.x, y: T_RING.y, s: 1},
-  {f: 1292, x: T_RING.x, y: T_RING.y, s: 1.9, ease: 'inOutQuad'},
-  {f: 1379, x: T_RING.x, y: T_RING.y, s: 1.9},   // 1379 not 1380 -- see beat-3/4 note above
-
-  // beat 6 -- ACC 200 modal: hold through the click/open, snap in onto the CTA.
-  {f: 1380, x: T_MODAL.x, y: T_MODAL.y, s: 1},
-  {f: 1450, x: T_MODAL.x, y: T_MODAL.y, s: 1},
-  {f: 1500, x: T_MODAL.x, y: T_MODAL.y, s: 1.7, ease: 'outCubic'},
-  {f: 1679, x: T_MODAL.x, y: T_MODAL.y, s: 1.7},   // 1679 not 1680 -- see beat-3/4 note above
-
-  // beat 7 -- chat: hold through the fab/quick-action clicks, snap in for the answer.
-  {f: 1680, x: T_CHAT.x, y: T_CHAT.y, s: 1},
-  {f: 1740, x: T_CHAT.x, y: T_CHAT.y, s: 1},
-  {f: 1780, x: T_CHAT.x, y: T_CHAT.y, s: 1.6, ease: 'outCubic'},
-  {f: 2009, x: T_CHAT.x, y: T_CHAT.y, s: 1.6},   // 2009 not 2010 -- same reasoning, though
-  // moot in practice since #appframe's own opacity is already 0 by f=2010 (its fade-out
-  // track runs 2000-2010) -- fixed anyway so the rig itself is never momentarily wrong.
-
-  // beat 8 -- terminal/tests: rig is irrelevant (appframe hidden) but stays at scale 1.
-  {f: 2010, x: 960, y: 540, s: 1},
-  {f: 2280, x: 960, y: 540, s: 1},
+  {f: 0,    x: 960,             y: 540,             s: 1},                       // beat 1: identity
+  {f: 225,  x: 960,             y: 540,             s: 1},                       // appframe settled, "No plan yet"
+  {f: 245,  x: T_NEWPLAN.x,     y: T_NEWPLAN.y,     s: 1.2,  ease: 'outCubic'},   // click New plan
+  {f: 295,  x: 1044,            y: 347,             s: 1.3,  ease: 'inOutQuad'}, // pan toward the opening modal
+  {f: 330,  x: T_MAJORSCROLL.x, y: T_MAJORSCROLL.y, s: 1.5,  ease: 'inOutQuad'}, // settle on majors list
+  {f: 480,  x: T_MAJORSCROLL.x, y: T_MAJORSCROLL.y, s: 1.58, ease: 'linear'},    // slow drift through the scroll
+  {f: 535,  x: T_ISBS.x,        y: T_ISBS.y,        s: 1.78, ease: 'outCubic'},  // punch onto IS-BS pick
+  {f: 580,  x: T_WIZNEXT1.x,    y: T_WIZNEXT1.y,    s: 1.35, ease: 'inOutQuad'}, // beat 3: Programs -> History
+  {f: 630,  x: T_IMPORT.x,      y: T_IMPORT.y,      s: 1.55, ease: 'inOutQuad'}, // pan to transcript textarea
+  {f: 800,  x: T_IMPORT.x,      y: T_IMPORT.y,      s: 1.7,  ease: 'linear'},    // hold through scan+add
+  {f: 860,  x: T_WIZNEXT2.x,    y: T_WIZNEXT2.y,    s: 1.4,  ease: 'inOutQuad'}, // History -> Constraints
+  {f: 920,  x: T_WIZNEXT3.x,    y: T_WIZNEXT3.y,    s: 1.3,  ease: 'inOutQuad'}, // Generate plan click
+  {f: 958,  x: T_BOARD.x,       y: T_BOARD.y,       s: 1.12, ease: 'inOutQuad'}, // PLAN GENERATES reveal
+  {f: 1005, x: T_BUCKET.x,      y: T_BUCKET.y,      s: 1.5,  ease: 'outCubic'},  // beat 4: bucket card
+  {f: 1055, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'inOutQuad'}, // picker opens, 13 options
+  {f: 1160, x: T_PICKER.x,      y: T_PICKER.y,      s: 1.8,  ease: 'linear'},    // hold through the internal scrub
+  {f: 1220, x: T_TOPBAR.x,      y: T_TOPBAR.y,      s: 1.25, ease: 'inOutQuad'}, // pan far to close (wordmark)
+  {f: 1385, x: T_PANEL.x,       y: T_PANEL.y,       s: 1.6,  ease: 'inOutQuad'}, // beat 5: settle on the panel
+  {f: 1720, x: T_PANEL2.x,      y: T_PANEL2.y,      s: 1.85, ease: 'linear'},    // drift deeper through the scrub
+  {f: 1785, x: T_ACC200CARD.x,  y: T_ACC200CARD.y,  s: 1.4,  ease: 'inOutQuad'}, // beat 6: ACC 200 card
+  {f: 1860, x: T_SECTIONSBTN.x, y: T_SECTIONSBTN.y, s: 1.7,  ease: 'outCubic'},  // punch to the sections button
+  {f: 2180, x: T_SECTABLE.x,    y: T_SECTABLE.y,    s: 1.95, ease: 'inOutQuad'}, // the real seat-count table
+  {f: 2230, x: T_MODALX.x,      y: T_MODALX.y,      s: 1.55, ease: 'inOutQuad'}, // beat 7: close the modal
+  {f: 2305, x: T_CHATFAB.x,     y: T_CHATFAB.y,     s: 1.3,  ease: 'inOutQuad'}, // pan far to the chat FAB
+  {f: 2461, x: T_CHATPANEL.x,   y: T_CHATPANEL.y,   s: 1.7,  ease: 'inOutQuad'}, // question sends
+  {f: 2690, x: T_CHATPANEL.x,   y: T_CHATPANEL.y,   s: 1.9,  ease: 'linear'},    // tighten on the real answer
 ];
 
 function rigAt(f) {
@@ -446,128 +473,169 @@ function rigAt(f) {
   for (let i = 0; i < kf.length - 1; i++) {
     if (f >= kf[i].f && f <= kf[i + 1].f) { a = kf[i]; b = kf[i + 1]; break; }
   }
-  if (a.f === b.f) return b;   // instantaneous target-switch pair -- see RIG_KF comment
+  if (a.f === b.f) return b;
   const q = E[b.ease || 'linear'](p01(a.f, b.f, f));
   return {x: lerp(a.x, b.x, q), y: lerp(a.y, b.y, q), s: lerp(a.s, b.s, q)};
 }
 
-TL.build({fps: 60, frames: 2700, tracks: [
+/* --- beat 9: 12-item tech stack, generated (not hand-duplicated 24 times) --- */
+const STACK_LINES = [
+  'Constraint modeling.',
+  'Vanilla JS.',
+  '12-source pipeline.',
+  'Optimization algorithms.',
+  'RAG AI.',
+  'API design.',
+  'AI evals: benchmark + human.',
+  'Scrapers + data pipelines with quality gates.',
+  'Data modeling (7,000+ courses).',
+  'Prompt-injection testing.',
+  'Serverless / edge deployment.',
+  'Cost engineering.',
+];
+const STACK_ROW_H = 58, STACK_POP_DUR = 34, STACK_STAGGER = 20, STACK_F0 = 2910;
+const STACK_FADE0 = 3200, STACK_FADE1 = 3235;
+const stackRows = STACK_LINES.map((text, i) => {
+  const el = document.createElement('div');
+  el.className = 'stack-line';
+  el.textContent = text;
+  el.style.top = (i * STACK_ROW_H) + 'px';
+  stackWrap.appendChild(el);
+  return el;
+});
+const stackTracks = stackRows.flatMap((el, i) => {
+  const onset = STACK_F0 + i * STACK_STAGGER;
+  return [
+    {el, f0: onset, f1: onset + STACK_POP_DUR, ease: 'outCubic', apply: (el, p) => {
+      el.style.opacity = p <= 0 ? 0 : 1;
+      el.style.transform = `translateY(${(1 - p) * -42}px)`;
+    }},
+    {el, f0: STACK_FADE0, f1: STACK_FADE1, ease: 'outQuad', apply: (el, p) => {
+      if (p > 0) el.style.opacity = 1 - p;
+    }},
+  ];
+});
+
+TL.build({fps: 60, frames: 3360, tracks: [
   // === beat 1 (0-210): browser bar types the real URL; headline pops; no cursor. ===
   {el: browserbar, f0: 0, f1: 170, ease: 'linear', apply: (el, p) => el._fx(p)},
   {el: browserbar, f0: 190, f1: 209, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
   {el: headline, f0: 100, f1: 175, ease: 'linear', apply: (el, p) => el._fx(p < 0.8 ? p / 0.8 : 1)},
   {el: headline, f0: 192, f1: 209, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === appframe: single writer for its own resting transform + pop-in + opacity. ===
-  // Isometric-feel rest tilt: long perspective (3800px, was 2200), mild combined
-  // rotation with much less rotateY than before -- fixes the old right-side skew.
+  // === appframe: single writer for its own resting transform + pop-in + opacity.
+  // Isometric-feel rest tilt: long perspective, mild combined rotation (unchanged from
+  // R8's fix for the old right-side skew). The RIG (separate track below) owns the
+  // continuous pan/zoom; appframe only owns its own tilt + entrance/exit. ===
   {f0: 0, run: f => {
     const rest = s => `perspective(3800px) rotateX(2.2deg) rotateY(-2.2deg) rotateZ(.4deg) scale(${s})`;
     let s, op;
     if (f < 210) { s = 0.7; op = 0; }
     else if (f < 222) { const q = E.outBack(p01(210, 222, f)); s = 0.7 + q * 0.3; op = Math.min(1, (f - 210) / 4); }
-    else if (f < 2000) { s = 1; op = 1; }
-    else if (f < 2010) { s = 1; op = 1 - p01(2000, 2010, f); }
+    else if (f < 2680) { s = 1; op = 1; }
+    else if (f < 2700) { s = 1; op = 1 - p01(2680, 2700, f); }
     else { s = 1; op = 0; }
     appframe.style.opacity = op;
     appframe.style.transform = rest(s);
   }},
 
-  // === zoom rig: single writer for the whole video. ===
+  // === zoom rig: single writer for the whole video (translate+scale, see architecture
+  // note -- transform-origin is pinned to 0,0 once, above, not touched per-frame). ===
   {f0: 0, run: f => {
     const r = rigAt(f);
-    zoomrig.style.transformOrigin = r.x + 'px ' + r.y + 'px';
-    zoomrig.style.transform = `scale(${r.s})`;
+    const tx = 960 - r.s * r.x, ty = 540 - r.s * r.y;
+    zoomrig.style.transform = `translate(${tx}px,${ty}px) scale(${r.s})`;
   }},
 
-  // === cursor: single writer for opacity + position, beats 2-8 only. ===
+  // === cursor: single writer for opacity + position, beats 2-7 only (fades out
+  // alongside appframe into the beat-8 hard cut rather than popping instantly). ===
   {f0: 0, run: f => {
-    cur.layer.style.opacity = (f >= 210 && f < 2280) ? 1 : 0;
-    if (f >= 210 && f < 480) cur.update(mapCur(Cursor.stateAt(s6log, f)));
-    else if (f >= 480 && f < 750) cur.update(mapCur(Cursor.stateAt(s7log, f)));
-    else if (f >= 750 && f < 1080) cur.update(mapCur(Cursor.stateAt(s8log, f)));
-    else if (f >= 1080 && f < 1380) cur.update(mapCur(Cursor.stateAt(s3log, Math.min(f, 1292))));
-    else if (f >= 1380 && f < 1680) cur.update(mapCur(Cursor.stateAt(s9log, f)));
-    else if (f >= 1680 && f < 2010) cur.update(mapCur(Cursor.stateAt(s10log, f)));
-    else if (f >= 2010 && f < 2280) cur.update({x: 1560, y: 185, pressed: false, ripple: 0});
+    let op;
+    if (f < 210 || f >= 2700) op = 0;
+    else if (f < 2680) op = 1;
+    else op = 1 - p01(2680, 2700, f);
+    cur.layer.style.opacity = op;
+    if (f >= 210 && f < 540) cur.update(mapCur(Cursor.stateAt(s11log, f)));
+    else if (f >= 540 && f < 960) cur.update(mapCur(Cursor.stateAt(s12log, f)));
+    else if (f >= 960 && f < 1290) cur.update(mapCur(Cursor.stateAt(s13log, f)));
+    else if (f >= 1290 && f < 1740) cur.update(mapCur(Cursor.stateAt(s14log, f)));
+    else if (f >= 1740 && f < 2190) cur.update(mapCur(Cursor.stateAt(s15log, f)));
+    else if (f >= 2190 && f < 2700) cur.update(mapCur(Cursor.stateAt(s16log, f)));
   }},
 
-  // === beat 2 (210-480): import, s6 at srcFps 80 (360 src -> 270 beat frames). ===
-  seq(appS6, 210, 480, 's6', 360, 80),
-  {el: stmtImport, f0: 225, f1: 320, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtImport, f0: 455, f1: 478, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  // dynamic border highlight over the scan-populate window (master ~315-420, source
-  // click-scan f140 -> master315 through click-add f280 -> master420).
-  {el: hlImport, f0: 300, f1: 325, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlImport, f0: 425, f1: 450, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // === beat 2 (210-540): majors scroll + pick, s11 (330 src, 1:1). ===
+  seq(appS11, 210, 540, 's11', 330, 60),
+  {el: stmtMajors, f0: 225, f1: 320, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: stmtMajors, f0: 515, f1: 538, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 3 (480-750): majors scroll, s7 at srcFps 300*60/270 (300 src -> 270). ===
-  seq(appS7, 480, 750, 's7', 300, 300 * 60 / 270),
-  {el: stmtMajors, f0: 495, f1: 590, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtMajors, f0: 725, f1: 748, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // === beat 3 (540-960): transcript import -> PLAN GENERATES, s12 (420 src, 1:1). ===
+  seq(appS12, 540, 960, 's12', 420, 60),
+  {el: stmtImport, f0: 555, f1: 650, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: stmtImport, f0: 935, f1: 958, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // dynamic border highlight over the scan-populate window (master ~630-905).
+  {el: hlImport, f0: 630, f1: 655, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: hlImport, f0: 880, f1: 903, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 4 (750-1080): bucket + drag + sit tail, s8 at srcFps 480*60/330. ===
-  seq(appS8, 750, 1080, 's8', 480, 480 * 60 / 330),
-  {el: stmtBucket, f0: 765, f1: 860, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtBucket, f0: 940, f1: 960, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  // sit-tail bucket emphasis: rail buckets first, then the ACC 200 card, matching
-  // the rig's own punch-to-buckets / punch-to-ACC200 phases above.
-  {el: hlGeRel, f0: 970, f1: 990, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlMajor, f0: 995, f1: 1015, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlGeRel, f0: 1025, f1: 1040, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  {el: hlMajor, f0: 1025, f1: 1040, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  {el: hlAcc200, f0: 1048, f1: 1064, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: hlAcc200, f0: 1074, f1: 1080, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // === beat 4 (960-1290): bucket dropdown expand, s13 (330 src, 1:1). ===
+  seq(appS13, 960, 1290, 's13', 330, 60),
+  {el: stmtBucket, f0: 975, f1: 1070, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: stmtBucket, f0: 1265, f1: 1288, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 5 (1080-1380): warnings/scholarships/abroad, s3 clamp-held at source 180. ===
-  seq(appS3, 1080, 1380, 's3', 181, 51),
-  {el: stmtRing, f0: 1095, f1: 1190, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtRing, f0: 1350, f1: 1378, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  {el: ring, f0: 1260, f1: 1320, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: ring, f0: 1365, f1: 1379, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // === beat 5 (1290-1740): opportunities scrub, s14 (450 src, 1:1). ===
+  seq(appS14, 1290, 1740, 's14', 450, 60),
+  {el: stmtPanel, f0: 1305, f1: 1400, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: stmtPanel, f0: 1715, f1: 1738, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  {el: hlPanel, f0: 1305, f1: 1330, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: hlPanel, f0: 1715, f1: 1738, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 6 (1380-1680): ACC 200 modal, s9 1:1 (300 src -> 300 beat frames). ===
-  seq(appS9, 1380, 1680, 's9', 300, 60),
-  {el: stmtModal, f0: 1395, f1: 1480, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtModal, f0: 1655, f1: 1678, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // === beat 6 (1740-2190): ACC 200 modal + live seat-count click, s15 (450 src, 1:1). ===
+  seq(appS15, 1740, 2190, 's15', 450, 60),
+  {el: stmtModal, f0: 1755, f1: 1850, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: stmtModal, f0: 2165, f1: 2188, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 7 (1680-2010): critique chat, s10 at srcFps 400*60/330 (400 -> 330). ===
-  seq(appS10, 1680, 2010, 's10', 400, 400 * 60 / 330),
-  {el: stmtChat, f0: 1790, f1: 1880, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtChat, f0: 1985, f1: 2008, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // === beat 7 (2190-2700): modal close -> advisor pan -> real Q&A, s16 (510 src, 1:1). ===
+  seq(appS16, 2190, 2700, 's16', 510, 60),
+  {el: stmtChat, f0: 2205, f1: 2300, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: stmtChat, f0: 2675, f1: 2698, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
 
-  // === beat 8 (2010-2280): terminal + tests, one quick flash, no circle wipe. ===
-  {el: stmtScraper, f0: 2020, f1: 2080, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: stmtScraper, f0: 2260, f1: 2278, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
-  {f0: 2010, run: f => {
-    const on = f >= 2010 && f < 2140;
+  // === beat 8 (2700-2910): terminal + tests, one quick flash, no circle wipe.
+  // Statement pinned to y 130-310; terminal+tests both pinned to y 350-1040 -- see
+  // architecture note. Both reveals are clip-path self-masks, zero cover rectangles. ===
+  {el: stmtScraper, f0: 2715, f1: 2810, ease: 'linear', apply: (el, p) => el._fx(p)},
+  {el: stmtScraper, f0: 2885, f1: 2908, ease: 'outQuad', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  {f0: 2700, run: f => {
+    const on = f >= 2700 && f < 2800;
     term.el.style.opacity = on ? 1 : 0;
-    if (on) term.update(SCRAPER_LOG_CLEAN, (f - 2010) / 130);
+    if (on) {
+      // Self-mask: the terminal WINDOW materializes via its own clip-path over the
+      // first 18 frames (a "curtain" opening top-down), while its internal lines
+      // continue to type on their own cadence via terminal.js's update().
+      const openP = Math.max(0, Math.min(1, (f - 2700) / 18));
+      term.el.style.clipPath = `inset(0 0 ${(1 - openP) * 100}% 0)`;
+      term.update(SCRAPER_LOG_CLEAN, (f - 2700) / 100);
+    }
   }},
-  // Seamless tests reveal: clip-path inset animated on the <img> ITSELF (never a
-  // covering rect -- the old rect mismatched the gradient background).
-  {f0: 2140, run: f => {
-    const on = f >= 2140 && f < 2280;
+  {f0: 2800, run: f => {
+    const on = f >= 2800 && f < 2910;
     tests.style.opacity = on ? 1 : 0;
     testsCounter.style.opacity = on ? 1 : 0;
     if (on) {
-      const p = Math.max(0, Math.min(1, (f - 2145) / 105));
+      const p = Math.max(0, Math.min(1, (f - 2805) / 90));
       tests.style.clipPath = `inset(0 0 ${(1 - p) * 100}% 0)`;
       const shown = Math.round(TEST_TOTALS.pass * p);
       testsCounter.textContent = `${shown}/${TEST_TOTALS.cases} invariants green`;
     }
   }},
 
-  // === beat 9 (2280-2520): three tech-component credits, no cursor. ===
-  {el: credits, f0: 2280, f1: 2470, ease: 'linear', apply: (el, p) => el._fx(p)},
-  {el: credits, f0: 2490, f1: 2515, ease: 'linear', apply: (el, p) => { if (p > 0) el.style.opacity = 1 - p; }},
+  // === beat 9 (2910-3240): 12-item tech stack, sequential downward dropdown. ===
+  ...stackTracks,
 
-  // === beat 10 (2520-2700): outro URL typewriter on dark, no cursor. ===
-  {f0: 2520, run: f => {
-    const on = f >= 2520;
-    outroWrap.style.opacity = on ? Math.min(1, (f - 2520) / 25) : 0;
+  // === beat 10 (3240-3360): outro URL typewriter on dark, no cursor. ===
+  {f0: 3240, run: f => {
+    const on = f >= 3240;
+    outroWrap.style.opacity = on ? Math.min(1, (f - 3240) / 15) : 0;
     if (!on) return;
-    const TA = 2550, TB = 2670, url = 'jordanheaton.com/myplanBYU';
+    const TA = 3260, TB = 3350, url = 'jordanheaton.com/myplanBYU';
     const p = Math.max(0, Math.min(1, (f - TA) / (TB - TA)));
     FX.typewriter(outroText, url, p);
     outroCaret.style.opacity = p < 1 ? 1 : 0;
