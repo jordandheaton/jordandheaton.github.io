@@ -263,7 +263,7 @@ const seq = (el, f0, f1, name, count, srcFps = 60, start = 0) =>
    s10 (critique chat, 400 src -> 330 beat frames): srcFps 400*60/330, ratio 0.825
        -> master = 1680 + f*0.825. */
 const s6log  = {fps:60, events: EVENTS_S6.events.map(e => ({...e, f: Math.round(210 + e.f * 0.75)}))};
-const s7log  = {fps:60, events: EVENTS_S7.events.map(e => ({...e, f: Math.round(480 + e.f * (300*60/270))}))};
+const s7log  = {fps:60, events: EVENTS_S7.events.map(e => ({...e, f: Math.round(480 + e.f * 0.9)}))}; // 0.9 = 60/srcFps, srcFps = 300*60/270
 const s8log  = {fps:60, events: EVENTS_S8.events.map(e => ({...e, f: Math.round(750 + e.f * 0.6875)}))};
 const s3log  = {fps:60, events: EVENTS_S3.events.filter(e => e.f <= 180)
                                 .map(e => ({...e, f: Math.round(1080 + e.f * (60/51))}))};
