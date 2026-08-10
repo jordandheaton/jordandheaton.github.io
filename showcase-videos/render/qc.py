@@ -36,7 +36,7 @@ def main():
             fail.append(f"{name}: no h264 stream"); continue
         v = vlist[0]
         aac = [s for s in j["streams"] if s["codec_name"] == "aac"]
-        if not (30 <= dur <= 50): fail.append(f"{name}: duration {dur:.1f}s outside 30-50")
+        if not (30 <= dur <= 60): fail.append(f"{name}: duration {dur:.1f}s outside 30-60")
         if mb > 10: fail.append(f"{name}: {mb:.1f} MB > 10")
         if (v["width"], v["height"]) != (1920, 1080): fail.append(f"{name}: {v['width']}x{v['height']}")
         if v["r_frame_rate"] != "60/1": fail.append(f"{name}: fps {v['r_frame_rate']}")

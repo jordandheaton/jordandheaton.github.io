@@ -21,6 +21,18 @@ try:
     with open(os.path.join(raw_dir, "report.json"), "w") as f:
         json.dump(payload, f, indent=1)
     c.eval("document.querySelector('#emit').style.display='none'; window.scrollTo(0,0)")
+    # Dash-clean pass (screenshot only -- runs AFTER totals are already parsed
+    # above, so it cannot affect the report.json numbers). Same convention as
+    # the composition's own SCRAPER_LOG_CLEAN: replace em dashes with a
+    # middot so no em dash ever reaches on-screen pixels, per the binding
+    # "no em dashes on screen" rule. Walks every text node (covers the "—
+    # solver tests" heading, the dim "—" skip-status glyph, and any course
+    # names that happen to carry one) rather than special-casing selectors.
+    c.eval(
+        "(()=>{const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null);"
+        "let n;while((n=w.nextNode())){if(n.nodeValue.indexOf('\\u2014')!==-1){"
+        "n.nodeValue=n.nodeValue.split('\\u2014').join('\\u00b7');}}})()"
+    )
     c.shot(os.path.join(out_dir, "report.png"))
     t = payload["totals"]
     print("PASS" if t["fail"] == 0 else "FAIL", t)
