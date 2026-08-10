@@ -36,9 +36,9 @@ cd showcase-videos/render
 python build_myplan_audio.py --music ../music/myplan.mp3 --clicks "24,29,34,40,45,51,56,61,67,72,78,83,88,94,99,105,110,115,121,126,132,137,142" --clicks2 "3262,3266,3269,3273,3276,3280,3283,3286,3290,3293,3297,3300,3304,3307,3311,3314,3318,3321,3325,3328,3331,3335,3338,3342,3345,3349" --fps 60 --out ../music/myplan-mix.wav
 cd ../..
 
-# renders (myplanBYU: 56s continuous cut, crf 28 to stay <=10MB; scroller 35s at crf 27)
+# renders (myplanBYU: 56s continuous cut, crf 28; scroller: 46s real-media cut, crf 34 — both to stay <=10MB)
 python showcase-videos/render/render.py ../compose/myplanbyu.html --out ../dist/myplanbyu-showcase.mp4 --crf 28 --music ../music/myplan-mix.wav
-python showcase-videos/render/render.py ../compose/scroller.html --out ../dist/universe-scroller-process.mp4 --crf 27 --music ../music/scroller.mp3
+python showcase-videos/render/render.py ../compose/scroller.html --out ../dist/universe-scroller-process.mp4 --crf 34 --music ../music/scroller.mp3
 
 # QC gate (strict: requires AAC audio + duration sync in both files)
 python showcase-videos/render/qc.py
@@ -47,7 +47,7 @@ python showcase-videos/render/qc.py
 ## Gotchas
 
 - After re-capturing myplanBYU, re-inline the event JSONs + test totals into `compose/myplanbyu.html` (PowerShell snippets in the plan's Task 7).
-- Scroller uses `--crf 27` to stay ≤10 MB; render times ~20 min each (~45 ms/frame virtual-time stepping).
+- Scroller uses `--crf 34` (real-media content compresses hard; crf 27 measured 21.3 MB vs the 10 MB cap); render times a few minutes each on an idle machine.
 - `.ps1` files must stay ASCII-only; PowerShell 5.1 reads BOM-less files as ANSI.
 - Frame intermediates must never live inside the OneDrive tree — all captured and render frames route to `%TEMP%\showcase`.
 - The scroller pipeline's source media (`Universe scroller/draft-test/` clips + anchors, and since Revision 7 `Universe scroller/media/` — the real project clips/anchors used in the generation, stitch, and outro beats) is deliberately gitignored and exists only on this machine — a re-render elsewhere needs those files copied in first.
