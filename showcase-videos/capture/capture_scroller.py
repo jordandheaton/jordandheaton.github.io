@@ -37,7 +37,6 @@ try:
     # f00000/f00150/f00299 after capture.
     for name, frames, a, b, ease in (
         ("hook", 300, 0.455, 0.985, ease_io),    # 5s fast continent->solar system->galaxy scrub
-        ("outro", 270, 0.40, 0.56, lambda p: p), # 4.5s slow drift
     ):
         d = os.path.join(OUT, name)
         os.makedirs(d, exist_ok=True)
@@ -48,6 +47,33 @@ try:
             c.shot_jpeg(os.path.join(d, "f%05d.jpg" % f), quality=90)
             if f % 60 == 0:
                 print(" ", name, f, c.eval("window.__uni && window.__uni.idx"))
+
+    # ---- outro: FULL journey scrub, 0.0 -> 1.0 (Revision 7 / R16) ----------
+    # The site opens mid-journey on the leaf BY DESIGN (frameFromScroll/OPEN_
+    # FRAME in scroller.js), and "hook" above just left the page scrolled deep
+    # into the Milky Way -- so a hard scrollTo(0, 0) moves the TARGET to frame 0
+    # instantly, but the eased playhead (0.22/tick, see scroller.js tick())
+    # takes real ticks to catch up. Without a settle pause the first captured
+    # frames would show the tail end of that glide instead of sitting inside
+    # the smallest scene (Chromosome chapter, idx 0) -- exactly the "starts
+    # inside the cell" requirement. 50 vt_step ticks is enough for 0.78**n to
+    # shrink any starting offset under half a frame (worst case right after
+    # "hook": playhead ~1400 units from the new target of 0).
+    OUTRO_FRAMES = 720                          # 12s @60fps, gentle ease, full 27-decade sweep
+    name = "outro"
+    d = os.path.join(OUT, name)
+    os.makedirs(d, exist_ok=True)
+    c.eval("scrollTo(0, 0)")
+    for _ in range(50):
+        c.vt_step()
+    print(" outro settle idx:", c.eval("window.__uni && window.__uni.idx"))
+    for f in range(OUTRO_FRAMES):
+        p = ease_io(f / (OUTRO_FRAMES - 1))
+        c.eval("scrollTo(0, %d)" % int(H * p))
+        c.vt_step()
+        c.shot_jpeg(os.path.join(d, "f%05d.jpg" % f), quality=90)
+        if f % 60 == 0 or f == OUTRO_FRAMES - 1:
+            print(" ", name, f, c.eval("window.__uni && window.__uni.idx"))
     print("frames:", c.eval("JSON.stringify(window.__uni)"))
 finally:
     if c:
