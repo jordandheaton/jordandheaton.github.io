@@ -335,6 +335,14 @@ Acceptance: an analytic scale/position-vs-frame table derived from the
 keyframes proving rule 1 (monotonic scale within transitions) + frame
 sequences across every transition after t=15s showing smooth motion.
 
+## Revision 6 — no highlight annotations (2026-08-10, Jordan)
+
+Remove ALL arc/circle highlight annotations from the myplanBYU composition
+(the four FX.arcs uses: import, PHIL 201 pick, opportunities panel, seat
+table). No replacement — the cursor and camera carry the emphasis. FX.arcs
+stays in fx.js (tested primitive, other cuts may use it). Poster re-extracted
+arc-free. Everything else unchanged.
+
 ## Out of scope
 
 - Voiceover (a VO pass can be layered later without redesign)
