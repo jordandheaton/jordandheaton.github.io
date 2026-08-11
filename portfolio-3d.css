@@ -504,7 +504,17 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   position: relative; z-index: 1;
   transform-origin: top left;
 }
-.wcard.is-expanded .wcard-inner { justify-content: flex-start; }
+/* min-height:0 above lets the collapsed card's wrapper shrink gracefully —
+   but inherited into the expanded story it breaks BOTH sticky children
+   (.wcard-bar close/traffic-lights, .wcard-foot CTA): a flex item with
+   min-height:0 and overflow:visible is allowed to lay out SHORTER than its
+   own content (here: the viewport's ~700px instead of the story's real
+   ~2500px), and position:sticky can only stick within its own parent's box —
+   so past roughly one screen of scrolling both bars ran out of room and
+   scrolled away with the text, taking the only obvious close affordance
+   with them. min-height:auto (the default) makes this wrapper grow to its
+   real content height, giving sticky its full range back. */
+.wcard.is-expanded .wcard-inner { justify-content: flex-start; min-height: auto; }
 
 /* faint themed watermark icon peeking from the window's corner */
 .wcard-bg {
@@ -1080,6 +1090,13 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
   .work-ghost .wg { white-space: normal; text-align: center; font-size: 16.5vw; line-height: 0.95; }
   .wcard-body { padding: 18px 18px 4px; }
   .wcard h3 { font-size: 1.3rem; }
+  /* .wcard-featured h3's nowrap (line ~623) assumes the wider desktop card,
+     where the title's own clamp() keeps it to one line by design. This phone
+     breakpoint bumps the font size back up without widening the card, so
+     "myplanBYU — Degree Optimizer" and "Process Improvement Analysis" were
+     both clipped mid-word with no ellipsis. Letting it wrap is the simplest
+     fix — plenty of vertical room here, unlike the aligned desktop row. */
+  .wcard-featured h3 { white-space: normal; }
   .wcard p { font-size: 0.88rem; margin-bottom: 14px; }
   .wcard-cta { margin-top: 16px; padding: 11px 18px 13px; }
   .wcard-bar { padding: 10px 12px; gap: 8px; }
