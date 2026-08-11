@@ -1133,9 +1133,12 @@
     let paneBusy = false;
     let othersShown = false;
 
-    // Everything that is not the movement itself: which arrow exists, which
-    // edge the sunset band hangs off. All of it snaps, so it happens midway
-    // through the swap, while .cards-moving is holding both at opacity 0.
+    // Everything that is not the movement itself: which arrow exists (a11y +
+    // tab order via `hidden`), which pane is aria-hidden, which edge the
+    // sunset band hangs off. All of it snaps — the visible fade is handled
+    // separately by the opacity tweens flanking this call in showPane(). The
+    // band itself stays invisible for the whole .cards-moving window either
+    // way, so exactly when its edge flips inside that window is unobservable.
     function setPaneChrome(others) {
       workGridEl.classList.toggle("others-active", others);
       paneFeat.setAttribute("aria-hidden", others ? "true" : "false");
@@ -1160,8 +1163,16 @@
       const inPane = others ? paneOthers : paneFeat;
       const outCards = others ? featCards : otherCards;
       const inCards = others ? otherCards : featCards;
+      const outArrow = others ? paneNext : paneBack;
+      const inArrow = others ? paneBack : paneNext;
 
-      if (reduced || !window.gsap) {
+      // Instant path when reduced-motion, GSAP failed to load, or the tab is
+      // backgrounded — same reasoning as wmaxInstant() above: a frozen rAF
+      // loop must never strand an arrow mid-fade or leave both invisible.
+      // Clear any inline opacity a previous, interrupted animated swap left
+      // behind so CSS (.work-lit .pane-arrow) is back in sole control.
+      if (reduced || !window.gsap || document.hidden) {
+        if (window.gsap) gsap.set([paneNext, paneBack], { clearProps: "opacity" });
         setPaneChrome(others);
         outPane.classList.remove("is-active");
         inPane.classList.add("is-active");
@@ -1205,9 +1216,13 @@
           // next measurement, since getBoundingClientRect includes transforms
           gsap.set(outCards, { x: 0 });
           outCards.concat(inCards).forEach((el) => el.classList.remove("is-entering"));
-          // last of all: the arrow and the band come back up over 0.6s, on the
-          // other side of the screen, with nothing left moving behind them
+          // last of all: the band comes back up, with nothing left moving behind it
           workGridEl.classList.remove("cards-moving");
+          // both arrows are exactly where their own tweens left them (out: 0 +
+          // hidden, in: 1 + visible) — hand opacity back to CSS now, or a
+          // leftover inline value would outlive this swap and block the
+          // unlit/hover rules on every swap after it
+          gsap.set([paneNext, paneBack], { clearProps: "opacity" });
           paneBusy = false;
         },
       });
@@ -1223,14 +1238,35 @@
         clearProps: "transform",     // give the hover lift its transform back
       }, outEnd + GAP);
 
-      /* The arrow swap and the band's change of edge are both instant, so they
-         happen here, at the darkest point of the 0.6s fade — after the old
-         arrow has faded out, before the new one starts coming back. Focus moves
-         with it: focusing a still-`hidden` element does nothing. */
+      /* The arrow you press fades OUT the instant you press it; the opposite
+         arrow fades IN once its pane has actually settled — not a hard cut.
+         fromTo (not `to`) pins an explicit from:1, so this doesn't matter what
+         CSS's own opacity rules for .cards-moving currently compute — GSAP's
+         inline style outranks the stylesheet for the whole tween regardless,
+         which is what makes it a real fade instead of a 0→0 no-op. */
+      const OUT_FADE_D = 0.28, IN_FADE_D = 0.32;
+      tl.fromTo(outArrow, { opacity: 1 },
+        { opacity: 0, duration: OUT_FADE_D, ease: "power1.out" }, 0);
+
+      /* `hidden` still toggles here, for a11y/tab-order — but only once the
+         outgoing arrow is fully invisible (display:none can't animate, so any
+         earlier would cut its fade short) and no later (the incoming arrow
+         must already be a11y-visible before ITS fade starts, or the fade would
+         run on an element the accessibility tree doesn't know exists yet). The
+         incoming arrow is forced to opacity 0 in the SAME tick it stops being
+         `hidden`, so removing `hidden` can never flash it at full opacity for
+         a frame before its own fade-in takes over. Focus moves with it, same
+         as before: focusing a still-hidden element does nothing. */
       tl.add(() => {
+        gsap.set(inArrow, { opacity: 0 });
         setPaneChrome(others);
         (others ? paneBack : paneNext).focus({ preventScroll: true });
-      }, 0.62);
+      }, OUT_FADE_D);
+
+      // mirrors inCards' own finish time (its stagger's last start + IN_D), so
+      // the arrow only brightens once the last card has actually arrived
+      const inEnd = outEnd + GAP + IN_D + STEP * (inCards.length - 1);
+      tl.to(inArrow, { opacity: 1, duration: IN_FADE_D, ease: "power1.out" }, inEnd);
     }
     paneNext.addEventListener("click", () => showPane(true));
     paneBack.addEventListener("click", () => showPane(false));

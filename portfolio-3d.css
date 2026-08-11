@@ -755,6 +755,15 @@ body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: t
 body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
   opacity: 0; pointer-events: none;    /* unclickable while it is invisible */
 }
+/* showPane()'s GSAP timeline drives .pane-arrow's opacity directly (inline,
+   every frame) for the whole cards-moving window — but the base rule above
+   still carries `transition: ... opacity 0.6s ease` for the hover glow, and
+   an active CSS transition fights a per-frame inline write exactly like
+   .wcard's hover-lift `transition: transform 0.3s` fights the FLIP tween
+   elsewhere in this file (see the comment by .wcard.is-flipping). Covers the
+   initial entrance's cards-moving window too, where the arrow is invisible
+   either way, so killing its transition there is a no-op, not a regression. */
+#work-grid.cards-moving .pane-arrow { transition: none; }
 
 /* ===================== STORY: THE CARD ITSELF EXPANDS =====================
    There is no separate window element. openStory() lifts the real card out of
@@ -849,34 +858,66 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
 }
 
 /* below the 3-across layout the cards go full-width, so the arrow can't own a
-   clear margin — it becomes a floating pill riding the edge instead */
+   clear margin — it drops in-flow below the card stack instead. No pill chrome
+   here any more: same chrome-less chevron+label as desktop, just centred and
+   in normal flow instead of pinned to the gutter. */
 @media (max-width: 1100px) {
   .pane-arrow {
     padding: 12px 8px;
-    /* The pill is now in-flow (grid item) across the whole ≤1100px range, not
-       absolutely positioned. Visual styling (backdrop, border, border-radius) stays
-       to help it read as a distinct element on the desk. */
-    background: rgba(9, 12, 20, 0.97);
-    border: 1px solid rgba(120, 150, 220, 0.28);
-    border-radius: 999px;
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    position: static; grid-column: 1 / -1; justify-self: center;
+    background: none; border: 0; border-radius: 0;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    /* `relative`, not `static`: touch has no hover, so ::before below needs to
+       be visible without one — which means it can no longer sit inertly
+       behind an opaque pill background. Once visible it needs THIS element as
+       its containing block (inset:-12px is relative to .pane-arrow's own box),
+       or it balloons out to fill .work-panes, the nearest positioned ancestor.
+       `relative` still leaves the element in-flow as a grid item; the desktop
+       offsets it would otherwise inherit (top/right/left, meant for
+       position:absolute) are neutralised to auto so it does not shift. */
+    position: relative; top: auto; right: auto; left: auto; bottom: auto;
+    grid-column: 1 / -1; justify-self: center;
   }
-  .pane-arrow span { writing-mode: horizontal-tb; }  /* pill reads horizontally */
+  .pane-arrow span { writing-mode: horizontal-tb; }  /* reads horizontally in flow */
   .pane-arrow:hover, .arrow-back:hover,
   body.js:not(.reduced) .pane-arrow,
   body.js:not(.reduced) #work-grid.work-lit .pane-arrow {
-    transform: none;   /* static pill doesn't move on hover or state changes */
+    transform: none;   /* in-flow arrow doesn't move on hover or state changes */
   }
+  /* touch devices have no hover: show the desktop's faint radial-gradient
+     circle (normally .pane-arrow::before, hover-only) by default instead —
+     tuned down from the desktop hover value of 1, "very faint" against the
+     dark desk */
+  .pane-arrow::before { opacity: 0.55; }
   /* the cards go full-width here and the column runs several screens tall, so the
-     band would be a thin wash down the whole scroll — the pill carries the hint */
+     band would be a thin wash down the whole scroll — the circle carries the hint */
   #work-panes::before { display: none; }
 }
 
 @media (max-width: 720px) {
   .wcard.is-expanded { border-radius: 0; }
   .wcard.is-expanded .wcard-body { padding: 24px 22px 0; }
-  .wcard.is-expanded .wexp-content { padding: 0 22px 24px; }
+  /* Showcase video first: on phones the story should open ON the video, not
+     three screens below it. `order` only — the DOM stays authored-order so
+     desktop (which never enters this media query) is untouched. Flex breaks
+     the adjacent-margin collapsing the rest of this rhythm relies on (block
+     flow was letting .wx-learned-label's mt:26 collapse with the container's
+     own top edge, and .wx-sec's mt:28 collapse with .wx-learned's mb:6, into
+     smaller *shared* gaps) — margins below are re-tuned for the flex context
+     rather than just inherited, or the gaps visibly grow. */
+  .wcard.is-expanded .wexp-content {
+    padding: 0 22px 24px;
+    display: flex; flex-direction: column;
+  }
+  /* Measured against the site's own 28px section rhythm (.wx-sec's own
+     margin-top) and corrected to match it exactly, in both directions:
+     video sits flush at the top (its own 28px margin would otherwise be
+     uncollapsed dead space above it, since it's now the first child) and
+     picks the label's un-collapsed 28px back up instead; the label's tag
+     row loses its un-collapsed 6px trailing margin so the section right
+     after it lands at 28px too, not 34px. */
+  .wcard.is-expanded .wexp-content .wx-sec.wx-video { order: -1; margin-top: 0; }
+  .wcard.is-expanded .wexp-content .wx-learned-label { margin-top: 28px; }
+  .wcard.is-expanded .wexp-content .wx-learned { margin-bottom: 0; }
 }
 
 /* ============================================================
