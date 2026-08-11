@@ -852,23 +852,22 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
    clear margin — it becomes a floating pill riding the edge instead */
 @media (max-width: 1100px) {
   .pane-arrow {
-    right: -6px; padding: 12px 8px;
-    /* near-opaque + a stronger blur: at this width the card is full-bleed, so the
-       pill has nowhere to float that ISN'T over some card's own text. That overlap
-       is only tolerable in the 721-1100px tablet range, where there is still a
-       little true margin outside the card — below 720px it isn't (measured: ~56px
-       of the pill sat on top of card copy at 375px), so the 720px block further
-       down relocates the pill entirely instead of just dressing up the collision.
-       Here a solid-reading backdrop keeps the remaining tablet-width overlap from
-       looking like garbled double-exposed type underneath it, instead of a small
-       deliberate chip sitting on top of the desk. */
+    padding: 12px 8px;
+    /* The pill is now in-flow (grid item) across the whole ≤1100px range, not
+       absolutely positioned. Visual styling (backdrop, border, border-radius) stays
+       to help it read as a distinct element on the desk. */
     background: rgba(9, 12, 20, 0.97);
     border: 1px solid rgba(120, 150, 220, 0.28);
     border-radius: 999px;
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    position: static; grid-column: 1 / -1; justify-self: center;
   }
   .pane-arrow span { writing-mode: horizontal-tb; }  /* pill reads horizontally */
-  .arrow-back { left: -6px; right: auto; }
+  .pane-arrow:hover, .arrow-back:hover,
+  body.js:not(.reduced) .pane-arrow,
+  body.js:not(.reduced) #work-grid.work-lit .pane-arrow {
+    transform: none;   /* static pill doesn't move on hover or state changes */
+  }
   /* the cards go full-width here and the column runs several screens tall, so the
      band would be a thin wash down the whole scroll — the pill carries the hint */
   #work-panes::before { display: none; }
@@ -878,26 +877,6 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
   .wcard.is-expanded { border-radius: 0; }
   .wcard.is-expanded .wcard-body { padding: 24px 22px 0; }
   .wcard.is-expanded .wexp-content { padding: 0 22px 24px; }
-
-  /* The floating edge-pill above (1100px block) has nowhere to float on a
-     phone that ISN'T over some card's own text — full-bleed cards leave no
-     true gutter (measured at 375px: ~56px of the pill sat on top of card
-     copy). Below 720px the arrow drops out of that absolute/centred scheme
-     and becomes the LAST ITEM of its own pane's card grid instead (moved in
-     the markup — see the comments by #pane-next / #pane-back in index.html):
-     a centred pill that lives in normal flow right after the last card, with
-     the grid's own `gap` as its clearance. That also solves reachability for
-     free, because it now sits wherever that pane's content actually ends,
-     rather than at a single guessed offset that would have to work for both
-     the multi-screen-tall featured stack and the much shorter others grid. */
-  .pane-arrow {
-    position: static; grid-column: 1 / -1; justify-self: center;
-  }
-  .pane-arrow:hover, .arrow-back:hover,
-  body.js:not(.reduced) .pane-arrow,
-  body.js:not(.reduced) #work-grid.work-lit .pane-arrow {
-    transform: none;   /* all three above assume the old absolute/centred pill */
-  }
 }
 
 /* ============================================================
