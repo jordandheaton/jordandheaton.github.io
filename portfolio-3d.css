@@ -853,10 +853,18 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
 @media (max-width: 1100px) {
   .pane-arrow {
     right: -6px; padding: 12px 8px;
-    background: rgba(11, 15, 24, 0.88);
+    /* near-opaque + a stronger blur: at this width the card is full-bleed, so the
+       pill has nowhere to float that ISN'T over some card's own text (measured:
+       it lands across the middle featured card's blurb one way, and across the
+       next mini card's title-bar path the other way — there is only ~30px of
+       true margin outside the card and the pill needs to stay >=44px to keep
+       its tap target, so some geometric overlap is unavoidable). A solid-reading
+       backdrop keeps that overlap from looking like garbled double-exposed type
+       underneath it, instead of a small deliberate chip sitting on top of the desk. */
+    background: rgba(9, 12, 20, 0.97);
     border: 1px solid rgba(120, 150, 220, 0.28);
     border-radius: 999px;
-    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   }
   .pane-arrow span { writing-mode: horizontal-tb; }  /* pill reads horizontally */
   .arrow-back { left: -6px; right: auto; }
