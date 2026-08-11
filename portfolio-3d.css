@@ -1056,6 +1056,24 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
     width: calc(100% + 16px); /* gap:18px - 2px safety, split 8px per side */
     height: 44px;
   }
+  /* Mobile scrim: the content column is nearly full-width on phones, so page
+     text scrolls directly under the nav links with nothing behind them. A
+     ::before sits behind the bar's own children (negative z-index paints
+     right after the .bar stacking context's background, before the in-flow
+     brand/links/socials) so it never dims or hit-tests over the nav — it's
+     pure background, pointer-events:none besides. Dark scrim matches --bg
+     (#05070f); the light variant matches .about/.skills-band (#e7f0f3, the
+     section the bar sits over for most of the .bar--light run). Fades to
+     transparent by the bottom of the bar so it doesn't cut a hard edge over
+     the hero video or any section beneath. */
+  .bar::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(180deg, rgba(5, 7, 15, 0.94), rgba(5, 7, 15, 0.6) 68%, transparent);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .bar--light::before {
+    background: linear-gradient(180deg, rgba(231, 240, 243, 0.96), rgba(231, 240, 243, 0.68) 68%, transparent);
+  }
   section { padding: 12vh 6vw; }
   .about-cols { grid-template-columns: 1fr; }
   .stat-strip { grid-template-columns: repeat(2, 1fr); gap: 34px 4vw; }
