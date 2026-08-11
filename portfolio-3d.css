@@ -1013,6 +1013,20 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
   .bar { padding: 14px 18px; }
   .bar-links { gap: 18px; font-size: 0.68rem; }
   .brand-name { display: none; }
+  /* Tap-target hit areas (WCAG 2.5.8): the visible nav text/icons stay the
+     same size — a transparent ::after grows the CLICKABLE box around each
+     link to 44px tall without touching layout. Width only expands into the
+     real flex `gap` (minus a 2px safety margin split across both
+     neighbours), so two adjacent hit boxes never overlap and steal a tap
+     meant for the link next door. See the ≤600px block below for the
+     tighter-gap phone override. */
+  .bar-links a, .bar-socials a { position: relative; }
+  .bar-links a::after, .bar-socials a::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% + 16px); /* gap:18px - 2px safety, split 8px per side */
+    height: 44px;
+  }
   section { padding: 12vh 6vw; }
   .about-cols { grid-template-columns: 1fr; }
   .stat-strip { grid-template-columns: repeat(2, 1fr); gap: 34px 4vw; }
@@ -1031,6 +1045,25 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
   .wcard-cta { padding: 13px 24px 15px; }
   .wpath { font-size: 0.6rem; }
   .wcard-bg { font-size: 9rem; }
+  /* Story card title-bar buttons: w-max/w-close stay visually 28x20px (the
+     numbers below are sized for the tightest case, the ≤600px .wcard-bar
+     padding of 10px 12px — so they also clear the roomier ≤900px padding
+     with margin to spare). .wcard has overflow:hidden, so each offset stays
+     inside the card's own edge: 8px top/bottom leaves the 11px budget to
+     the card top (and to wcard-body below) with 3px to spare, so the box
+     never gets clipped and never bleeds into the title/body region enough
+     to break tap-the-card-to-open on the collapsed card. Horizontally the
+     two buttons sit 2px apart, so each only claims 1px of that shared gap;
+     w-max borrows the rest of its growth from the w-min dot on its left
+     (decorative, aria-hidden, no click handler — safe to cover), and
+     w-close borrows from the card's right padding, kept short of the
+     top-right corner's 12px border-radius so the box isn't clipped there. */
+  .wwin button.w-max, .wwin button.w-close { position: relative; }
+  .wwin button.w-max::after, .wwin button.w-close::after {
+    content: ""; position: absolute; top: -8px; bottom: -8px;
+  }
+  .wwin button.w-max::after { left: -13px; right: -0.5px; }   /* 41.5x36, 1px real gap to w-close's box */
+  .wwin button.w-close::after { left: -0.5px; right: -5px; }  /* 33.5x36 */
   .work-head { padding-top: 92px; }
   .work-hint { display: none; }
   .about-body-grid { grid-template-columns: 1fr; gap: 40px; }
@@ -1043,6 +1076,10 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
   .brand-dot { width: 34px; height: 34px; border-radius: 10px; }
   .bar-links { gap: 12px; font-size: 0.6rem; letter-spacing: 0.1em; }
   .bar-socials { gap: 12px; font-size: 0.95rem; }
+  /* tighter 12px gap at phone width — the hit area can only borrow 10px of
+     width (12px gap - 2px safety) before it would overlap the neighbour's
+     own hit box; see the ≤900px block above for position/height. */
+  .bar-links a::after, .bar-socials a::after { width: calc(100% + 10px); }
   section { padding: 8vh 5vw; }
   .section-head { margin-bottom: 3.5vh; gap: 14px; }
 
