@@ -699,7 +699,12 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 12px 2px; background: none; border: 0; cursor: pointer;
   color: #8fa2c4; font-size: 0.56rem; letter-spacing: 0.14em; line-height: 1.25;
-  /* opacity matches the band's 0.6s so the two read as one light coming up */
+  /* This transition only ever drives the arrow's opacity during the initial
+     entrance and on hover — a pane swap disables it entirely (see the
+     .cards-moving rule below) and animates opacity with GSAP instead, inline,
+     every frame. showPane() deliberately runs that GSAP fade at the same 0.6s
+     as this rule so the two paths still read as one speed regardless of which
+     one is driving. */
   transition: color 0.25s, transform 0.45s ease, opacity 0.6s ease;
 }
 .pane-arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -741,14 +746,24 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
               rgba(77, 163, 255, 0.30), rgba(77, 163, 255, 0.10) 42%, transparent 74%);
 }
 /* The band and the arrow arrive together, and only once the cards are done
-   moving — .cards-moving covers both the entrance and a pane swap, so neither
-   one is ever lit while something is still sliding. Both sides of that fade are
-   slow on purpose: the band changing which edge it hangs off is a hard switch,
-   and it happens in the middle of this fade, at opacity 0, where nobody sees
-   it. That is the whole trick. */
+   moving. During the initial entrance both are plain CSS, so gating the band
+   on .cards-moving (removed the instant the cards land) keeps it in step with
+   the arrow's own CSS-transitioned opacity for free.
+   A pane swap can't reuse that class for the band: showPane() drives the
+   arrow with GSAP's own inline opacity for the ENTIRE .cards-moving window,
+   including a beat after the arrow has already finished brightening while
+   .cards-moving is still held (as the guard against `#work-grid.cards-moving
+   .pane-arrow { transition: none }` below losing effect mid-tween). If the
+   band waited on that same class it would start rising only once .cards-moving
+   finally lifts — after the arrow's fade is long over. .band-dim is the
+   band's own, swap-specific hook: showPane() drops it in the same tick the
+   arrow's in-fade starts, so both begin rising on the same frame. Both sides
+   of the fade are slow on purpose: the band changing which edge it hangs off
+   is a hard switch, and it happens in the middle of the fade, at opacity 0,
+   where nobody sees it. That is the whole trick. */
 #work-grid.work-lit #work-panes::before { opacity: 0.14; }   /* barely there — a hint of light, not a panel */
 #work-grid.work-lit:has(.pane-arrow:hover) #work-panes::before { opacity: 0.3; }
-#work-grid.work-lit.cards-moving #work-panes::before { opacity: 0; }
+#work-grid.work-lit.band-dim #work-panes::before { opacity: 0; }
 
 body.js:not(.reduced) .pane-arrow { opacity: 0; transform: translateY(-50%) translateX(16px); }
 body.js:not(.reduced) #work-grid.work-lit .pane-arrow { opacity: 1; transform: translateY(-50%); }
@@ -914,9 +929,15 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
      uncollapsed dead space above it, since it's now the first child) and
      picks the label's un-collapsed 28px back up instead; the label's tag
      row loses its un-collapsed 6px trailing margin so the section right
-     after it lands at 28px too, not 34px. */
+     after it lands at 28px too, not 34px.
+     The label's own margin-top bump is scoped to :has(~ .wx-video) — only
+     cards that actually reorder a video above the label need the extra 2px
+     (26 → 28) this compensates for. A card without a video never triggers the
+     `order: -1` rule above, so its label is never displaced the way this is
+     tuned for; applying the bump unconditionally would give it a gap the
+     video-specific rhythm math was never meant to produce. */
   .wcard.is-expanded .wexp-content .wx-sec.wx-video { order: -1; margin-top: 0; }
-  .wcard.is-expanded .wexp-content .wx-learned-label { margin-top: 28px; }
+  .wcard.is-expanded .wexp-content .wx-learned-label:has(~ .wx-video) { margin-top: 28px; }
   .wcard.is-expanded .wexp-content .wx-learned { margin-bottom: 0; }
 }
 

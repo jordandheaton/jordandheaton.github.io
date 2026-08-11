@@ -624,8 +624,11 @@
         // changes ever fixed the arrival.
         cards.forEach((el) => el.classList.add("is-entering"));
         gsap.set(cards, { x: () => window.innerWidth * 0.85, opacity: 0 });
-        // holds the edge arrow and the sunset band dark until the trio lands
-        workGrid.classList.add("cards-moving");
+        // holds the edge arrow and the sunset band dark until the trio lands.
+        // band-dim rides alongside cards-moving here (the entrance is pure CSS,
+        // so the two classes always flip at the same instant) — see showPane()
+        // for why a pane swap needs them to split apart.
+        workGrid.classList.add("cards-moving", "band-dim");
 
         // Arriving TRIGGERS the entrance; the entrance then plays at its own
         // pace. Scrubbing it to scroll meant a fast flick had to be honoured
@@ -646,14 +649,14 @@
             clearProps: "transform",
             onComplete: () => {
               cards.forEach((el) => el.classList.remove("is-entering"));
-              workGrid.classList.remove("cards-moving");   // now the light comes up
+              workGrid.classList.remove("cards-moving", "band-dim");   // now the light comes up
               release();
             },
           });
           // a page that never scrolls again is far worse than a missed beat
           gsap.delayedCall(3.4, () => {
             release();
-            workGrid.classList.remove("cards-moving");
+            workGrid.classList.remove("cards-moving", "band-dim");
           });
         };
 
@@ -682,7 +685,7 @@
         if (st.progress > 0) {
           played = true;
           gsap.set(cards, { x: 0, opacity: 1 });
-          workGrid.classList.remove("cards-moving");
+          workGrid.classList.remove("cards-moving", "band-dim");
         }
         // A deep-link (#myplan etc.) opens its story over the desk, BEFORE this
         // trigger's start — and openStory() stops Lenis, so the entrance could
@@ -694,11 +697,11 @@
           played = true;
           gsap.set(cards, { opacity: 1, clearProps: "transform" });
           cards.forEach((el) => el.classList.remove("is-entering"));
-          workGrid.classList.remove("cards-moving");
+          workGrid.classList.remove("cards-moving", "band-dim");
         }
         // resizing across the breakpoint reverts this context; a stale
-        // .cards-moving would leave the arrow dark for good
-        return () => workGrid.classList.remove("cards-moving");
+        // .cards-moving or .band-dim would leave the arrow/band dark for good
+        return () => workGrid.classList.remove("cards-moving", "band-dim");
       });
 
       mm.add("(max-width: 900px)", () => {
@@ -1137,8 +1140,9 @@
     // tab order via `hidden`), which pane is aria-hidden, which edge the
     // sunset band hangs off. All of it snaps — the visible fade is handled
     // separately by the opacity tweens flanking this call in showPane(). The
-    // band itself stays invisible for the whole .cards-moving window either
-    // way, so exactly when its edge flips inside that window is unobservable.
+    // band itself stays invisible for the whole .band-dim window either way
+    // (this call runs at OUT_FADE_D, band-dim doesn't lift until inEnd, well
+    // after), so exactly when its edge flips inside that window is unobservable.
     function setPaneChrome(others) {
       workGridEl.classList.toggle("others-active", others);
       paneFeat.setAttribute("aria-hidden", others ? "true" : "false");
@@ -1182,8 +1186,14 @@
 
       paneBusy = true;
       // takes the arrow and the band down first, so the click reads as the
-      // light going out rather than the arrow being yanked away
-      workGridEl.classList.add("cards-moving");
+      // light going out rather than the arrow being yanked away. Two classes,
+      // not one: cards-moving is the structural guard (keeps CSS's own
+      // .pane-arrow transition switched off for as long as GSAP is writing
+      // its inline opacity — see the transition:none rule in the stylesheet)
+      // and has to survive until the timeline truly ends. band-dim is purely
+      // "should the band read as dark", and comes off the moment the arrow
+      // starts brightening — see the inArrow tween below.
+      workGridEl.classList.add("cards-moving", "band-dim");
       // .wcard carries `transition: transform 0.3s` for the hover lift, which
       // would fight every frame of this — same bug that made the entrance
       // refuse to follow its curve.
@@ -1216,8 +1226,11 @@
           // next measurement, since getBoundingClientRect includes transforms
           gsap.set(outCards, { x: 0 });
           outCards.concat(inCards).forEach((el) => el.classList.remove("is-entering"));
-          // last of all: the band comes back up, with nothing left moving behind it
-          workGridEl.classList.remove("cards-moving");
+          // band-dim already came off when the arrow's in-fade started (below);
+          // this is just the structural guard's own release, plus a harmless
+          // no-op re-removal of band-dim in case anything upstream ever left it
+          // stuck
+          workGridEl.classList.remove("cards-moving", "band-dim");
           // both arrows are exactly where their own tweens left them (out: 0 +
           // hidden, in: 1 + visible) — hand opacity back to CSS now, or a
           // leftover inline value would outlive this swap and block the
@@ -1243,8 +1256,13 @@
          fromTo (not `to`) pins an explicit from:1, so this doesn't matter what
          CSS's own opacity rules for .cards-moving currently compute — GSAP's
          inline style outranks the stylesheet for the whole tween regardless,
-         which is what makes it a real fade instead of a 0→0 no-op. */
-      const OUT_FADE_D = 0.28, IN_FADE_D = 0.32;
+         which is what makes it a real fade instead of a 0→0 no-op.
+         IN_FADE_D is 0.6 on purpose — it's the same duration as the band's own
+         CSS transition (#work-panes::before, opacity 0.6s ease). Both start at
+         `inEnd` (see below) and both run 0.6s, so they land in the same frame
+         instead of the arrow — which used to run its own faster 0.32s fade —
+         finishing while the band was still coming up. */
+      const OUT_FADE_D = 0.28, IN_FADE_D = 0.6;
       tl.fromTo(outArrow, { opacity: 1 },
         { opacity: 0, duration: OUT_FADE_D, ease: "power1.out" }, 0);
 
@@ -1266,7 +1284,14 @@
       // mirrors inCards' own finish time (its stagger's last start + IN_D), so
       // the arrow only brightens once the last card has actually arrived
       const inEnd = outEnd + GAP + IN_D + STEP * (inCards.length - 1);
-      tl.to(inArrow, { opacity: 1, duration: IN_FADE_D, ease: "power1.out" }, inEnd);
+      // band-dim comes off in the SAME tick the arrow's own fade-in begins —
+      // that's the one moment both are gated on, so dropping it here (instead
+      // of waiting for cards-moving at onComplete) is what puts the band's
+      // 0.6s CSS transition and the arrow's 0.6s GSAP tween on the same clock.
+      tl.to(inArrow, {
+        opacity: 1, duration: IN_FADE_D, ease: "power1.out",
+        onStart: () => workGridEl.classList.remove("band-dim"),
+      }, inEnd);
     }
     paneNext.addEventListener("click", () => showPane(true));
     paneBack.addEventListener("click", () => showPane(false));
