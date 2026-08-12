@@ -1270,6 +1270,20 @@
       // the last of the outgoing set finishes here; nothing arrives before it
       const outEnd = OUT_D + STEP * (outCards.length - 1);
 
+      // Two independent completion signals gate the lock off the desktop pin:
+      // the cards actually landing (cardsDone, marked at `inEnd` below — see
+      // the card-timeline comment near LANDING_SCROLL_D) and the scroll glide
+      // finishing (glideDone). Neither one alone may clear paneBusy; only
+      // once BOTH have fired, whichever finishes last. On the desktop pin
+      // there is no glide, so both flags start true and the lock releases
+      // from the timeline's own onComplete exactly as before.
+      let released = landingY === null;
+      let cardsDone = landingY === null;
+      let glideDone = landingY === null;
+      const tryRelease = () => {
+        if (!released && cardsDone && glideDone) { released = true; paneBusy = false; }
+      };
+
       const tl = gsap.timeline({
         onComplete: () => {
           outPane.classList.remove("is-leaving");
@@ -1288,10 +1302,11 @@
           // unlit/hover rules on every swap after it
           gsap.set([paneNext, paneBack], { clearProps: "opacity" });
           // On the desktop pin (landingY === null) there is no landing glide
-          // to wait for, so release the lock here, same as always. Off the
-          // pin, the glide (added below) outlives this timeline — the lock
-          // instead releases from ITS onComplete, once the page has actually
-          // finished moving, not just the cards.
+          // to wait for, so release the lock here, same as always (released
+          // is already true from init, so this is a no-op there — left in
+          // place as the historical release point for that path). Off the
+          // pin, release goes through tryRelease() instead, gated on the
+          // glide too — see cardsDone/glideDone above.
           if (landingY === null) paneBusy = false;
         },
       });
@@ -1353,36 +1368,53 @@
         onStart: () => workGridEl.classList.remove("band-dim"),
       }, inEnd);
 
-      /* The second beat Jordan asked for: once the incoming cards have
-         actually landed, glide the page up to rest on the first one, instead
-         of teleporting there before anyone could see it move. Starts at
-         `inEnd` — the same moment the cards finish and the arrow starts
-         brightening — so it reads as "slide, then glide" rather than
-         happening mid-slide or waiting on the arrow's own fade too. Lenis
-         owns this, not window.scrollTo (see the comment on landingY above).
-         The easing is the quadratic in/out curve GSAP's power2.inOut also
-         draws from, kept as a plain function since Lenis takes its own
-         easing callback, not a GSAP ease string. landingY is null on the
-         desktop pin, where this whole beat is skipped (see above) — the
-         lock there is released from the timeline's own onComplete instead. */
-      const LANDING_SCROLL_D = 0.8;
+      /* Jordan wants ONE combined movement, not "cards slide, then page
+         glides" — so the glide now starts at position 0, the same instant
+         the outgoing cards start moving, instead of waiting for `inEnd`.
+         `inEnd` — outEnd + GAP + IN_D + STEP*(inCards.length - 1) — is the
+         card-timeline duration: the moment the incoming cards finish
+         landing (it works out to the same ~1.605s either direction, since
+         outN+inN is constant at 7 cards total). LANDING_SCROLL_D matches
+         that, minus a small buffer, so the page finishes settling a touch
+         BEFORE the cards do rather than after: GSAP's ticker and Lenis's own
+         RAF loop are two independent clocks, so an exact-match duration
+         risks the scroll trailing the cards by a frame or two, which would
+         read as a stray drift after the cards have already stopped — motion
+         finishing early instead reads as the page and cards arriving
+         together, cards landing right on the settle. Lenis owns this scroll,
+         not window.scrollTo (see the comment on landingY above). The easing
+         is the same quadratic in/out curve GSAP's power2.inOut draws from,
+         kept as a plain function since Lenis takes its own easing callback,
+         not a GSAP ease string — chosen so the glide eases in gently instead
+         of snapping to speed the instant the cards start sliding, matching
+         the cards' own power2 in/out feel. landingY is null on the desktop
+         pin, where this whole beat is skipped (see above) — the lock there
+         is released from the timeline's own onComplete instead. */
+      const LANDING_SCROLL_D = inEnd - 0.1;
+
+      // Cards have visually landed at `inEnd` — one half of the paneBusy AND
+      // gate (see cardsDone/glideDone/tryRelease above). Only matters off
+      // the desktop pin, where the glide below is now racing the cards
+      // instead of trailing them.
+      if (landingY !== null) tl.call(() => { cardsDone = true; tryRelease(); }, null, inEnd);
+
       if (landingY !== null) {
         tl.add(() => {
           // onComplete can go unfired if something else calls lenis.stop()
           // mid-glide (e.g. tapping a just-landed card opens its story,
           // which locks scroll the same way) — Lenis's own Animate.stop()
-          // halts silently with no callback in that case. A `released` guard
-          // plus a timeout backstop just past the glide's own duration means
-          // the lock always clears one way or the other, never stranded.
-          let released = false;
-          const release = () => { if (!released) { released = true; paneBusy = false; } };
+          // halts silently with no callback in that case. A timeout backstop
+          // just past the glide's own duration means glideDone always gets
+          // set one way or the other, never stranded; tryRelease() still
+          // waits on cardsDone too, so an early backstop can't release the
+          // lock before the cards have actually finished sliding.
           lenis.scrollTo(landingY, {
             duration: LANDING_SCROLL_D,
             easing: (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2),
-            onComplete: release,
+            onComplete: () => { glideDone = true; tryRelease(); },
           });
-          setTimeout(release, LANDING_SCROLL_D * 1000 + 100);
-        }, inEnd);
+          setTimeout(() => { glideDone = true; tryRelease(); }, LANDING_SCROLL_D * 1000 + 100);
+        }, 0);
       }
     }
     paneNext.addEventListener("click", () => showPane(true));
