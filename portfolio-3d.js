@@ -1133,6 +1133,8 @@
     const featCards = Array.from(paneFeat.querySelectorAll(".wcard"));
     const otherCards = Array.from(paneOthers.querySelectorAll(".wcard"));
     const workGridEl = document.getElementById("work-grid");
+    const workPanesEl = document.getElementById("work-panes");
+    const navBarEl = document.querySelector(".bar");
     let paneBusy = false;
     let othersShown = false;
 
@@ -1160,6 +1162,9 @@
     const offLeft = (el) => -(el.getBoundingClientRect().right + PAD);
     const offRight = (el) => window.innerWidth - el.getBoundingClientRect().left + PAD;
 
+    // clearance below the fixed nav bar the incoming pane's first card lands at
+    const LANDING_GAP = 20;
+
     function showPane(others) {
       if (paneBusy || others === othersShown) return;
       othersShown = others;
@@ -1169,6 +1174,37 @@
       const inCards = others ? otherCards : featCards;
       const outArrow = others ? paneNext : paneBack;
       const inArrow = others ? paneBack : paneNext;
+
+      // Land on the incoming pane's FIRST card, not wherever the scroll
+      // happened to be — on phones that was the BOTTOM of the outgoing stack,
+      // because that's where the arrow lives. Both panes share one grid cell
+      // (.work-pane { grid-area: 1/1 }), and a visibility:hidden pane still
+      // lays out real boxes (the same fact inFrom below relies on), so the
+      // incoming pane's cards already have their real, final Y position we
+      // can read right now — before is-active/is-leaving flip anything else.
+      // Scrolling here, synchronously, before a single class or transform
+      // changes, means the new scroll position and the swap's very first
+      // painted frame land together instead of the reader seeing the old
+      // scroll position for a beat first. Lenis owns scroll on this page —
+      // never window.scrollTo, see lenis.scrollTo elsewhere in this file.
+      //
+      // #work-panes is ScrollTrigger-pinned above ~901px (position:fixed,
+      // set by GSAP while the pin is engaged): every scroll position inside
+      // that pin's held range paints identically, since nothing scrubs the
+      // panes' own position off scroll progress there — only the pin start
+      // itself does, once, before the cards even land. Scrolling further
+      // would do nothing useful and risks pushing PAST the pin's own end
+      // (it releases after a fixed +=900px of scroll), which would un-pin
+      // the row out from under the swap. Skip it there; the row is already
+      // fully on screen by construction (the entrance never plays until it
+      // is). Below that width the section scrolls normally and this is the
+      // only way to land the incoming card where Jordan wants it.
+      const firstIn = inCards[0];
+      if (firstIn && getComputedStyle(workPanesEl).position !== "fixed") {
+        const navH = navBarEl ? navBarEl.getBoundingClientRect().height : 0;
+        const dy = firstIn.getBoundingClientRect().top - (navH + LANDING_GAP);
+        lenis.scrollTo(window.scrollY + dy, { immediate: true });
+      }
 
       // Instant path when reduced-motion, GSAP failed to load, or the tab is
       // backgrounded — same reasoning as wmaxInstant() above: a frozen rAF
@@ -1180,7 +1216,11 @@
         setPaneChrome(others);
         outPane.classList.remove("is-active");
         inPane.classList.add("is-active");
-        (others ? paneBack : paneNext).focus();
+        // preventScroll, or the browser's own default focus behaviour
+        // scrolls the arrow into view and fights the landing scroll above —
+        // same reason the animated path's own .focus() call (further down)
+        // already carries it.
+        (others ? paneBack : paneNext).focus({ preventScroll: true });
         return;
       }
 
@@ -1257,12 +1297,16 @@
          CSS's own opacity rules for .cards-moving currently compute — GSAP's
          inline style outranks the stylesheet for the whole tween regardless,
          which is what makes it a real fade instead of a 0→0 no-op.
-         IN_FADE_D is 0.6 on purpose — it's the same duration as the band's own
-         CSS transition (#work-panes::before, opacity 0.6s ease). Both start at
-         `inEnd` (see below) and both run 0.6s, so they land in the same frame
-         instead of the arrow — which used to run its own faster 0.32s fade —
-         finishing while the band was still coming up. */
-      const OUT_FADE_D = 0.28, IN_FADE_D = 0.6;
+         IN_FADE_D matches the sunset band's own CSS transition
+         (#work-panes::before, opacity 0.6s ease) above 1100px, where the band
+         is actually on screen and both start at `inEnd` (see below) and land
+         in the same frame. Below 1100px the band is display:none (see the
+         stylesheet's own ≤1100px block), so a 0.6s fade there has nothing to
+         sync with and just reads slow — 0.3s instead. Read window.innerWidth
+         here, at swap time, not once at load: the viewport can change (resize,
+         rotation) between swaps. */
+      const OUT_FADE_D = 0.28;
+      const IN_FADE_D = window.innerWidth <= 1100 ? 0.3 : 0.6;
       tl.fromTo(outArrow, { opacity: 1 },
         { opacity: 0, duration: OUT_FADE_D, ease: "power1.out" }, 0);
 

@@ -702,9 +702,12 @@ body.js.reduced .reveal { opacity: 1; transform: none; }
   /* This transition only ever drives the arrow's opacity during the initial
      entrance and on hover — a pane swap disables it entirely (see the
      .cards-moving rule below) and animates opacity with GSAP instead, inline,
-     every frame. showPane() deliberately runs that GSAP fade at the same 0.6s
-     as this rule so the two paths still read as one speed regardless of which
-     one is driving. */
+     every frame. Above 1100px showPane() deliberately runs that GSAP fade at
+     the same 0.6s as this rule, so the two paths still read as one speed
+     regardless of which one is driving. At ≤1100px the sunset band this 0.6s
+     was originally tuned to sync with is display:none (see the ≤1100px block
+     below), so showPane() drops to a snappier 0.3s there instead — see
+     IN_FADE_D in portfolio-3d.js. */
   transition: color 0.25s, transform 0.45s ease, opacity 0.6s ease;
 }
 .pane-arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -906,6 +909,20 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
   /* the cards go full-width here and the column runs several screens tall, so the
      band would be a thin wash down the whole scroll — the circle carries the hint */
   #work-panes::before { display: none; }
+  /* The arrow is a real grid item at this width (grid-column: 1/-1 above), so
+     it being present/absent used to change #featured-grid's / #other-grid's
+     own row count — showPane() flips the OTHER arrow's `hidden` mid-swap
+     (see the JS comment by setPaneChrome's call site), and each grid's height
+     changing mid-flight resized the shared .work-panes cell both panes centre
+     in (.work-pane { justify-content: center }), visibly shifting whichever
+     pane's cards were still on screen. [hidden] normally means display:none
+     (the browser's own UA rule) — overridden here to stay a grid item at its
+     full height, just invisible and inert, so BOTH arrows' slots are always
+     reserved and neither grid's height — and so neither pane's vertical
+     centring — ever changes over the course of a swap. visibility:hidden
+     already excludes it from hit-testing and the accessibility tree on its
+     own; pointer-events is belt and braces. */
+  .pane-arrow[hidden] { display: flex; visibility: hidden; pointer-events: none; }
 }
 
 @media (max-width: 720px) {
