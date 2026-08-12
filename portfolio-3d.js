@@ -1181,12 +1181,15 @@
       // (.work-pane { grid-area: 1/1 }), and a visibility:hidden pane still
       // lays out real boxes (the same fact inFrom below relies on), so the
       // incoming pane's cards already have their real, final Y position we
-      // can read right now — before is-active/is-leaving flip anything else.
-      // Scrolling here, synchronously, before a single class or transform
-      // changes, means the new scroll position and the swap's very first
-      // painted frame land together instead of the reader seeing the old
-      // scroll position for a beat first. Lenis owns scroll on this page —
-      // never window.scrollTo, see lenis.scrollTo elsewhere in this file.
+      // can read right now — before is-active/is-leaving flip anything else,
+      // and before either card set gets a transform, so this rect is the
+      // untransformed layout position. Compute the target as an ABSOLUTE
+      // document Y (current scrollY + delta), not a relative delta applied
+      // later: that way it stays correct even if the page scrolls (or a
+      // reflow moves things) during the slide, since it's resolved once, up
+      // front. Only the SCROLL itself moves later — see landingY below.
+      // Lenis owns scroll on this page — never window.scrollTo, see
+      // lenis.scrollTo elsewhere in this file.
       //
       // #work-panes is ScrollTrigger-pinned above ~901px (position:fixed,
       // set by GSAP while the pin is engaged): every scroll position inside
@@ -1198,21 +1201,29 @@
       // the row out from under the swap. Skip it there; the row is already
       // fully on screen by construction (the entrance never plays until it
       // is). Below that width the section scrolls normally and this is the
-      // only way to land the incoming card where Jordan wants it.
+      // only way to land the incoming card where Jordan wants it. `null`
+      // means "nothing to scroll" and is checked below both on the instant
+      // path and on the animated one.
       const firstIn = inCards[0];
+      let landingY = null;
       if (firstIn && getComputedStyle(workPanesEl).position !== "fixed") {
         const navH = navBarEl ? navBarEl.getBoundingClientRect().height : 0;
         const dy = firstIn.getBoundingClientRect().top - (navH + LANDING_GAP);
-        lenis.scrollTo(window.scrollY + dy, { immediate: true });
+        landingY = window.scrollY + dy;
       }
 
       // Instant path when reduced-motion, GSAP failed to load, or the tab is
       // backgrounded — same reasoning as wmaxInstant() above: a frozen rAF
       // loop must never strand an arrow mid-fade or leave both invisible.
+      // These viewers never get the animated glide below either — an
+      // animation nobody can see (or that keeps running in a backgrounded
+      // tab) is just a stranded scroll waiting to happen, so this path lands
+      // on landingY immediately, same as it always has.
       // Clear any inline opacity a previous, interrupted animated swap left
       // behind so CSS (.work-lit .pane-arrow) is back in sole control.
       if (reduced || !window.gsap || document.hidden) {
         if (window.gsap) gsap.set([paneNext, paneBack], { clearProps: "opacity" });
+        if (landingY !== null) lenis.scrollTo(landingY, { immediate: true });
         setPaneChrome(others);
         outPane.classList.remove("is-active");
         inPane.classList.add("is-active");
@@ -1276,7 +1287,12 @@
           // leftover inline value would outlive this swap and block the
           // unlit/hover rules on every swap after it
           gsap.set([paneNext, paneBack], { clearProps: "opacity" });
-          paneBusy = false;
+          // On the desktop pin (landingY === null) there is no landing glide
+          // to wait for, so release the lock here, same as always. Off the
+          // pin, the glide (added below) outlives this timeline — the lock
+          // instead releases from ITS onComplete, once the page has actually
+          // finished moving, not just the cards.
+          if (landingY === null) paneBusy = false;
         },
       });
       tl.to(outCards, {
@@ -1336,6 +1352,38 @@
         opacity: 1, duration: IN_FADE_D, ease: "power1.out",
         onStart: () => workGridEl.classList.remove("band-dim"),
       }, inEnd);
+
+      /* The second beat Jordan asked for: once the incoming cards have
+         actually landed, glide the page up to rest on the first one, instead
+         of teleporting there before anyone could see it move. Starts at
+         `inEnd` — the same moment the cards finish and the arrow starts
+         brightening — so it reads as "slide, then glide" rather than
+         happening mid-slide or waiting on the arrow's own fade too. Lenis
+         owns this, not window.scrollTo (see the comment on landingY above).
+         The easing is the quadratic in/out curve GSAP's power2.inOut also
+         draws from, kept as a plain function since Lenis takes its own
+         easing callback, not a GSAP ease string. landingY is null on the
+         desktop pin, where this whole beat is skipped (see above) — the
+         lock there is released from the timeline's own onComplete instead. */
+      const LANDING_SCROLL_D = 0.8;
+      if (landingY !== null) {
+        tl.add(() => {
+          // onComplete can go unfired if something else calls lenis.stop()
+          // mid-glide (e.g. tapping a just-landed card opens its story,
+          // which locks scroll the same way) — Lenis's own Animate.stop()
+          // halts silently with no callback in that case. A `released` guard
+          // plus a timeout backstop just past the glide's own duration means
+          // the lock always clears one way or the other, never stranded.
+          let released = false;
+          const release = () => { if (!released) { released = true; paneBusy = false; } };
+          lenis.scrollTo(landingY, {
+            duration: LANDING_SCROLL_D,
+            easing: (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2),
+            onComplete: release,
+          });
+          setTimeout(release, LANDING_SCROLL_D * 1000 + 100);
+        }, inEnd);
+      }
     }
     paneNext.addEventListener("click", () => showPane(true));
     paneBack.addEventListener("click", () => showPane(false));
