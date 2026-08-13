@@ -1192,7 +1192,15 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
      phone-shaped frame doesn't cut off his entrance), and the type sits as one
      centred row along the bottom, over a scrim. His face stays clear up top. */
   .hero { min-height: 360px; max-height: 54vh; }
-  #hero-video { top: 0; height: 100%; -webkit-mask-image: none; mask-image: none; }
+  /* Slide him down clear of the fixed nav so his hair isn't tucked under the
+     bar. The footage is a black-studio shot and .hero is #000, so the strip
+     this exposes along the top is invisible; the torso it clips off the bottom
+     was already sitting behind the hero-type scrim. The 4398x1886 source is
+     wider than any phone, so cover fits it by HEIGHT — there is no vertical
+     overflow to slide with object-position, hence the offset lives on `top`. */
+     A fixed 42px (not a %) because the bar it has to clear is a fixed height:
+     on a short phone a percentage shrinks with the hero and stops clearing. */
+  #hero-video { top: 42px; height: 100%; -webkit-mask-image: none; mask-image: none; }
   .hero-type {
     left: 0; right: 0; top: auto; bottom: 0;
     transform: none; max-width: none;
