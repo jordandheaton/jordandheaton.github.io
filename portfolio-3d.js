@@ -201,6 +201,26 @@
       onToggle: (self) => bar.classList.toggle("bar--light", self.isActive),
       onRefresh: syncBarLight,
     });
+
+    /* The mobile scrim behind the bar only exists for content that scrolls
+       under it AFTER the hero. Over the hero itself the bar stays fully
+       transparent so the black-studio footage reads clean to the top of the
+       screen. Same start as the light run (the skills band is the first thing
+       past the hero) but it never ends — everything below the hero gets it.
+       Computed from start-vs-scroll rather than `self.isActive` for the same
+       reason as syncBarLight above: isActive is undefined during the first
+       refresh, and toggle(name, undefined) flips instead of setting. */
+    const syncBarScrim = (self) => {
+      const y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      bar.classList.toggle("bar--scrim", y >= self.start);
+    };
+    ScrollTrigger.create({
+      trigger: ".skills-band",
+      start: "top 60px",
+      end: "max",
+      onToggle: (self) => bar.classList.toggle("bar--scrim", self.isActive),
+      onRefresh: syncBarScrim,
+    });
   }
 
   /* ---------------- typewriter intro ---------------- */
