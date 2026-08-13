@@ -1134,17 +1134,15 @@ body.js:not(.reduced) #work-grid.work-lit.cards-moving .pane-arrow {
      (#05070f); the light variant matches .about/.skills-band (#e7f0f3, the
      section the bar sits over for most of the .bar--light run). Fades to
      transparent by the bottom of the bar so it doesn't cut a hard edge over
-     the hero video or any section beneath.
-     Gated on .bar--scrim (JS adds it once the hero has scrolled past): over the
-     hero the bar stays perfectly transparent, so the black-studio footage runs
-     clean to the top of the screen and nothing dims his hair. The scrim only
-     exists for the content that scrolls under the bar AFTER the hero. */
-  .bar--scrim::before {
+     the hero video or any section beneath. Always on, including over the
+     hero — the hero video itself now sits 42px down clear of the bar, so the
+     scrim has nothing of his hair left to cover. */
+  .bar::before {
     content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
     background: linear-gradient(180deg, rgba(5, 7, 15, 0.94), rgba(5, 7, 15, 0.6) 68%, transparent);
     -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   }
-  .bar--scrim.bar--light::before {
+  .bar--light::before {
     background: linear-gradient(180deg, rgba(231, 240, 243, 0.96), rgba(231, 240, 243, 0.68) 68%, transparent);
   }
   section { padding: 12vh 6vw; }
