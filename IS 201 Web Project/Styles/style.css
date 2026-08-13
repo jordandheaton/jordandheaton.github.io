@@ -52,6 +52,12 @@ body {
     font-size: 0.9rem;
     letter-spacing: 1px;
     transition: color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 4px;
+    min-height: 44px;
+    box-sizing: border-box;
 }
 
 .nav-links a:hover {
@@ -252,9 +258,12 @@ ul {
         border-right: none;
         border-bottom: 1px solid var(--border-color);
     }
+    .navbar {
+        padding: 6px 16px;
+    }
     .nav-links {
         flex-wrap: wrap;
-        gap: 15px;
+        gap: 0 15px;
     }
     .entry-header {
         flex-direction: column;

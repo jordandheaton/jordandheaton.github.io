@@ -27,6 +27,7 @@
             text-align: center;
             min-height: 100vh;
             padding: 24px 16px 48px;
+            overscroll-behavior-y: contain;
         }
 
         header.game-header { max-width: 560px; margin: 0 auto 14px; }
@@ -73,7 +74,9 @@
         /* Controls */
         .controls { margin-bottom: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         button.ctrl {
-            padding: 11px 22px;
+            padding: 13px 22px;
+            min-height: 44px;
+            box-sizing: border-box;
             font-size: 0.95rem;
             font-weight: 700;
             font-family: inherit;

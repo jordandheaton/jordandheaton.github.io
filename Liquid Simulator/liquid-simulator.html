@@ -142,6 +142,71 @@
   /* scrollbar */
   #panel::-webkit-scrollbar { width: 8px; }
   #panel::-webkit-scrollbar-thumb { background: rgba(120,160,255,0.25); border-radius: 8px; }
+
+  /* ---- Small / touch screens: panel becomes a bottom sheet, closed by default ----
+     Matches BOTH narrow-portrait phones (max-width) and short-landscape phones
+     (max-height), so it also catches a phone rotated sideways. Desktop layout
+     above is left completely untouched. */
+  @media (max-width: 820px), (max-height: 480px) {
+    #panel {
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 100%;
+      max-height: 78vh;
+      border-radius: 20px 20px 0 0;
+      padding: 12px 18px calc(16px + env(safe-area-inset-bottom));
+      transform: translateY(0);
+      opacity: 1;
+    }
+    #panel.collapsed {
+      transform: translateY(100%);
+      opacity: 1;
+      pointer-events: none;
+    }
+    #panel::before {
+      content: "";
+      display: block;
+      width: 40px;
+      height: 4px;
+      margin: 0 auto 12px;
+      border-radius: 4px;
+      background: var(--panel-border);
+    }
+
+    /* Always-visible open/close affordance -- the only way to reach the
+       controls, so it can't be hidden behind the .show class like on desktop. */
+    #toggleBtn {
+      display: flex;
+      top: calc(14px + env(safe-area-inset-top));
+      right: calc(14px + env(safe-area-inset-right));
+      width: 48px;
+      height: 48px;
+      font-size: 20px;
+    }
+
+    #stats {
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      left: calc(14px + env(safe-area-inset-left));
+    }
+
+    /* Comfortable thumb-sized controls: taller track, bigger thumb, more
+       breathing room between rows so adjacent sliders aren't mis-tapped. */
+    .control { margin: 0 0 22px; }
+    .control .row { margin-bottom: 8px; }
+    .control label { font-size: 14.5px; }
+    .control .val { font-size: 13px; }
+
+    input[type="range"] { height: 8px; border-radius: 8px; }
+    input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; border-width: 4px; }
+    input[type="range"]::-moz-range-thumb { width: 26px; height: 26px; border-width: 4px; }
+
+    .btns button, .seg button { min-height: 46px; }
+    .preset-row button { min-height: 40px; padding: 10px 6px; }
+    .hint { font-size: 13px; }
+  }
 </style>
 </head>
 <body>
@@ -194,7 +259,7 @@
 
   <div id="panel">
     <h1><span class="dot"></span> Liquid Simulator</h1>
-    <p class="sub">Click to drop liquid, move the cursor through it to push it around. Tweak the sliders to change how it behaves.</p>
+    <p class="sub">Click (or tap) to drop liquid, drag through it to push it around. Tweak the sliders to change how it behaves.</p>
 
     <div class="control">
       <div class="row"><label for="viscosity">Viscosity</label><span class="val" id="viscosityV"></span></div>
@@ -254,7 +319,7 @@
       <button id="resetBtn">↺ Reset</button>
     </div>
 
-    <p class="hint"><b>Click &amp; hold</b> to drop liquid &nbsp;·&nbsp; <b>Move</b> the cursor through the liquid to push it around.</p>
+    <p class="hint"><b>Click / tap &amp; hold</b> to drop liquid &nbsp;·&nbsp; <b>Move / drag</b> through the liquid to push it around.</p>
   </div>
 
   <div id="stats">
@@ -271,6 +336,12 @@
   // SVG goo filter threshold the blobs' alpha into a continuous surface.
   const ctx = canvas.getContext("2d");
 
+  // Small / touch screens get a lighter default particle budget (same query as
+  // the CSS breakpoint that turns the panel into a bottom sheet). Desktop is
+  // untouched; users can still raise the count back up via the slider.
+  const MOBILE_MQ = window.matchMedia("(max-width: 820px), (max-height: 480px)");
+  function isMobileLayout() { return MOBILE_MQ.matches; }
+
   // ---------- Tunable parameters (defaults = "water") ----------
   const params = {
     viscosity: 0.10,   // linear viscosity (sigma)
@@ -279,7 +350,7 @@
     density:   5.0,    // rest density (rho0)
     stiffness: 0.08,   // pressure stiffness (k); near-stiffness derived from it
     radius:    26,     // interaction radius h (px)
-    count:     600,    // target particle count (kept light by default for smoothness)
+    count:     isMobileLayout() ? 320 : 600,  // target particle count (kept light by default for smoothness)
     renderMode:"liquid",
   };
 
@@ -358,8 +429,13 @@
   // ---------- Mouse / touch interaction ----------
   //   left click / hold -> drop a falling stream of liquid
   //   moving the cursor through the liquid -> push it (no button needed)
+  //   Touch has no hover state, so it's mapped onto the same two behaviors:
+  //   a finger held still pours (like click+hold), a finger that starts
+  //   dragging switches to push (like moving the mouse without a button).
   const mouse = { x: 0, y: 0, px: 0, py: 0, left: false, over: false };
   const MOUSE_R = 85;
+  const TOUCH_DRAG_PX = 8;   // movement beyond this turns a touch from "pour" into "push"
+  let touchStartX = 0, touchStartY = 0, touchActive = false;
 
   function setMouse(e) {
     const r = canvas.getBoundingClientRect();
@@ -370,17 +446,30 @@
   function resetDrag() { mouse.px = mouse.x; mouse.py = mouse.y; }
   function onDown(e) {
     setMouse(e); resetDrag(); mouse.over = true;
-    if (e.touches || e.button === 0) mouse.left = true;
+    if (e.touches) {
+      touchActive = true;
+      touchStartX = mouse.x; touchStartY = mouse.y;
+      mouse.left = true;   // starts as a pour; onMove flips it to a push once it drags
+    } else if (e.button === 0) {
+      mouse.left = true;
+    }
   }
   function onMove(e) {
     if (!mouse.over) { setMouse(e); resetDrag(); mouse.over = true; return; } // entering: no jump
     setMouse(e);
-    if (e.touches) e.preventDefault();
+    if (e.touches) {
+      e.preventDefault();
+      if (touchActive && mouse.left) {
+        const dx = mouse.x - touchStartX, dy = mouse.y - touchStartY;
+        if (dx * dx + dy * dy > TOUCH_DRAG_PX * TOUCH_DRAG_PX) mouse.left = false; // now pushing
+      }
+    }
   }
   function onUp(e) {
     if (!e || (e.type && e.type.startsWith("touch")) || e.button === 0) mouse.left = false;
+    touchActive = false;
   }
-  function onLeave() { mouse.left = false; mouse.over = false; }
+  function onLeave() { mouse.left = false; mouse.over = false; touchActive = false; }
 
   canvas.addEventListener("mousedown", onDown);
   canvas.addEventListener("mousemove", onMove);
@@ -811,12 +900,26 @@
   });
   toggleBtn.addEventListener("click", togglePanel);
   function togglePanel() {
-    panel.classList.toggle("collapsed");
-    toggleBtn.classList.toggle("show", panel.classList.contains("collapsed"));
+    const collapsed = panel.classList.toggle("collapsed");
+    toggleBtn.classList.toggle("show", collapsed);
+    // On mobile the button is always visible, so its icon is the only
+    // indicator of open/closed state -- swap it so that's obvious.
+    toggleBtn.textContent = collapsed ? "☰" : "✕";
+    toggleBtn.title = collapsed ? "Show controls" : "Hide controls";
   }
 
   // ---------- Boot ----------
   resize();
+  if (isMobileLayout()) {
+    // Start with the sim visible and the panel closed as a bottom sheet;
+    // also cap how far the particle slider can be pushed so it's harder to
+    // tank the frame rate on a phone (still adjustable, just a lower ceiling).
+    panel.classList.add("collapsed");
+    toggleBtn.classList.add("show");
+    toggleBtn.textContent = "☰";
+    toggleBtn.title = "Show controls";
+    document.getElementById("count").max = 1200;
+  }
   sliders.forEach(syncSlider);
   spawnBlock(params.count);
   requestAnimationFrame(loop);

@@ -97,7 +97,7 @@ body:not(.is-loading) #preloader { pointer-events: none; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 22px clamp(20px, 4vw, 48px);
+    padding: 10px clamp(20px, 4vw, 48px);
     mix-blend-mode: difference;
 }
 .site-nav a {
@@ -109,13 +109,17 @@ body:not(.is-loading) #preloader { pointer-events: none; }
     text-transform: uppercase;
     opacity: 0.85;
     transition: opacity 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    box-sizing: border-box;
 }
 .site-nav a:hover { opacity: 1; }
 .nav-links { display: flex; gap: clamp(16px, 3vw, 36px); }
 .site-nav a { white-space: nowrap; }
 
 @media (max-width: 640px) {
-    .site-nav { padding: 16px 18px; }
+    .site-nav { padding: 4px 18px; }
     .site-nav a { font-size: 0.6rem; letter-spacing: 0.14em; }
     .nav-links { gap: 14px; }
 }
