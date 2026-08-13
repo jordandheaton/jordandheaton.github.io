@@ -8,7 +8,7 @@ Code-built recruiter showcase videos where every frame is a pure function of fra
 - `capture/` — scene drivers (`capture_myplan.py`, `capture_tests.py`, `capture_scroller.py`) that emit headless frame sequences + interaction event logs
 - `compose/` — frame-addressed HTML timelines (`myplanbyu.html`, `scroller.html`) with cursor, text FX, terminal components; every frame rendered on demand via `window.__seek(f)`
 - `render/` — harness that steps compositor pages frame-by-frame, screenshots each frame, and ffmpeg encodes to MP4; includes QC validator
-- `dist/` — final MP4s, poster frames, LinkedIn captions
+- `dist/` — final MP4s, poster frames, LinkedIn captions (plus a `-mobile.mp4` beside each showcase MP4 — see "Mobile encode" below)
 - `music/` — chosen track + license (selected during implementation)
 - `raw/` — gitignored; holds captured source clips
 
@@ -42,7 +42,36 @@ python showcase-videos/render/render.py ../compose/scroller.html --out ../dist/u
 
 # QC gate (strict: requires AAC audio + duration sync in both files)
 python showcase-videos/render/qc.py
+
+# mobile encode — re-encode from the dist 1080p MP4s (do NOT re-run the
+# compositor). portfolio-3d.js swaps to these at <=900px viewport width; see
+# "Mobile encode" below for why and the exact ffmpeg invocation.
+ffmpeg -y -i showcase-videos/dist/myplanbyu-showcase.mp4 -vf "scale=-2:720,fps=30" -c:v libx264 -preset slow -crf 30 -maxrate 650k -bufsize 1300k -profile:v high -pix_fmt yuv420p -color_range tv -c:a aac -b:a 96k -movflags +faststart showcase-videos/dist/myplanbyu-showcase-mobile.mp4
+ffmpeg -y -i showcase-videos/dist/universe-scroller-process.mp4 -vf "scale=-2:720,fps=30" -c:v libx264 -preset slow -crf 32 -maxrate 700k -bufsize 1400k -profile:v high -pix_fmt yuv420p -color_range tv -c:a aac -b:a 96k -movflags +faststart showcase-videos/dist/universe-scroller-process-mobile.mp4
 ```
+
+## Mobile encode
+
+The 1080p60 dist MP4s are VBR-encoded for a good average size (`crf 28`/`34`
+keep them under the 10 MB cap) but that means the *peak* one-second bitrate
+is much higher than the average — measured at ~3.1 Mbps (myplanBYU) and
+~6.9 Mbps (scroller) — while a real phone on a busy 5G cell can land well
+under that. Confirmed with a real bandwidth-limited proxy (CDP's own
+`Network.emulateNetworkConditions` doesn't reliably throttle `<video>`
+byte-range fetches in headless Chrome) at 1.5 Mbps/150ms: both 1080p files
+rebuffered mid-playback for several seconds — the "runs a bit then rubber
+bands" report.
+
+`dist/*-mobile.mp4` are 720p30, bitrate-capped (`-maxrate`/`-bufsize`, not
+just `-crf`, since the *peak* was the actual failure mode) re-encodes of the
+already-committed 1080p files — not a re-run of the capture/compose
+pipeline, and not derived from any licensed source media, so they're
+committed normally (not gitignored). `portfolio-3d.js` swaps `video.wx-showcase`
+`src` to the `-mobile` variant once at boot when `window.matchMedia("(max-width: 900px)")`
+matches (the same breakpoint the rest of the mobile layout uses); desktop is
+untouched. Re-run the two `ffmpeg` commands above after any 1080p re-render —
+`qc.py` does not check the mobile files (only the two 1080p dist MP4s), so
+verify size/duration/audio manually (`ffprobe`) after regenerating.
 
 ## Gotchas
 

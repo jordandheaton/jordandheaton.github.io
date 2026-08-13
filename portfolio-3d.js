@@ -13,6 +13,24 @@
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
+  /* ---------------- mobile gets a lighter showcase encode ----------------
+     The 1080p60 story videos peak at ~3-7 Mbps for a given one-second window
+     (VBR — average bitrate is much lower, ~1-1.7 Mbps, but motion-heavy
+     seconds spike hard). Confirmed with a real bandwidth-limited proxy at a
+     1.5 Mbps/150ms profile: both clips rebuffer mid-playback (multi-second
+     `waiting` stalls, readyState dropping to HAVE_CURRENT_DATA) — the
+     "runs a bit then rubber-bands" a phone on real-world 5G throughput can
+     see. Swapped once at boot to a 720p30, bitrate-capped encode (same
+     <=900px breakpoint the rest of the mobile layout uses) whose peak stays
+     under ~1.4 Mbps, comfortably inside that throttled profile. Desktop is
+     untouched and keeps the full 1080p60 file. */
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    document.querySelectorAll("video.wx-showcase").forEach((v) => {
+      const src = v.getAttribute("src");
+      if (src) v.setAttribute("src", src.replace(/\.mp4$/, "-mobile.mp4"));
+    });
+  }
+
   /* ---------------- techy network background ---------------- */
   (function bgNet() {
     const canvas = document.getElementById("bg-net");
@@ -162,13 +180,26 @@
      the frame. Hero / dark-desk / contact / footer keep light text. */
   const bar = document.querySelector(".bar");
   if (bar) {
+    // onRefresh's `self.isActive` is the PRE-refresh value (stale, and
+    // literally `undefined` the first time — during ScrollTrigger.init(),
+    // before any update() has ever run). classList.toggle(name, undefined)
+    // then blind-flips instead of setting, so every boot-time refresh (init,
+    // sibling triggers batching, the window "load" refresh) flips a coin.
+    // An odd number of them lands bar--light on at scrollY 0 over the dark
+    // hero — intermittently, matching what was reported ("sometimes").
+    // Compute the class directly from the just-recalculated start/end
+    // against the real current scroll position instead of trusting isActive.
+    const syncBarLight = (self) => {
+      const y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      bar.classList.toggle("bar--light", y >= self.start && y < self.end);
+    };
     ScrollTrigger.create({
       trigger: ".skills-band",
       start: "top 60px",
       endTrigger: "#work",
       end: "top top",
       onToggle: (self) => bar.classList.toggle("bar--light", self.isActive),
-      onRefresh: (self) => bar.classList.toggle("bar--light", self.isActive),
+      onRefresh: syncBarLight,
     });
   }
 
