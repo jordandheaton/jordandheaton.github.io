@@ -107,6 +107,13 @@ jobs:
         continue-on-error: true
         run: python generate_schedule.py
 
+      # continue-on-error steps report "success" to the API and show a green
+      # check, so run #1's dates failure was invisible outside the summary.
+      - name: Flag non-fatal failures
+        if: steps.dates.outcome == 'failure' || steps.sections.outcome == 'failure' || steps.schedule.outcome == 'failure'
+        run: |
+          echo "::warning::Non-fatal step failed; that source keeps its previous data. dates=${{ steps.dates.outcome }} sections=${{ steps.sections.outcome }} schedule=${{ steps.schedule.outcome }}"
+
       # --- the publish gate --------------------------------------------------
       - name: Sanity gate
         id: gate
@@ -161,8 +168,10 @@ jobs:
         id: mirror
         shell: pwsh
         run: |
-          $siteArgs = @("-DeployRepo", "$env:GITHUB_WORKSPACE/_deploy/myplanbyu-site")
-          if ($env:PUBLISH -ne 'true') { $siteArgs += "-NoPush" }
+          # Hashtable splat: an ARRAY splat into a script binds "-DeployRepo" as
+          # a positional VALUE, not a parameter name (run #1 failed that way).
+          $siteArgs = @{ DeployRepo = "$env:GITHUB_WORKSPACE/_deploy/myplanbyu-site" }
+          if ($env:PUBLISH -ne 'true') { $siteArgs.NoPush = $true }
           & ./publish_site.ps1 @siteArgs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Set-Location "$env:GITHUB_WORKSPACE/_deploy/myplanbyu-site"
