@@ -47,7 +47,7 @@ jobs:
       # The portfolio repo is ~550 MB of videos and images. A blob-less partial
       # clone limited to the two folders the refresh reads keeps this to seconds,
       # and still has full history for a rebase before pushing.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           filter: blob:none
@@ -55,7 +55,7 @@ jobs:
             myplanBYU
             BYU Scholarship Matcher
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -85,9 +85,15 @@ jobs:
       - name: catalog
         id: catalog
         run: python sources/catalog.py
+      # BYU's CloudFront 403s runner IPs, so term dates come from the API
+      # gateway; without these secrets the step falls back to the (blocked)
+      # calendar page and fails non-fatally, keeping the previous file.
       - name: dates
         id: dates
         continue-on-error: true
+        env:
+          BYU_CLIENT_ID: ${{ secrets.BYU_CLIENT_ID }}
+          BYU_CLIENT_SECRET: ${{ secrets.BYU_CLIENT_SECRET }}
         run: python sources/academic_dates.py
       - name: maps
         id: maps
@@ -154,7 +160,7 @@ jobs:
 
       # --- myplan.jordanheaton.com ------------------------------------------
       - name: Check out the subdomain deploy repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: jordandheaton/myplanbyu-site
           path: _deploy/myplanbyu-site
@@ -210,7 +216,7 @@ jobs:
 
       - name: Upload refreshed data
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: myplanbyu-refresh-data
           retention-days: 14
