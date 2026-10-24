@@ -78,6 +78,13 @@ body {
   background: #fff8e4; border-bottom: 1px solid #f0e3bb;
   text-align: center; font-size: .78rem; color: #6a5a24; padding: 5px 14px; flex: 0 0 auto;
 }
+/* Frozen copy only (2026-10-24): points visitors to myplan.jordanheaton.com. */
+.moved-banner {
+  background: var(--royal); color: #fff; text-align: center;
+  font-size: .82rem; line-height: 1.45; padding: 8px 14px; flex: 0 0 auto;
+}
+.moved-banner a { color: #fff; text-decoration: underline; }
+.moved-banner .fa-bars { font-size: .75em; }
 
 /* ---------------------------- student band ---------------------------- */
 .student-band {
