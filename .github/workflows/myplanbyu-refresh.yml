@@ -4,16 +4,26 @@
 # in the same order, behind the same gate (_sanity_check.py). Differences:
 #   - runs on a fresh clone every time, so OneDrive can't roll back .git/index
 #     (what blocked every PC publish from 2026-10-11);
-#   - a failure fails the run, and GitHub emails Jordan -- that replaces the toast;
-#   - manual-dispatch only for now. publish=false is a dry run: scrape, generate,
-#     gate, and mirror with -NoPush, then report -- nothing reaches either site.
+#   - a failure fails the run, and GitHub emails Jordan -- that replaces the toast.
+#
+# Scheduled runs always publish. A manual run publishes only when the box is
+# checked; unchecked is a dry run (scrape, generate, gate, mirror with -NoPush,
+# report) and nothing reaches either site.
 #
 # Publishing to myplan.jordanheaton.com needs the MYPLAN_SITE_DEPLOY_KEY secret:
-# a deploy key with write access on jordandheaton/myplanbyu-site.
+# a deploy key with write access on jordandheaton/myplanbyu-site. The private
+# half was generated at C:\Users\jorda\.ssh\myplanbyu_site_deploy (2026-10-24).
+#
+# This replaced the PC's "myplanBYU\weekly core refresh" task, which is
+# DISABLED, not deleted -- re-enable it there if this ever has to be rolled back.
 
 name: myplanBYU refresh
 
 on:
+  # Sunday 09:00 UTC = 3 AM Mountain in winter (MST), 2 AM in summer (MDT).
+  # GitHub may start scheduled runs some minutes late under load.
+  schedule:
+    - cron: "0 9 * * 0"
   workflow_dispatch:
     inputs:
       publish:
@@ -41,7 +51,9 @@ jobs:
       run:
         working-directory: myplanBYU/scraper
     env:
-      PUBLISH: ${{ inputs.publish }}
+      # A scheduled run has no inputs, so `inputs.publish` alone would make
+      # every scheduled run a silent dry run.
+      PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish }}
       PYTHONUNBUFFERED: "1"
     steps:
       # The portfolio repo is ~550 MB of videos and images. A blob-less partial
@@ -170,7 +182,7 @@ jobs:
           repository: jordandheaton/myplanbyu-site
           path: _deploy/myplanbyu-site
           fetch-depth: 0
-          ssh-key: ${{ inputs.publish && secrets.MYPLAN_SITE_DEPLOY_KEY || '' }}
+          ssh-key: ${{ (github.event_name == 'schedule' || inputs.publish) && secrets.MYPLAN_SITE_DEPLOY_KEY || '' }}
 
       # The same script the PC runs (PowerShell 7 ships on the runner). In a dry
       # run it commits locally with -NoPush, which still proves the mirror and
