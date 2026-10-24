@@ -104,9 +104,14 @@ jobs:
       - name: timeline
         id: timeline
         run: python generate_timeline.py
+      # Instructors come from commtech (public, preferred names); the planner's
+      # registration dates come from the API, for the same CloudFront reason.
       - name: sections
         id: sections
         continue-on-error: true
+        env:
+          BYU_CLIENT_ID: ${{ secrets.BYU_CLIENT_ID }}
+          BYU_CLIENT_SECRET: ${{ secrets.BYU_CLIENT_SECRET }}
         run: python sources/class_schedule.py
       - name: schedule
         id: schedule
